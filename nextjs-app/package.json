@@ -14,7 +14,9 @@
     "test:unit": "vitest run tests/unit",
     "test:hooks": "vitest run tests/hooks",
     "test:rls": "vitest run tests/rls",
-    "test:integration": "vitest run tests/integration"
+    "test:integration": "vitest run tests/integration",
+    "eval": "tsx --tsconfig eval/tsconfig.json eval/runners/run-all.ts",
+    "eval:offline": "tsx --tsconfig eval/tsconfig.json eval/runners/run-all.ts --offline"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -56,6 +58,7 @@
     "prettier": "^3.9.8",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^3.4.19",
+    "tsx": "4.19.2",
     "typescript": "^5",
     "vitest": "^2.1.9"
   }

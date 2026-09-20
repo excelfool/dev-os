@@ -1,0 +1,549 @@
+{
+  "release": "2026-09-20",
+  "prompt_version": "v1.0",
+  "dataset": {
+    "provenance": "synthetic",
+    "note": "Synthetic corpus authored alongside the harness. NOT SME-annotated and NOT CUAD. Ground truth is correct by construction because the prose was written around the values, but the contracts are ours, so these figures measure the pipeline against our own labels and are not the launch-gate evidence spec 18 §4 calls for.",
+    "contracts": 10,
+    "nda": 6,
+    "msa": 4
+  },
+  "f1": {
+    "overall": {
+      "precision": 0.711340206185567,
+      "recall": 0.7263157894736842,
+      "f1": 0.7187499999999999,
+      "tp": 69,
+      "fp": 28,
+      "fn": 26,
+      "tn": 11
+    },
+    "nda": {
+      "precision": 0.7592592592592593,
+      "recall": 0.7592592592592593,
+      "f1": 0.7592592592592593,
+      "tp": 41,
+      "fp": 13,
+      "fn": 13,
+      "tn": 6
+    },
+    "msa": {
+      "precision": 0.6511627906976745,
+      "recall": 0.6829268292682927,
+      "f1": 0.6666666666666667,
+      "tp": 28,
+      "fp": 15,
+      "fn": 13,
+      "tn": 5
+    },
+    "by_term": {
+      "Parties": {
+        "precision": 0.4,
+        "recall": 0.4,
+        "f1": 0.4000000000000001,
+        "tp": 4,
+        "fp": 6,
+        "fn": 6,
+        "tn": 0
+      },
+      "Effective Date": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Confidentiality Obligations": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Permitted Disclosures": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 5,
+        "fn": 5,
+        "tn": 1
+      },
+      "Term & Duration": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Governing Law": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Jurisdiction": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "IP Ownership": {
+        "precision": 0.4,
+        "recall": 0.4,
+        "f1": 0.4000000000000001,
+        "tp": 4,
+        "fp": 6,
+        "fn": 6,
+        "tn": 0
+      },
+      "Non-Solicitation": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "tn": 5
+      },
+      "Breach & Remedy": {
+        "precision": 0.3333333333333333,
+        "recall": 0.3333333333333333,
+        "f1": 0.3333333333333333,
+        "tp": 2,
+        "fp": 4,
+        "fn": 4,
+        "tn": 0
+      },
+      "Service Scope": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Payment Terms": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Invoice Schedule": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Late Payment Penalty": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "tn": 3
+      },
+      "Liability Cap": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Indemnification": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 2,
+        "fn": 2,
+        "tn": 2
+      },
+      "Termination Clause": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Dispute Resolution": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "tp": 2,
+        "fp": 2,
+        "fn": 2,
+        "tn": 0
+      },
+      "Notice Period": {
+        "precision": 0.25,
+        "recall": 0.5,
+        "f1": 0.3333333333333333,
+        "tp": 1,
+        "fp": 3,
+        "fn": 1,
+        "tn": 0
+      }
+    }
+  },
+  "page_accuracy": {
+    "accuracy": 1,
+    "scored": 95,
+    "correct": 95,
+    "byTerm": {
+      "Parties": {
+        "total": 10,
+        "correct": 10
+      },
+      "Effective Date": {
+        "total": 6,
+        "correct": 6
+      },
+      "Confidentiality Obligations": {
+        "total": 6,
+        "correct": 6
+      },
+      "Permitted Disclosures": {
+        "total": 5,
+        "correct": 5
+      },
+      "Term & Duration": {
+        "total": 6,
+        "correct": 6
+      },
+      "Governing Law": {
+        "total": 10,
+        "correct": 10
+      },
+      "Jurisdiction": {
+        "total": 6,
+        "correct": 6
+      },
+      "IP Ownership": {
+        "total": 10,
+        "correct": 10
+      },
+      "Breach & Remedy": {
+        "total": 6,
+        "correct": 6
+      },
+      "Non-Solicitation": {
+        "total": 1,
+        "correct": 1
+      },
+      "Service Scope": {
+        "total": 4,
+        "correct": 4
+      },
+      "Payment Terms": {
+        "total": 4,
+        "correct": 4
+      },
+      "Invoice Schedule": {
+        "total": 4,
+        "correct": 4
+      },
+      "Late Payment Penalty": {
+        "total": 1,
+        "correct": 1
+      },
+      "Liability Cap": {
+        "total": 4,
+        "correct": 4
+      },
+      "Indemnification": {
+        "total": 2,
+        "correct": 2
+      },
+      "Termination Clause": {
+        "total": 4,
+        "correct": 4
+      },
+      "Dispute Resolution": {
+        "total": 4,
+        "correct": 4
+      },
+      "Notice Period": {
+        "total": 2,
+        "correct": 2
+      }
+    },
+    "misses": []
+  },
+  "term_coverage": {
+    "overall": {
+      "valued": 97,
+      "total": 108,
+      "coverage": 0.8981481481481481
+    },
+    "nda": {
+      "valued": 54,
+      "total": 60,
+      "coverage": 0.9
+    },
+    "msa": {
+      "valued": 43,
+      "total": 48,
+      "coverage": 0.8958333333333334
+    }
+  },
+  "custom_term_f1": {
+    "precision": 0.8,
+    "recall": 0.8,
+    "f1": 0.8000000000000002,
+    "tp": 8,
+    "fp": 2,
+    "fn": 2,
+    "tn": 0
+  },
+  "calibration": {
+    "error": 0.2182474226804123,
+    "buckets": [
+      {
+        "bucket": "0-10",
+        "lower": 0,
+        "upper": 10,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "10-20",
+        "lower": 10,
+        "upper": 20,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "20-30",
+        "lower": 20,
+        "upper": 30,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "30-40",
+        "lower": 30,
+        "upper": 40,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "40-50",
+        "lower": 40,
+        "upper": 50,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "50-60",
+        "lower": 50,
+        "upper": 60,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "60-70",
+        "lower": 60,
+        "upper": 70,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "70-80",
+        "lower": 70,
+        "upper": 80,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "80-90",
+        "lower": 80,
+        "upper": 90,
+        "count": 0,
+        "meanConfidence": null,
+        "observedAccuracy": null,
+        "gap": null,
+        "withinTolerance": null
+      },
+      {
+        "bucket": "90-100",
+        "lower": 90,
+        "upper": 100,
+        "count": 97,
+        "meanConfidence": 0.9295876288659793,
+        "observedAccuracy": 0.711340206185567,
+        "gap": 0.2182474226804123,
+        "withinTolerance": false
+      }
+    ],
+    "populatedBuckets": 1,
+    "bucketsOutOfTolerance": [
+      "90-100"
+    ]
+  },
+  "chat_groundedness": {
+    "total": 30,
+    "hallucinated": 1,
+    "rate": 0.03333333333333333,
+    "failures": [
+      {
+        "contract_id": "nda-05",
+        "question": "What is the data retention period?",
+        "label": "not-found",
+        "queryClass": "contract",
+        "answer": "Based on the document, the confidentiality undertaking remains in force for eighteen (18) months from the date of the letter, which is 28 April 2025 [Page 1].",
+        "citedPages": [
+          1
+        ],
+        "verdict": "hallucinated",
+        "reason": "answered a question the contract does not cover"
+      }
+    ]
+  },
+  "hallucination_regression": {
+    "total": 12,
+    "failures": [],
+    "rate": 0
+  },
+  "memory_regression": {
+    "turnsRun": 10,
+    "failures": []
+  },
+  "latency": {
+    "processingP95Ms": 1549,
+    "processingSamples": 379,
+    "chatP95Ms": 254,
+    "chatSamples": 234
+  },
+  "gates": [
+    {
+      "gate": "F1 — NDA (public launch)",
+      "metric": "f1",
+      "value": 0.7592592592592593,
+      "threshold": 0.88,
+      "comparison": "gte",
+      "passed": false
+    },
+    {
+      "gate": "F1 — MSA (public launch)",
+      "metric": "f1",
+      "value": 0.6666666666666667,
+      "threshold": 0.85,
+      "comparison": "gte",
+      "passed": false
+    },
+    {
+      "gate": "F1 — overall (beta floor)",
+      "metric": "f1",
+      "value": 0.7187499999999999,
+      "threshold": 0.82,
+      "comparison": "gte",
+      "passed": false
+    },
+    {
+      "gate": "Page accuracy",
+      "metric": "accuracy",
+      "value": 1,
+      "threshold": 0.92,
+      "comparison": "gte",
+      "passed": true
+    },
+    {
+      "gate": "Standard-term value coverage",
+      "metric": "coverage",
+      "value": 0.8981481481481481,
+      "threshold": 0.8,
+      "comparison": "gte",
+      "passed": true
+    },
+    {
+      "gate": "Custom-term F1",
+      "metric": "f1",
+      "value": 0.8000000000000002,
+      "threshold": 0.8,
+      "comparison": "gte",
+      "passed": true
+    },
+    {
+      "gate": "Calibration error",
+      "metric": "error",
+      "value": 0.2182474226804123,
+      "threshold": 0.1,
+      "comparison": "lte",
+      "passed": false
+    },
+    {
+      "gate": "Chat hallucination rate",
+      "metric": "rate",
+      "value": 0.03333333333333333,
+      "threshold": 0.05,
+      "comparison": "lte",
+      "passed": true
+    },
+    {
+      "gate": "Latency — processing P95",
+      "metric": "ms",
+      "value": 1549,
+      "threshold": 30000,
+      "comparison": "lte",
+      "passed": true
+    },
+    {
+      "gate": "Latency — chat P95",
+      "metric": "ms",
+      "value": 254,
+      "threshold": 15000,
+      "comparison": "lte",
+      "passed": true
+    }
+  ],
+  "extraction_errors": []
+}
