@@ -16,7 +16,7 @@ export const SelectTrigger = forwardRef<
     ref={ref}
     className={cn(
       'flex w-full items-center justify-between rounded-input border border-grey-200 bg-white px-3 py-2.5 text-body text-grey-900',
-      'data-[placeholder]:text-grey-300',
+      'data-[placeholder]:text-grey-500',
       className,
     )}
     {...props}

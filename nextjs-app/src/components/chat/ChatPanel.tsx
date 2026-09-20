@@ -93,7 +93,7 @@ export function ChatPanel({
           maxLength={2000}
           aria-label="Ask a question about this contract"
           placeholder="Ask in plain English…"
-          className="flex-1 resize-none rounded-input border border-grey-200 px-3 py-2 text-body text-grey-900 placeholder:text-grey-300 disabled:bg-grey-25"
+          className="flex-1 resize-none rounded-input border border-grey-200 px-3 py-2 text-body text-grey-900 placeholder:text-grey-500 disabled:bg-grey-25"
         />
         <Button
           onClick={() => void submit()}

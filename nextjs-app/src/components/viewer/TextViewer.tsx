@@ -27,7 +27,13 @@ export function TextViewer({
   }, [targetPage, nonce]);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
+    <div
+      // A scrollable region must be focusable, or a keyboard user cannot
+      // scroll the contract text at all (WCAG 2.1.1).
+      tabIndex={0}
+      aria-label="Contract text"
+      className="flex h-full flex-col overflow-y-auto"
+    >
       {pdfPurgedAt && (
         <p className="sticky top-0 z-10 bg-warning-50 px-4 py-2 text-caption text-warning-900">
           The original PDF was removed after 90 days of inactivity. Your extracted text, key terms

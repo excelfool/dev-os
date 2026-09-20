@@ -76,6 +76,7 @@ export function PdfDropzone({
         ref={inputRef}
         type="file"
         accept="application/pdf"
+        aria-label="Choose a PDF contract"
         className="sr-only-live"
         tabIndex={-1}
         disabled={locked}

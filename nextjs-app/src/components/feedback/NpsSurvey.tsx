@@ -105,7 +105,7 @@ export function NpsSurvey({ trigger }: { trigger: boolean }) {
             onChange={(e) => setComment(e.target.value)}
             aria-label="Optional comment"
             placeholder="Anything you'd like to add? (optional)"
-            className="mt-3 w-full rounded-input border border-grey-200 px-3 py-2 text-caption text-grey-900 placeholder:text-grey-300"
+            className="mt-3 w-full rounded-input border border-grey-200 px-3 py-2 text-caption text-grey-900 placeholder:text-grey-500"
           />
 
           <Button size="sm" className="mt-2" disabled={score === null} onClick={() => void submit()}>

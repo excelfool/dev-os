@@ -97,7 +97,7 @@ export function InlineTermEditor({
           }}
           className="text-left text-body text-grey-900 hover:underline"
         >
-          {value ?? <span className="italic text-grey-300">Not found in document</span>}
+          {value ?? <span className="italic text-grey-500">Not found in document</span>}
         </button>
         {error && (
           <p role="alert" className="text-caption text-danger-700">

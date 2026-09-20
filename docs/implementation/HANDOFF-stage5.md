@@ -98,6 +98,7 @@ Each is also annotated at its call site in code. This table is the index.
 | **Edge Functions never executed** | Both written, neither deployed. | `supabase functions deploy`. `send-notification` degrades safely today: with `SMTP_HOST` unset it logs and returns `{sent: 0}` rather than throwing, and account deletion treats the send as best-effort. |
 | **`.env.local` holds 4 of ~50 variables** | Everything else has a working default. | SMTP, Slack webhook and the status-page URL are empty; the features that use them degrade rather than fail. |
 | **Export route (spec 15)** | Not built. | v1.1 by the spec's own scoping. |
+| **No dark theme** | Spec 16 §4 item 10 and §7 require axe in light **and** dark. There is no dark theme: no `darkMode` in the Tailwind config, no `dark:` variant anywhere in `src/`, nothing in `globals.css`. | Someone building it. `accessibility.spec.ts` covers light only and says so — emulating `prefers-color-scheme: dark` renders the identical light UI, so a "dark" run would assert nothing while reporting coverage. |
 | **`process.test.ts` `ALREADY_PROCESSING` assertion is flaky** | Pre-existing; not investigated. Fails under full-suite load, passes in isolation (18/18). Untouched by the chat work. | A timing-tolerant assertion. The check races the first request's completion against the second request's arrival. |
 
 ---

@@ -96,7 +96,7 @@ export function FeedbackWidget({
             onChange={(e) => setComment(e.target.value)}
             onBlur={() => rating && void submit({ rating })}
             placeholder="Anything we got wrong? (optional)"
-            className="rounded-input border border-grey-200 px-3 py-2 text-body text-grey-900 placeholder:text-grey-300"
+            className="rounded-input border border-grey-200 px-3 py-2 text-body text-grey-900 placeholder:text-grey-500"
           />
 
           {betaSurveyEnabled && (
