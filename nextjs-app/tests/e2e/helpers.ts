@@ -19,11 +19,14 @@ export const NDA_EXTRACTION = JSON.stringify({
       source_sentence: 'This Agreement is governed by the laws of the State of Delaware.',
     },
     {
-      term_name: 'Term',
-      value: 'Three years',
+      // The library name is 'Term & Duration'; post-processing drops anything
+      // that is neither a library term for this contract type nor a custom one.
+      term_name: 'Term & Duration',
+      value: 'Two years from the Effective Date',
       page_number: 1,
       confidence_score: 0.88,
-      source_sentence: 'This Agreement shall remain in effect for three years.',
+      source_sentence:
+        'This Agreement runs for two (2) years from the Effective Date, and the confidentiality obligations survive for a further three (3) years after termination.',
     },
   ],
 });
@@ -88,10 +91,11 @@ export async function processedContract(
   page: Page,
   buffer: Buffer,
   extraction: string = NDA_EXTRACTION,
+  contractType: 'NDA' | 'MSA' = 'NDA',
 ): Promise<string> {
   await signUp(page, 'flow');
   await scriptStub(page.request, [extraction]);
-  const contractId = await uploadViaApi(page, buffer);
+  const contractId = await uploadViaApi(page, buffer, contractType);
   const processed = await page.request.post(`/api/contracts/${contractId}/process`);
   expect(processed.status()).toBe(200);
   return contractId;
@@ -110,4 +114,22 @@ export async function openChat(page: Page, contractId: string): Promise<void> {
 export async function ask(page: Page, question: string): Promise<void> {
   await page.getByLabel('Ask a question about this contract').fill(question);
   await page.getByRole('button', { name: 'Send question' }).click();
+}
+
+/**
+ * Forces the text viewer by answering the signed-url call with the same
+ * `404 NO_FILE` the server returns when a contract has no stored PDF — a purge,
+ * or a Storage write that failed at upload. This drives the app's real fallback
+ * branch. The server-side half of that path (upload recording
+ * `storage_available: false`) is covered by the integration suite's Supabase
+ * proxy, which cannot be reached from a browser-driven server.
+ */
+export async function forceTextViewer(page: Page, contractId: string): Promise<void> {
+  await page.route(`**/api/contracts/${contractId}/signed-url`, (route) =>
+    route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: { code: 'NO_FILE', message: 'No file.' } }),
+    }),
+  );
 }
