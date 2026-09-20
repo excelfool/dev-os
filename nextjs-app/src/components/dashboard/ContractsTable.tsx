@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,6 +42,8 @@ const COLUMNS: Array<{ key: SortColumn | null; label: string }> = [
 
 export function ContractsTable() {
   const router = useRouter();
+  const [toast, setToast] = useState<string | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
   const params = useSearchParams();
   const queryClient = useQueryClient();
 
@@ -81,11 +84,26 @@ export function ContractsTable() {
     router.replace(`/dashboard?${next.toString()}`);
   }
 
+  /**
+   * Spec 11 §5 step 5: optimistic removal with rollback on failure, and a
+   * confirmation toast. Neither was implemented — the row only disappeared
+   * once the refetch came back, and nothing confirmed the deletion.
+   */
   async function remove(id: string) {
-    const res = await fetch(`/api/contracts/${id}`, { method: 'DELETE' });
-    if (res.ok || res.status === 404) {
-      await queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      router.refresh();
+    setPendingRemoval((prev) => [...prev, id]);
+    try {
+      const res = await fetch(`/api/contracts/${id}`, { method: 'DELETE' });
+      if (res.ok || res.status === 404) {
+        await queryClient.invalidateQueries({ queryKey: ['contracts'] });
+        router.refresh();
+        setToast('Contract and all associated data deleted.');
+        setTimeout(() => setToast(null), 5000);
+        return;
+      }
+      // Rollback: the row comes back rather than vanishing on a failed delete.
+      setPendingRemoval((prev) => prev.filter((pending) => pending !== id));
+    } catch {
+      setPendingRemoval((prev) => prev.filter((pending) => pending !== id));
     }
   }
 
@@ -95,13 +113,18 @@ export function ContractsTable() {
     router.refresh();
   }
 
-  const rows = data?.contracts ?? [];
+  const rows = (data?.contracts ?? []).filter((row) => !pendingRemoval.includes(row.id));
   const total = data?.total ?? 0;
   const from = total === 0 ? 0 : (page - 1) * (data?.page_size ?? 50) + 1;
   const to = Math.min(page * (data?.page_size ?? 50), total);
 
   return (
     <section className="flex flex-col gap-subsection" aria-label="All contracts">
+      {toast && (
+        <p role="status" className="rounded-card bg-success-50 px-4 py-2 text-caption text-success-700">
+          {toast}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-h5 text-grey-900">All contracts</h2>
         <div className="flex items-center gap-2">
