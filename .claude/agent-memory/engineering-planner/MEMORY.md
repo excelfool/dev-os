@@ -1,2 +1,0 @@
-- [ContractIQ architecture decisions](project_contractiq-architecture-decisions.md) — how the engineering doc resolved each PRD ambiguity; which still need user confirmation
-- [ContractIQ run history](project_contractiq-run-history.md) — cycles, verdicts, and the requirement class that keeps slipping (qualitative PRD promises with no measurement source)
