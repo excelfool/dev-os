@@ -79,6 +79,10 @@ Each is also annotated at its call site in code. This table is the index.
 | 6 | **`page_size` above 50 is rejected, not clamped** | 09 §5 | Spec 01 §7's `.max(50)` is normative and rejects; §5's prose said "capped". Silently substituting a different `page_size` would also make the `total`/`page_size` pagination contract dishonest. Returns `400 VALIDATION` with a field map. | spec 09 §5 |
 | 7 | **CSP adds `'unsafe-eval'` in development only** | 13 §3 | See §4 below — this one is the most important entry in this document. | spec 13 §3 |
 | 8 | **Validation messages appear per touched field, not only on submit** | 03 §6 | See §4 below. | spec 03 §6 |
+| 9 | **History signals also match the user's own voice** | 08 §4 | The spec's history regex is written entirely in the second person, so "What have I asked you so far" — §8's own HISTORY example — scored no history signal, classified `contract` and was answered against the document alone. | spec 08 §4 |
+| 10 | **Undecidable fallback is `both`, not `contract`** | 08 §4 | "Include the document" is not safe on its own: the `contract` prompt also orders the model to answer only from the document and otherwise reply with the exact refusal, so a classifier miss refuses instead of degrading. No contract signal + an existing conversation ⇒ `both`, which costs nothing since history is sent for every class. | spec 08 §4 |
+| 11 | **Class `history` gets its own prompt, not BASE + a suffix** | 08 §5 | BASE orders "answer only from the document … otherwise reply exactly 'I cannot find this in the document.'" while `history` omits the document body. The refusal was the only instruction left to follow, so a correctly classified turn still refused. | spec 08 §5 |
+| 12 | **`validateCitations` takes the query class** | 08 §6 | A history answer has no page to cite, so the class-blind check fired a repair call on every correct one — and would have replaced it with a fabricated citation had the repair ever produced a page. | spec 08 §6 |
 
 ---
 
@@ -94,6 +98,7 @@ Each is also annotated at its call site in code. This table is the index.
 | **Edge Functions never executed** | Both written, neither deployed. | `supabase functions deploy`. `send-notification` degrades safely today: with `SMTP_HOST` unset it logs and returns `{sent: 0}` rather than throwing, and account deletion treats the send as best-effort. |
 | **`.env.local` holds 4 of ~50 variables** | Everything else has a working default. | SMTP, Slack webhook and the status-page URL are empty; the features that use them degrade rather than fail. |
 | **Export route (spec 15)** | Not built. | v1.1 by the spec's own scoping. |
+| **Chat answer sometimes renders twice** | Found 2026-09-20 while writing `chat-history.spec.ts`. Render-only: measured at 2 runs in 5, with exactly one POST, one model call and exactly two rows persisted. | A fix in `useChat`: the mount-time history GET does not discard its result once a turn has begun, so a load landing mid-turn leaves the assistant in the list that the POST's functional append then adds again. StrictMode's double mount makes it visible in dev. Two attempts to force the interleaving deterministically from Playwright failed, so it is reported rather than fixed, and no regression test is claimed. |
 
 ---
 
@@ -239,16 +244,19 @@ Still to write, in rough priority order:
    preview, add a custom term, see its "Custom" badge) → process → results
    (values, page chips, confidence badges) → inline edit → "Edited" badge → mark
    review complete → dashboard badge updates. Spec 04 §7, 05 §6, 07 §8, 10 §6.
-   **Needs the OpenAI stub reachable from a browser-driven server** — either
-   reuse the integration harness's stub in the Playwright `webServer` env, or
-   accept billed calls for this one file. The former is strongly preferred.
+   **The OpenAI stub is now reachable from the Playwright server** —
+   `tests/e2e/openai-stub.mjs` runs as its own `webServer` entry on port 3300
+   and the app is started with `OPENAI_BASE_URL` pointed at it. Spec files
+   script it and read its request log over `/__control/*`. No billed calls.
 2. **`navigation.spec.ts`** — clicking a page chip scrolls the viewer to that
    page and flashes the highlight, **in both viewers**. Spec 07 §8.
 3. **`viewer-fallback.spec.ts`** — with Storage unavailable, the results page
    renders the text viewer and all terms. The Supabase proxy from §5 makes this
    drivable; wire it into the Playwright `webServer`.
-4. **`chat-history.spec.ts`** — ask → answer with a clickable citation chip that
-   navigates the viewer → refresh → history persists. Spec 08 §8, US-012.
+4. ~~**`chat-history.spec.ts`**~~ — **written 2026-09-20** (6 tests, Chromium +
+   WebKit), covering the two turns that failed live in Lab 2 Lesson 2. Still
+   owed from this file: the citation chip actually navigating the viewer, which
+   belongs with `navigation.spec.ts`.
 5. **`keyboard.spec.ts`** — the entire core flow completed with the keyboard
    only. Spec 16 §7.
 6. **`accessibility.spec.ts`** — axe-core via `@axe-core/playwright` on every

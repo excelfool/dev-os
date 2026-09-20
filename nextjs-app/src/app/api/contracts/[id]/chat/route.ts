@@ -156,7 +156,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     // 9. Citation post-validation, with one repair retry.
     let content = result.content;
-    let citation = validateCitations(content, contract.page_count);
+    let citation = validateCitations(content, contract.page_count, queryClass);
     let promptTokens = result.promptTokens;
     let completionTokens = result.completionTokens;
 
@@ -175,7 +175,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
           contractId: contract.id,
           supabase,
         });
-        const repairedCitation = validateCitations(repaired.content, contract.page_count);
+        const repairedCitation = validateCitations(repaired.content, contract.page_count, queryClass);
         // Keep the repaired answer only if it actually cited a page.
         if (repairedCitation.citationVerified) {
           content = repaired.content;

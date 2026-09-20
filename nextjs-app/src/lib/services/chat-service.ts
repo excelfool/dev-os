@@ -62,7 +62,22 @@ export interface CitationResult {
   needsRepair: boolean;
 }
 
-export function validateCitations(content: string, pageCount: number): CitationResult {
+/**
+ * `queryClass` added 2026-09-20. An answer about the conversation has no page
+ * to cite, so the class-blind check flagged every correct history answer for
+ * repair — a second billed call whose only possible "fix" is a page number the
+ * model cannot have, and which would overwrite a correct answer with a
+ * fabricated citation if it ever produced one.
+ */
+export function validateCitations(
+  content: string,
+  pageCount: number,
+  queryClass: QueryClass = 'contract',
+): CitationResult {
+  if (queryClass === 'history') {
+    return { citedPages: [], citationVerified: true, needsRepair: false };
+  }
+
   const matches = [...content.matchAll(/\[Page\s+(\d+)\]/gi)];
 
   const citedPages = [

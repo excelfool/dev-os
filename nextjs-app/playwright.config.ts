@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 3200;
+// The model stub runs as its own server: Playwright starts the app as a
+// separate process, so the in-process stub the integration harness uses is not
+// reachable from it (handoff §7 item 1).
+const OPENAI_STUB_PORT = 3300;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -21,12 +25,26 @@ export default defineConfig({
     // part of the gate, not an optional extra.
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
-  webServer: {
-    command: `npx next dev --port ${PORT}`,
-    url: `http://127.0.0.1:${PORT}/api/health`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-    // Its own build directory — sharing `.next` corrupts the webpack runtime.
-    env: { NEXT_DIST_DIR: '.next-e2e', NEXT_TELEMETRY_DISABLED: '1' },
-  },
+  webServer: [
+    {
+      command: `node tests/e2e/openai-stub.mjs`,
+      url: `http://127.0.0.1:${OPENAI_STUB_PORT}/__control/requests`,
+      reuseExistingServer: false,
+      timeout: 30_000,
+      env: { OPENAI_STUB_PORT: String(OPENAI_STUB_PORT) },
+    },
+    {
+      command: `npx next dev --port ${PORT}`,
+      url: `http://127.0.0.1:${PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      // Its own build directory — sharing `.next` corrupts the webpack runtime.
+      env: {
+        NEXT_DIST_DIR: '.next-e2e',
+        NEXT_TELEMETRY_DISABLED: '1',
+        // No billed calls from the E2E suite.
+        OPENAI_BASE_URL: `http://127.0.0.1:${OPENAI_STUB_PORT}/v1`,
+      },
+    },
+  ],
 });

@@ -96,6 +96,31 @@ The failure was silent by construction: a misclassified turn still returns a
 fluent answer, just one produced without the contract in context. Worth a
 regression test on any future edit to this regex.
 
+**SECOND CORRECTION (2026-09-20) — found by the Lab 2 Lesson 2 four-turn memory
+test, run live in a browser.** Two of the four turns returned the contract
+refusal. The unit tests for all four query classes were green throughout,
+because they call `classifyQuery` directly and never reach the prompt the model
+is actually sent.
+
+1. **Rule 1's regex is written entirely in the second person** — `you said`,
+   `what did you`. A user asking about the conversation in their own voice
+   matched nothing. This spec's own §8 HISTORY example, *"What have I asked you
+   so far"*, scored no history signal, classified `contract`, was answered
+   against the document alone and returned "I cannot find this in the
+   document." Added `HISTORY_SIGNAL_FIRST_PERSON`, covering `I/we asked|said|
+   discussed`, `my questions`, `this conversation` and `so far`.
+
+2. **Rule 3's fallback is wrong.** "Otherwise → `contract` (the safe default:
+   include the document)" assumes including the document is harmless. It is
+   not: the `contract` prompt also orders the model to answer ONLY from the
+   document and to reply with the exact refusal when it cannot, so a classifier
+   miss on a conversational question does not degrade — it refuses. The
+   fallback is now: no contract signal **and** a conversation already exists →
+   `both` (document *and* conversation). This costs nothing, because history is
+   sent for every class; only the prompt differs. A message with a clear
+   contract signal still classifies `contract`, so the class stays meaningful
+   for the spec 17 evaluation.
+
 Class `history` **omits the document body**, cutting tokens and latency for questions about the conversation itself; `contract` and `both` include it. The class is stored in `chat_messages.query_class` for evaluation.
 
 ---
@@ -105,6 +130,22 @@ Class `history` **omits the document body**, cutting tokens and latency for ques
 1. **System prompt** (`src/lib/ai/prompts/chat.v1.ts`), verbatim:
    > "You are ContractIQ. Answer only from the document text provided. If the answer is not in the document, reply exactly 'I cannot find this in the document.' Begin every substantive answer with 'Based on the document…'. Every answer that makes a claim about the contract must cite the page as [Page X]. Never use general legal knowledge. You cannot take any action on the contract — you only answer questions."
    For `query_class === 'history'` the prompt appends: "This question is about your earlier conversation. Answer from the conversation history; do not invent contract content."
+
+   **CORRECTION (2026-09-20).** Composing the history prompt as BASE + this
+   suffix is the second cause of the failure above. BASE says "Answer only from
+   the document text provided" and, failing that, "reply exactly 'I cannot find
+   this in the document.'" — while class `history` deliberately omits the
+   document body (§4). The model was handed no document and an explicit
+   instruction to refuse when the document does not answer; the suffix does not
+   retract it. Live result: "What does that mean in practice?" classified
+   `history` **correctly** and still returned the contract refusal.
+
+   Class `history` now has its own standalone prompt with no document-only
+   clause. Class `both` keeps BASE and adds permission to answer from the
+   conversation, with the refusal reserved for the contract part of a question.
+   Class `contract` is unchanged and still carries the spec's verbatim text, so
+   grounding and the "off-document question returns the refusal" acceptance
+   criterion are untouched.
 2. **Full contract text** from `contracts.contract_text`, markers included, as a system-role context block — for classes `contract` and `both` only. No chunking, no vector store (valid because contracts are capped at 15,000 tokens; a chunked RAG strategy is explicitly deferred).
 3. **Full conversation history**, ascending, up to **200 messages** (A-03 / Assumption 14) — this is what enables memory-style questions. If history would exceed `MAX_CHAT_HISTORY_TOKENS` (8,000), drop **oldest-first** until it fits.
 4. The new user message last.
@@ -117,6 +158,12 @@ Token budget per turn: ≤ 15,000 document + ≤ ~8,000 history + ~400 system �
 
 1. Parse all `[Page N]` tags with `/\[Page\s+(\d+)\]/gi`; keep unique values within `1..page_count`, sorted → `cited_pages`.
 2. If the reply **is** the exact "cannot find" fallback, `citation_verified = true` and `cited_pages = []` — "not found" is a correct, expected answer, not a failure.
+   **Added 2026-09-20:** the same applies to `query_class === 'history'`. An
+   answer about the conversation has no page to cite, so the class-blind check
+   flagged every correct history answer for repair — a second billed call whose
+   only possible "fix" is a page number the model cannot have, and which would
+   overwrite a correct answer with a fabricated citation if it ever produced
+   one. `validateCitations` now takes the query class.
 3. If the reply makes a claim and has **no** valid citation, issue **one** repair request (`repair.v1.ts`): "Your previous answer did not cite a page. Re-answer using only the document text, and cite the page as [Page X]." The repair call is logged with `purpose='repair'`.
 4. If it still lacks a citation, store `citation_verified = false` and render the "unverified citation" notice. The answer is still shown — the user keeps control.
 5. Citations naming a page outside `1..page_count` are discarded and count as "no citation".

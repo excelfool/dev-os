@@ -10,6 +10,17 @@ const HISTORY_SIGNAL =
   /\b(you (said|mentioned|told)|earlier|before|previous(ly)?|last (question|answer)|repeat that|what did you)\b/i;
 
 /**
+ * DEVIATION from spec 08 §4 rule 1 (2026-09-20). The spec's history regex is
+ * written entirely in the second person — `you said`, `what did you`. A user
+ * asking about the conversation in their OWN voice matched nothing:
+ * "What have I asked you so far" — the lesson's own worked example — scored no
+ * history signal, fell through to `contract`, was answered against the document
+ * alone and came back "I cannot find this in the document."
+ */
+const HISTORY_SIGNAL_FIRST_PERSON =
+  /\b((i|we) (have |had |just )?(asked|ask|said|mentioned|discussed|covered)|my (previous |earlier )?questions?|this (conversation|chat|session)|so far)\b/i;
+
+/**
  * DEVIATION from spec 08 §4. The spec writes one alternation wrapped in
  * `\b(...)\b`, which mixes whole words with prefix stems — and a trailing `\b`
  * makes every stem unmatchable: `terminat\b` cannot match "termination",
@@ -40,11 +51,29 @@ export function classifyQuery(message: string, hasHistory: boolean): QueryClass 
 
   // A short bare back-reference with no contract noun is about the conversation.
   const historySignal =
-    HISTORY_SIGNAL.test(text) || (wordCount < 8 && BARE_BACK_REFERENCE.test(text) && !contractSignal);
+    HISTORY_SIGNAL.test(text) ||
+    HISTORY_SIGNAL_FIRST_PERSON.test(text) ||
+    (wordCount < 8 && BARE_BACK_REFERENCE.test(text) && !contractSignal);
 
   if (historySignal && contractSignal) return 'both';
   if (historySignal && hasHistory) return 'history';
 
-  // The safe default is to include the document.
+  /**
+   * DEVIATION from spec 08 §4 rule 3 (2026-09-20). The spec ends "Otherwise →
+   * `contract` (the safe default: include the document)". Including the
+   * document is not, on its own, safe: the `contract` prompt also orders the
+   * model to answer ONLY from the document and to reply with the exact refusal
+   * when it cannot. So every classifier miss on a conversational question does
+   * not degrade — it refuses outright.
+   *
+   * When a message carries no contract signal and a conversation already
+   * exists, the class is genuinely undecidable, and the safe answer is `both`:
+   * document AND conversation, which costs nothing (history is sent for every
+   * class) and lets a miss degrade instead of refusing. A message with a clear
+   * contract signal still classifies `contract`, so the class stays meaningful
+   * for the spec 17 evaluation.
+   */
+  if (!contractSignal && hasHistory) return 'both';
+
   return 'contract';
 }
