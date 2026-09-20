@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { makePdf } from '../integration/pdf-fixtures';
-import { forceTextViewer, processedContract } from './helpers';
+import { forceTextViewer, processedContract, gotoAfterAuth } from './helpers';
 
 /**
  * Spec 07 §8 — clicking a page chip scrolls the viewer to that page and flashes
@@ -70,7 +70,7 @@ test.describe('page-chip navigation', () => {
     page,
   }) => {
     const contractId = await processedContract(page, threePageContract(), EXTRACTION, 'MSA');
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     const pdfPage1 = page.locator('[data-page="1"]');
     await expect(pdfPage1).toBeVisible({ timeout: 30_000 });
@@ -90,7 +90,7 @@ test.describe('page-chip navigation', () => {
   }) => {
     const contractId = await processedContract(page, threePageContract(), EXTRACTION, 'MSA');
     await forceTextViewer(page, contractId);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     const page2 = page.getByRole('region', { name: 'Page 2' });
     await expect(page2).toBeVisible({ timeout: 30_000 });
@@ -115,7 +115,7 @@ test.describe('page-chip navigation', () => {
     // still re-renders the mark (use-target-page.ts).
     const contractId = await processedContract(page, threePageContract(), EXTRACTION, 'MSA');
     await forceTextViewer(page, contractId);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     const chip = terms(page)
       .locator('li')

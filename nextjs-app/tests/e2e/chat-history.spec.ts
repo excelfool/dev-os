@@ -1,5 +1,15 @@
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { SHORT_NDA } from '../integration/pdf-fixtures';
+import {
+  ask,
+  chat,
+  gotoAfterAuth,
+  openChat,
+  processedContract,
+  scriptStub,
+  stubRequests,
+  systemBlocks,
+} from './helpers';
 
 /**
  * Spec 08 §8, US-012 — conversational memory through the real UI.
@@ -22,99 +32,15 @@ import { SHORT_NDA } from '../integration/pdf-fixtures';
  * prompt exactly.
  */
 
-const STUB = 'http://127.0.0.1:3300';
 const REFUSAL = 'I cannot find this in the document.';
-const GROUNDED_ANSWER = 'Based on the document, the governing law is the State of Delaware. [Page 1]';
-
-const EXTRACTION = JSON.stringify({
-  detected_type: 'NDA',
-  terms: [
-    {
-      term_name: 'Governing Law',
-      value: 'Delaware',
-      page_number: 1,
-      confidence_score: 0.95,
-      source_sentence: 'This Agreement is governed by the laws of the State of Delaware.',
-    },
-  ],
-});
-
-interface LlmRequest {
-  messages: Array<{ role: string; content: string }>;
-}
-
-async function scriptStub(request: APIRequestContext, contents: string[]): Promise<void> {
-  await request.post(`${STUB}/__control/reset`);
-  await request.post(`${STUB}/__control/script`, {
-    data: { responses: contents.map((content) => ({ content })) },
-  });
-}
-
-async function stubRequests(request: APIRequestContext): Promise<LlmRequest[]> {
-  const res = await request.get(`${STUB}/__control/requests`);
-  return (await res.json()) as LlmRequest[];
-}
-
-function systemBlocks(req: LlmRequest): string[] {
-  return req.messages.filter((m) => m.role === 'system').map((m) => m.content);
-}
-
-function uniqueEmail(label: string): string {
-  return `e2e.${label}.${Date.now()}${Math.floor(Math.random() * 1000)}@gmail.com`;
-}
-
-/**
- * The results page shows each term's source sentence and its own "Source:
- * Page N" button, so chat assertions must be scoped to the panel or they match
- * the terms panel instead.
- */
-function chat(page: Page) {
-  return page.getByRole('complementary', { name: 'Chat with contract' });
-}
-
-/** Signs up through the UI, then uploads and processes over the authed session. */
-async function processedContract(page: Page): Promise<string> {
-  const email = uniqueEmail('chat');
-  await page.goto('/signup');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill('Password12345');
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await page.waitForURL('**/dashboard', { timeout: 20_000 });
-
-  // page.request shares the browser's cookies, so these run as the signed-in
-  // user without re-implementing auth.
-  await scriptStub(page.request, [EXTRACTION]);
-
-  const upload = await page.request.post('/api/contracts/upload', {
-    multipart: {
-      contract_type: 'NDA',
-      file: { name: 'nda.pdf', mimeType: 'application/pdf', buffer: SHORT_NDA },
-    },
-  });
-  expect(upload.status()).toBe(201);
-  const contractId = (await upload.json()).contract_id as string;
-
-  const processed = await page.request.post(`/api/contracts/${contractId}/process`);
-  expect(processed.status()).toBe(200);
-
-  return contractId;
-}
-
-async function openChat(page: Page, contractId: string): Promise<void> {
-  await page.goto(`/contracts/${contractId}`);
-  await page.getByRole('button', { name: 'Chat with Contract' }).click();
-}
-
-async function ask(page: Page, question: string): Promise<void> {
-  await page.getByLabel('Ask a question about this contract').fill(question);
-  await page.getByRole('button', { name: 'Send question' }).click();
-}
+const GROUNDED_ANSWER =
+  'Based on the document, the governing law is the State of Delaware. [Page 1]';
 
 test.describe('conversational memory — the two turns that failed live', () => {
   test('a demonstrative follow-up is never told to answer only from the document', async ({
     page,
   }) => {
-    const contractId = await processedContract(page);
+    const contractId = await processedContract(page, SHORT_NDA);
     await openChat(page, contractId);
 
     // T1 — a grounded contract question.
@@ -146,7 +72,7 @@ test.describe('conversational memory — the two turns that failed live', () => 
   test('"What have I asked you so far" is answered from the conversation, not the document', async ({
     page,
   }) => {
-    const contractId = await processedContract(page);
+    const contractId = await processedContract(page, SHORT_NDA);
     await openChat(page, contractId);
 
     await scriptStub(page.request, [GROUNDED_ANSWER]);
@@ -186,7 +112,7 @@ test.describe('conversational memory — the two turns that failed live', () => 
   test('a contract question still gets the document and keeps the refusal available', async ({
     page,
   }) => {
-    const contractId = await processedContract(page);
+    const contractId = await processedContract(page, SHORT_NDA);
     await openChat(page, contractId);
 
     await scriptStub(page.request, [GROUNDED_ANSWER]);

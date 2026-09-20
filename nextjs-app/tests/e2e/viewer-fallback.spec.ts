@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { SHORT_NDA } from '../integration/pdf-fixtures';
-import { forceTextViewer, NDA_EXTRACTION, processedContract } from './helpers';
+import { forceTextViewer, NDA_EXTRACTION, processedContract, gotoAfterAuth } from './helpers';
 
 /**
  * Spec 07 §2 — viewer selection and its two fallbacks:
@@ -35,7 +35,7 @@ test.describe('when the PDF cannot be shown', () => {
   test('a missing file falls back to the text viewer with every term intact', async ({ page }) => {
     const contractId = await processedContract(page, SHORT_NDA);
     await forceTextViewer(page, contractId);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     // The text viewer is mounted, and the PDF canvas never is.
     await expect(documentPanel(page)).toBeVisible({ timeout: 30_000 });
@@ -64,7 +64,7 @@ test.describe('when the PDF cannot be shown', () => {
     await page.route(`**/api/contracts/${contractId}/signed-url`, (route) =>
       route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
     );
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     await expect(documentPanel(page)).toBeVisible({ timeout: 30_000 });
     await expect(
@@ -80,7 +80,7 @@ test.describe('when the PDF cannot be shown', () => {
     // The fallback must not be a read-only dead end (spec 07 §2).
     const contractId = await processedContract(page, SHORT_NDA);
     await forceTextViewer(page, contractId);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     const terms = page.getByRole('region', { name: 'Key terms' });
     await terms.getByRole('button', { name: 'State of Delaware' }).click();

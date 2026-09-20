@@ -3,6 +3,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { SHORT_NDA } from '../integration/pdf-fixtures';
 import {
   forceTextViewer,
+  gotoAfterAuth,
   NDA_EXTRACTION,
   processedContract,
   scriptStub,
@@ -74,10 +75,10 @@ test.describe('accessibility — authenticated routes', () => {
 
     await scan(page, '/dashboard (empty)');
 
-    await page.goto('/contracts/new');
+    await gotoAfterAuth(page, '/contracts/new');
     await scan(page, '/contracts/new');
 
-    await page.goto('/settings');
+    await gotoAfterAuth(page, '/settings');
     await scan(page, '/settings');
   });
 
@@ -86,7 +87,7 @@ test.describe('accessibility — authenticated routes', () => {
     await scriptStub(page.request, [NDA_EXTRACTION]);
     const contractId = await uploadViaApi(page, SHORT_NDA);
 
-    await page.goto(`/contracts/${contractId}/prepare`);
+    await gotoAfterAuth(page, `/contracts/${contractId}/prepare`);
     await expect(page.getByRole('button', { name: 'Process Contract' })).toBeVisible();
     await scan(page, '/contracts/[id]/prepare');
   });
@@ -95,7 +96,7 @@ test.describe('accessibility — authenticated routes', () => {
     page,
   }) => {
     await processedContract(page, SHORT_NDA);
-    await page.goto('/dashboard');
+    await gotoAfterAuth(page, '/dashboard');
     await expect(page.getByRole('table')).toBeVisible();
     await scan(page, '/dashboard (populated)');
   });
@@ -106,7 +107,7 @@ test.describe('accessibility — both viewers', () => {
     page,
   }) => {
     const contractId = await processedContract(page, SHORT_NDA);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
     await expect(page.locator('[data-page="1"]')).toBeVisible({ timeout: 30_000 });
     await scan(page, 'results + PdfViewer');
   });
@@ -116,14 +117,14 @@ test.describe('accessibility — both viewers', () => {
   }) => {
     const contractId = await processedContract(page, SHORT_NDA);
     await forceTextViewer(page, contractId);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
     await expect(page.getByRole('region', { name: 'Page 1' })).toBeVisible({ timeout: 30_000 });
     await scan(page, 'results + TextViewer');
   });
 
   test('the open chat panel has no serious or critical violations', async ({ page }) => {
     const contractId = await processedContract(page, SHORT_NDA);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
     await page.getByRole('button', { name: 'Chat with Contract' }).click();
     await expect(page.getByLabel('Ask a question about this contract')).toBeVisible();
     await scan(page, 'results + open chat');

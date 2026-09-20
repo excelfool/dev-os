@@ -80,7 +80,7 @@ test.describe('the full contract review journey', () => {
     await expect(page.getByText(/Review complete · /)).toBeVisible();
 
     // --- dashboard --------------------------------------------------------
-    await page.goto('/dashboard');
+    await gotoAfterAuth(page, '/dashboard');
     const row = page.getByRole('row').filter({ hasText: 'nda.pdf' });
     await expect(row.getByText('Review complete')).toBeVisible();
   });
@@ -88,7 +88,7 @@ test.describe('the full contract review journey', () => {
   test('a thumbs-up on the review persists across a reload', async ({ page }) => {
     // Spec 10 §6 names this file for the feedback widget.
     const contractId = await processedContract(page, SHORT_NDA);
-    await page.goto(`/contracts/${contractId}`);
+    await gotoAfterAuth(page, `/contracts/${contractId}`);
 
     const feedback = page.getByRole('region', { name: 'Feedback' });
     const thumbsUp = feedback.getByRole('button', { name: 'This review was accurate' });

@@ -111,7 +111,7 @@ export function chat(page: Page) {
 }
 
 export async function openChat(page: Page, contractId: string): Promise<void> {
-  await page.goto(`/contracts/${contractId}`);
+  await gotoAfterAuth(page, `/contracts/${contractId}`);
   await page.getByRole('button', { name: 'Chat with Contract' }).click();
 }
 
