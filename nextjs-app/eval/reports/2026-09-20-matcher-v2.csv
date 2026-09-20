@@ -1,0 +1,119 @@
+Contract_ID,Contract_Type,Term_Name,Expected_Value,AI_Extracted_Value,Expected_Page,AI_Page,Confidence_Score,F1_Match,Expert_Rating,Notes,Prompt_Version
+nda-01,NDA,Parties,"Harborlight Robotics, Inc. and Peakside Materials Ltd.","Harborlight Robotics, Inc. and Peakside Materials Ltd.",1,1,95,TRUE,,tp:exact,v1.0
+nda-01,NDA,Effective Date,11 February 2025,11 February 2025,1,1,94,TRUE,,tp:exact,v1.0
+nda-01,NDA,Confidentiality Obligations,Hold the other party's Confidential Information in strict confidence,"Each party shall hold the other party's Confidential Information in strict confidence, shall not disclose it to any third party without prior written consent, and shall use it solely for the purpose described in clause 1.",1,1,93,TRUE,,tp:substring,v1.0
+nda-01,NDA,Permitted Disclosures,Where required by a court of competent jurisdiction,"Disclosure permitted to the extent required by a court of competent jurisdiction, with prompt written notice and cooperation in seeking protective treatment.",1,1,92,TRUE,,tp:token-subset,v1.0
+nda-01,NDA,Term & Duration,two (2) years,Agreement continues for two (2) years from the Effective Date; confidentiality obligations survive for three (3) years after termination.,2,2,91,TRUE,,tp:substring,v1.0
+nda-01,NDA,Governing Law,the State of Delaware,Laws of the State of Delaware,2,2,95,TRUE,,tp:substring,v1.0
+nda-01,NDA,Jurisdiction,"Wilmington, Delaware","Exclusive jurisdiction of the courts of Wilmington, Delaware",2,2,94,TRUE,,tp:substring,v1.0
+nda-01,NDA,IP Ownership,Remains the property of the disclosing party,"All Confidential Information remains the property of the disclosing party; no licence, assignment or other right granted.",2,2,92,TRUE,,tp:substring,v1.0
+nda-01,NDA,Non-Solicitation,,,,,0,TRUE,,tn,v1.0
+nda-01,NDA,Breach & Remedy,Injunctive relief for irreparable harm,Breach may cause irreparable harm; non-breaching party entitled to seek injunctive relief.,2,2,93,TRUE,,tp:token-subset,v1.0
+nda-02,NDA,Parties,Cobalt Analytics LLC and Verity Freight Corporation,Cobalt Analytics LLC and Verity Freight Corporation,1,1,95,TRUE,,tp:exact,v1.0
+nda-02,NDA,Effective Date,3 September 2024,3 September 2024,1,1,94,TRUE,,tp:exact,v1.0
+nda-02,NDA,Confidentiality Obligations,Hold the other party's Confidential Information in strict confidence,"Each party shall hold the other party's Confidential Information in strict confidence, shall not disclose it to any third party without prior written consent, and shall use it solely for the purpose described in clause 1.",1,1,93,TRUE,,tp:substring,v1.0
+nda-02,NDA,Permitted Disclosures,,,,,0,TRUE,,tn,v1.0
+nda-02,NDA,Term & Duration,thirty-six (36) months,Agreement continues for thirty-six (36) months from the Effective Date; confidentiality obligations survive for three (3) years after termination,2,2,92,TRUE,,tp:substring,v1.0
+nda-02,NDA,Governing Law,the State of New York,Laws of the State of New York,2,2,95,TRUE,,tp:substring,v1.0
+nda-02,NDA,Jurisdiction,"New York County, New York","Exclusive jurisdiction of the courts of New York County, New York",2,2,94,TRUE,,tp:substring,v1.0
+nda-02,NDA,IP Ownership,Remains the property of the disclosing party,"All Confidential Information remains the property of the disclosing party; no licence, assignment or other right granted",2,2,92,TRUE,,tp:substring,v1.0
+nda-02,NDA,Non-Solicitation,Twelve (12) months following termination,"For twelve (12) months following termination, neither party shall solicit for employment any employee of the other party with whom it had material contact",2,2,93,TRUE,,tp:substring,v1.0
+nda-02,NDA,Breach & Remedy,Injunctive relief for irreparable harm,Breach may cause irreparable harm; non-breaching party entitled to seek injunctive relief,2,2,91,TRUE,,tp:token-subset,v1.0
+nda-03,NDA,Parties,Ashgrove Therapeutics Limited and Northwind Diagnostics plc,"Ashgrove Therapeutics Limited (""the Disclosing Party"") and Northwind Diagnostics plc (""the Receiving Party"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+nda-03,NDA,Effective Date,17 June 2025,17 June 2025,1,1,94,TRUE,,tp:exact,v1.0
+nda-03,NDA,Confidentiality Obligations,Keep the Confidential Information secret and confidential,"The Receiving Party undertakes to keep the Confidential Information secret and confidential, to use it only for the Purpose, and not to disclose it to any person other than those of its officers and employees who need to know it for the Purpose.",2,2,92,TRUE,,tp:substring,v1.0
+nda-03,NDA,Permitted Disclosures,"Disclosure required by law, court or regulatory body","Disclosure required by law, by any court of competent jurisdiction or by any regulatory or governmental body, with notification to the Disclosing Party as soon as reasonably practicable.",2,2,90,TRUE,,tp:token-subset,v1.0
+nda-03,NDA,Term & Duration,five (5) years,Agreement continues for five (5) years unless terminated earlier by either party on thirty days' written notice.,2,2,91,TRUE,,tp:substring,v1.0
+nda-03,NDA,Governing Law,the laws of England and Wales,Laws of England and Wales,2,2,95,TRUE,,tp:substring,v1.0
+nda-03,NDA,Jurisdiction,the courts of England and Wales,Exclusive jurisdiction of the courts of England and Wales,2,2,94,TRUE,,tp:substring,v1.0
+nda-03,NDA,IP Ownership,Remain vested in the Disclosing Party,"No transfer or licence of intellectual property rights in the Confidential Information, which remain vested in the Disclosing Party.",2,2,93,TRUE,,tp:substring,v1.0
+nda-03,NDA,Non-Solicitation,,,,,0,TRUE,,tn,v1.0
+nda-03,NDA,Breach & Remedy,Injunction and specific performance,Damages alone would not be an adequate remedy for breach; entitled to remedies of injunction and specific performance.,2,2,92,TRUE,,tp:substring,v1.0
+nda-04,NDA,Parties,Meridian Bioworks GmbH and Calder Instruments Limited,"Meridian Bioworks GmbH (""the Disclosing Party"") and Calder Instruments Limited (""the Receiving Party"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+nda-04,NDA,Effective Date,2 January 2025,2 January 2025,1,1,94,TRUE,,tp:exact,v1.0
+nda-04,NDA,Confidentiality Obligations,Keep the Confidential Information secret and confidential,"The Receiving Party undertakes to keep the Confidential Information secret and confidential, to use it only for the Purpose, and not to disclose it to any person other than those of its officers and employees who need to know it for the Purpose.",2,2,93,TRUE,,tp:substring,v1.0
+nda-04,NDA,Permitted Disclosures,"Disclosure required by law, court or regulatory body","Disclosure required by law, by any court of competent jurisdiction or by any regulatory or governmental body, with notification to the Disclosing Party as soon as reasonably practicable.",2,2,92,TRUE,,tp:token-subset,v1.0
+nda-04,NDA,Term & Duration,three (3) years,Agreement continues for three (3) years unless terminated earlier by either party on thirty days' written notice.,2,2,91,TRUE,,tp:substring,v1.0
+nda-04,NDA,Governing Law,Scots law,Scots law,2,2,95,TRUE,,tp:exact,v1.0
+nda-04,NDA,Jurisdiction,"the Court of Session, Edinburgh","Exclusive jurisdiction of the Court of Session, Edinburgh",2,2,94,TRUE,,tp:substring,v1.0
+nda-04,NDA,IP Ownership,Remain vested in the Disclosing Party,"No transfer or licence of intellectual property rights in the Confidential Information, which remain vested in the Disclosing Party.",2,2,92,TRUE,,tp:substring,v1.0
+nda-04,NDA,Non-Solicitation,,,,,0,TRUE,,tn,v1.0
+nda-04,NDA,Breach & Remedy,Injunction and specific performance,Damages alone would not be an adequate remedy for breach; entitled to remedies of injunction and specific performance.,2,2,93,TRUE,,tp:substring,v1.0
+nda-05,NDA,Parties,Stonebridge Capital Partners LLP and Ivory Lane Advisory Limited,Stonebridge Capital Partners LLP and Ivory Lane Advisory Limited,1,1,95,TRUE,,tp:exact,v1.0
+nda-05,NDA,Effective Date,28 April 2025,28 April 2025,1,1,94,TRUE,,tp:exact,v1.0
+nda-05,NDA,Confidentiality Obligations,Treat all information as strictly confidential,"Treat all information as strictly confidential and not disclose it outside the organisation, except where required by law or regulation",1,1,93,TRUE,,tp:substring,v1.0
+nda-05,NDA,Permitted Disclosures,Where required by applicable law or regulation,Disclosure required by applicable law or regulation,1,1,92,TRUE,,tp:token-subset,v1.0
+nda-05,NDA,Term & Duration,eighteen (18) months,Undertaking remains in force for eighteen (18) months from the date of the letter,1,1,91,TRUE,,tp:substring,v1.0
+nda-05,NDA,Governing Law,the laws of England and Wales,Laws of England and Wales,1,1,95,TRUE,,tp:substring,v1.0
+nda-05,NDA,Jurisdiction,the courts of England and Wales,Exclusive jurisdiction of the courts of England and Wales,1,1,94,TRUE,,tp:substring,v1.0
+nda-05,NDA,IP Ownership,Remains your property,All information remains the property of Stonebridge Capital Partners LLP and no licence or other right is granted,1,1,93,TRUE,,tp:token-subset,v1.0
+nda-05,NDA,Non-Solicitation,,,,,0,TRUE,,tn,v1.0
+nda-05,NDA,Breach & Remedy,Injunctive relief; damages an insufficient remedy,"Injunctive relief may be sought for any threatened breach, damages being an insufficient remedy",1,1,92,TRUE,,tp:token-subset,v1.0
+nda-06,NDA,Parties,"Fairhaven Mutual Insurance Company and Ridgeline Actuarial Services, Inc.","Fairhaven Mutual Insurance Company and Ridgeline Actuarial Services, Inc.",1,1,95,TRUE,,tp:exact,v1.0
+nda-06,NDA,Effective Date,9 October 2024,9 October 2024,1,1,94,TRUE,,tp:exact,v1.0
+nda-06,NDA,Confidentiality Obligations,Treat all information as strictly confidential,"Treat all information as strictly confidential and not disclose it outside the organisation, except where required by law or regulation.",1,1,93,TRUE,,tp:substring,v1.0
+nda-06,NDA,Permitted Disclosures,Where required by applicable law or regulation,Disclosure required by applicable law or regulation.,1,1,92,TRUE,,tp:token-subset,v1.0
+nda-06,NDA,Term & Duration,two (2) years,Undertaking remains in force for two (2) years from the date of the letter.,1,1,91,TRUE,,tp:substring,v1.0
+nda-06,NDA,Governing Law,the Commonwealth of Massachusetts,Commonwealth of Massachusetts,1,1,95,TRUE,,tp:substring,v1.0
+nda-06,NDA,Jurisdiction,"Suffolk County, Massachusetts","Exclusive jurisdiction of Suffolk County, Massachusetts",1,1,95,TRUE,,tp:substring,v1.0
+nda-06,NDA,IP Ownership,Remains your property,All information remains the property of Fairhaven Mutual Insurance Company; no licence or other right is granted.,1,1,93,TRUE,,tp:token-subset,v1.0
+nda-06,NDA,Non-Solicitation,,,,,0,TRUE,,tn,v1.0
+nda-06,NDA,Breach & Remedy,Injunctive relief; damages an insufficient remedy,"Injunctive relief may be sought for any threatened breach, as damages are insufficient.",1,1,92,FALSE,,wrong,v1.0
+msa-01,MSA,Parties,"Brightwater Logistics, Inc. and Quillon Software Services LLC","Brightwater Logistics, Inc. (""Customer"") and Quillon Software Services LLC (""Supplier"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+msa-01,MSA,Service Scope,software development and maintenance services,"Software development and maintenance services, as further described in one or more Statements of Work executed under this Agreement",1,1,92,TRUE,,tp:substring,v1.0
+msa-01,MSA,Payment Terms,within thirty (30) days of receipt of invoice,Undisputed invoiced amounts payable within thirty (30) days of receipt,1,1,94,TRUE,,tp:duration,v1.0
+msa-01,MSA,Invoice Schedule,monthly in arrears,Monthly in arrears,1,1,90,TRUE,,tp:exact,v1.0
+msa-01,MSA,Late Payment Penalty,1.5% per month,Interest at 1.5% per month on undisputed amounts not paid when due,1,1,93,TRUE,,tp:substring,v1.0
+msa-01,MSA,Liability Cap,the total fees paid in the twelve (12) months preceding the claim,"Aggregate liability capped at total fees paid in the twelve (12) months preceding the claim; excludes breach of confidentiality, indemnification obligations and gross negligence",2,2,92,TRUE,,tp:duration,v1.0
+msa-01,MSA,Indemnification,Supplier indemnifies Customer against third-party infringement claims,"Supplier shall defend, indemnify and hold harmless Customer from any third-party claim alleging that the deliverables infringe any patent, copyright or trade secret",2,2,93,TRUE,,tp:token-subset,v1.0
+msa-01,MSA,IP Ownership,Deliverables owned by Customer on payment; Supplier retains pre-existing materials,All deliverables created specifically for Customer owned by Customer upon payment in full; Supplier retains rights in pre-existing materials and tooling,2,2,91,TRUE,,tp:token-subset,v1.0
+msa-01,MSA,Termination Clause,for convenience on sixty (60) days written notice,Either party may terminate for convenience on sixty (60) days written notice,2,2,90,TRUE,,tp:substring,v1.0
+msa-01,MSA,Governing Law,the State of California,Laws of the State of California,2,2,95,TRUE,,tp:substring,v1.0
+msa-01,MSA,Dispute Resolution,Any dispute shall be resolved by binding arbitration in San Francisco under the rules of the American Arbitration Association.,Binding arbitration in San Francisco under the rules of the American Arbitration Association,2,2,94,TRUE,,tp:substring,v1.0
+msa-01,MSA,Notice Period,by certified mail or nationally recognised overnight courier,Sixty (60) days written notice for termination; notices delivered by certified mail or nationally recognised overnight courier,2,2,90,TRUE,,tp:substring,v1.0
+msa-02,MSA,Parties,"Aldergate Retail Group, Inc. and Thorne Data Systems, Inc.","Aldergate Retail Group, Inc. (""Customer"") and Thorne Data Systems, Inc. (""Supplier"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+msa-02,MSA,Service Scope,"data migration, hosting and support services","Data migration, hosting and support services, as further described in one or more Statements of Work executed under this Agreement",1,1,92,TRUE,,tp:substring,v1.0
+msa-02,MSA,Payment Terms,within forty-five (45) days of the invoice date,Undisputed invoiced amounts payable within forty-five (45) days of the invoice date,1,1,94,TRUE,,tp:substring,v1.0
+msa-02,MSA,Invoice Schedule,quarterly in advance,Quarterly in advance,1,1,90,TRUE,,tp:exact,v1.0
+msa-02,MSA,Late Payment Penalty,,,,,0,TRUE,,tn,v1.0
+msa-02,MSA,Liability Cap,"two million dollars ($2,000,000)","Aggregate liability capped at two million dollars ($2,000,000); excludes breach of confidentiality, indemnification obligations and gross negligence",2,2,92,TRUE,,tp:substring,v1.0
+msa-02,MSA,Indemnification,Supplier indemnifies Customer against third-party infringement claims,"Supplier shall defend, indemnify and hold harmless Customer from any third-party claim alleging that the deliverables infringe any patent, copyright or trade secret",2,2,93,TRUE,,tp:token-subset,v1.0
+msa-02,MSA,IP Ownership,Deliverables owned by Customer on payment; Supplier retains pre-existing materials,All deliverables created specifically for Customer owned by Customer upon payment in full; Supplier retains rights to pre-existing materials and tooling,2,2,91,TRUE,,tp:token-subset,v1.0
+msa-02,MSA,Termination Clause,for material breach not cured within thirty (30) days of written notice,Either party may terminate for material breach not cured within thirty (30) days of written notice,2,2,93,TRUE,,tp:substring,v1.0
+msa-02,MSA,Governing Law,the State of Texas,Laws of the State of Texas,2,2,95,TRUE,,tp:substring,v1.0
+msa-02,MSA,Dispute Resolution,"The parties shall first attempt mediation in Dallas, Texas before commencing litigation.","Mediation in Dallas, Texas before commencing litigation",2,2,94,TRUE,,tp:substring,v1.0
+msa-02,MSA,Notice Period,"by email to the addresses set out in the Statement of Work, with confirmation of receipt",Written notice delivered by email with confirmation of receipt,2,2,92,FALSE,,wrong,v1.0
+msa-03,MSA,Parties,Kestrel Borough Council and Lindhurst Professional Services Limited,"Kestrel Borough Council (the ""Client"") and Lindhurst Professional Services Limited (the ""Supplier"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+msa-03,MSA,Service Scope,highways consultancy and design services,Highways consultancy and design services in accordance with each Order placed under this Framework Agreement,1,1,92,TRUE,,tp:substring,v1.0
+msa-03,MSA,Payment Terms,within 30 days of receipt of a valid invoice,Charges payable within 30 days of receipt of a valid invoice,1,1,93,TRUE,,tp:substring,v1.0
+msa-03,MSA,Invoice Schedule,"monthly, supported by a timesheet report","Monthly, supported by a timesheet report",1,1,90,TRUE,,tp:exact,v1.0
+msa-03,MSA,Late Payment Penalty,,,,,0,TRUE,,tn,v1.0
+msa-03,MSA,Liability Cap,"£1,000,000 in aggregate","Supplier's total liability shall not exceed £1,000,000 in aggregate; excludes liability for death or personal injury caused by negligence or for fraud",2,2,94,TRUE,,tp:substring,v1.0
+msa-03,MSA,Indemnification,,,,,0,TRUE,,tn,v1.0
+msa-03,MSA,IP Ownership,Assigned to the Client on payment; Supplier retains Background IP,Supplier assigns all Intellectual Property Rights in the Deliverables to the Client upon payment; Supplier retains rights in its Background IP,2,2,93,TRUE,,tp:token-subset,v1.0
+msa-03,MSA,Termination Clause,"on three months written notice, or immediately on insolvency","Either party may terminate on three months written notice, or immediately on insolvency",2,2,92,TRUE,,tp:substring,v1.0
+msa-03,MSA,Governing Law,the laws of England and Wales,Laws of England and Wales,2,2,95,TRUE,,tp:substring,v1.0
+msa-03,MSA,Dispute Resolution,The parties shall refer any dispute to adjudication in accordance with the Scheme for Construction Contracts.,Disputes referred to adjudication in accordance with the Scheme for Construction Contracts,2,2,93,TRUE,,tp:token-subset,v1.0
+msa-03,MSA,Notice Period,,Three months written notice,,2,91,FALSE,,fp,v1.0
+msa-04,MSA,Parties,Tamar Valley NHS Foundation Trust and Coriander Clinical Informatics Ltd,"Tamar Valley NHS Foundation Trust (the ""Client"") and Coriander Clinical Informatics Ltd (the ""Supplier"")",1,1,95,TRUE,,tp:defined-terms,v1.0
+msa-04,MSA,Service Scope,clinical coding and information governance services,Clinical coding and information governance services in accordance with each Order placed under this Framework Agreement,1,1,92,TRUE,,tp:substring,v1.0
+msa-04,MSA,Payment Terms,within 45 days of receipt of a valid invoice,Charges payable within 45 days of receipt of a valid invoice,1,1,93,TRUE,,tp:substring,v1.0
+msa-04,MSA,Invoice Schedule,monthly in arrears against agreed milestones,Monthly in arrears against agreed milestones,1,1,90,TRUE,,tp:exact,v1.0
+msa-04,MSA,Late Payment Penalty,,,,,0,TRUE,,tn,v1.0
+msa-04,MSA,Liability Cap,the Charges paid in the preceding 12 months,Supplier's total liability shall not exceed the Charges paid in the preceding 12 months; excludes liability for death or personal injury caused by negligence or for fraud,2,2,91,TRUE,,tp:substring,v1.0
+msa-04,MSA,Indemnification,,,,,0,TRUE,,tn,v1.0
+msa-04,MSA,IP Ownership,Assigned to the Client on payment; Supplier retains Background IP,Supplier assigns all Intellectual Property Rights in the Deliverables to the Client upon payment; Supplier retains all Intellectual Property Rights in its Background IP,2,2,94,TRUE,,tp:token-subset,v1.0
+msa-04,MSA,Termination Clause,on six months written notice,Either party may terminate on six months written notice,2,2,92,TRUE,,tp:substring,v1.0
+msa-04,MSA,Governing Law,the laws of England and Wales,Laws of England and Wales,2,2,95,TRUE,,tp:substring,v1.0
+msa-04,MSA,Dispute Resolution,The parties shall escalate any dispute to their respective directors before commencing proceedings.,Disputes to be escalated to respective directors before commencing proceedings,2,2,93,TRUE,,tp:token-subset,v1.0
+msa-04,MSA,Notice Period,,Six months written notice,,2,92,FALSE,,fp,v1.0
+nda-01,NDA,Survival period,three (3) years after termination,Confidentiality obligations survive for three (3) years after termination.,2,2,91,TRUE,,tp:substring,v1.0
+nda-02,NDA,Survival period,three (3) years after termination,Confidentiality obligations survive for three (3) years after termination,2,2,92,TRUE,,tp:substring,v1.0
+nda-03,NDA,Termination notice,thirty days' written notice,Thirty days' written notice,2,2,90,TRUE,,tp:exact,v1.0
+nda-05,NDA,Purpose of disclosure,to evaluate the proposed transaction,To evaluate the proposed transaction and for no other purpose,1,1,93,TRUE,,tp:substring,v1.0
+msa-01,MSA,Arbitration venue,San Francisco,San Francisco,2,2,93,TRUE,,tp:exact,v1.0
+msa-01,MSA,Late payment interest,1.5% per month,1.5% per month,1,1,93,TRUE,,tp:exact,v1.0
+msa-02,MSA,Mediation venue,"Dallas, Texas","Dallas, Texas",2,2,94,TRUE,,tp:exact,v1.0
+msa-02,MSA,Cure period,thirty (30) days,Thirty (30) days,2,2,93,TRUE,,tp:exact,v1.0
+msa-03,MSA,Insolvency termination,immediately on insolvency,Immediate termination on insolvency,2,2,92,TRUE,,tp:token-subset,v1.0
+msa-04,MSA,Escalation route,their respective directors,Disputes to be escalated to respective directors,2,2,93,TRUE,,tp:token-subset,v1.0

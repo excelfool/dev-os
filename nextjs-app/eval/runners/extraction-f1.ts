@@ -1,5 +1,5 @@
 import { ALL_CONTRACTS, contractById } from '../lib/dataset';
-import { valuesMatch } from '../lib/matching';
+import { matchValues, type MatcherVersion, type MatchRule } from '../lib/matching';
 import type { ExtractionRun } from '../lib/extract';
 import type { ReportRow } from '../lib/types';
 
@@ -24,6 +24,8 @@ export interface TermOutcome {
   actualPage: number | null;
   confidence: number;
   outcome: 'tp' | 'fp' | 'fn' | 'tn' | 'wrong';
+  /** Which matcher rule produced a true positive; 'none' otherwise. */
+  rule: MatchRule;
 }
 
 export interface F1Result {
@@ -36,7 +38,7 @@ export interface F1Result {
   tn: number;
 }
 
-export function classifyTerms(runs: ExtractionRun[]): TermOutcome[] {
+export function classifyTerms(runs: ExtractionRun[], matcher: MatcherVersion = 'v2'): TermOutcome[] {
   const outcomes: TermOutcome[] = [];
 
   for (const run of runs) {
@@ -46,11 +48,15 @@ export function classifyTerms(runs: ExtractionRun[]): TermOutcome[] {
       const actualValue = actual?.value ?? null;
 
       let outcome: TermOutcome['outcome'];
+      let rule: MatchRule = 'none';
       if (expected.expected_value === null && actualValue === null) outcome = 'tn';
       else if (expected.expected_value === null && actualValue !== null) outcome = 'fp';
       else if (expected.expected_value !== null && actualValue === null) outcome = 'fn';
-      else if (valuesMatch(expected.expected_value!, actualValue!)) outcome = 'tp';
-      else outcome = 'wrong';
+      else {
+        const match = matchValues(expected.expected_value!, actualValue!, matcher);
+        rule = match.rule;
+        outcome = match.matched ? 'tp' : 'wrong';
+      }
 
       outcomes.push({
         contract_id: run.contract_id,
@@ -62,6 +68,7 @@ export function classifyTerms(runs: ExtractionRun[]): TermOutcome[] {
         actualPage: actual?.page_number ?? null,
         confidence: actual?.confidence_score ?? 0,
         outcome,
+        rule,
       });
     }
   }
@@ -83,14 +90,21 @@ export function scoreF1(outcomes: TermOutcome[]): F1Result {
   return { precision, recall, f1, tp, fp, fn, tn };
 }
 
-export function extractionF1(runs: ExtractionRun[]) {
-  const outcomes = classifyTerms(runs);
+export function extractionF1(runs: ExtractionRun[], matcher: MatcherVersion = 'v2') {
+  const outcomes = classifyTerms(runs, matcher);
   return {
     outcomes,
     overall: scoreF1(outcomes),
     nda: scoreF1(outcomes.filter((o) => o.contract_type === 'NDA')),
     msa: scoreF1(outcomes.filter((o) => o.contract_type === 'MSA')),
     /** Per-term-name breakdown, so a failure is reportable per term. */
+    /** How many true positives each matcher rule accounted for. */
+    byRule: Object.fromEntries(
+      [...new Set(outcomes.filter((o) => o.outcome === 'tp').map((o) => o.rule))].map((rule) => [
+        rule,
+        outcomes.filter((o) => o.outcome === 'tp' && o.rule === rule).length,
+      ]),
+    ),
     byTerm: Object.fromEntries(
       [...new Set(outcomes.map((o) => o.term_name))].map((name) => [
         name,
@@ -112,7 +126,7 @@ export function toReportRows(outcomes: TermOutcome[], promptVersion: string): Re
     Confidence_Score: String(o.confidence),
     F1_Match: o.outcome === 'tp' || o.outcome === 'tn' ? 'TRUE' : 'FALSE',
     Expert_Rating: '',
-    Notes: o.outcome,
+    Notes: o.outcome === 'tp' ? `tp:${o.rule}` : o.outcome,
     Prompt_Version: promptVersion,
   }));
 }

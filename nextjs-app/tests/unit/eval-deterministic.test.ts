@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { termCoverage } from '../../eval/runners/term-coverage';
 import { classifyTerms, scoreF1 } from '../../eval/runners/extraction-f1';
 import { calibration } from '../../eval/runners/calibration';
-import { valuesMatch } from '../../eval/lib/matching';
+import { matchValues, valuesMatch } from '../../eval/lib/matching';
 import { buildChatSystemPrompt, buildDocumentContextBlock } from '@/lib/ai/prompts/chat.v1';
 import { assembleChatMessages } from '@/lib/services/chat-service';
 import { buildExtractionSystemPrompt } from '@/lib/ai/prompts/extraction.v1';
@@ -66,14 +66,14 @@ describe('F1 scoring (spec 17 §2)', () => {
     // arithmetic has to say so.
     const wrong = scoreF1([
       { contract_id: 'c', contract_type: 'NDA', term_name: 't', expected: 'A', actual: 'B',
-        expectedPage: 1, actualPage: 1, confidence: 90, outcome: 'wrong' },
+        expectedPage: 1, actualPage: 1, confidence: 90, outcome: 'wrong', rule: 'none' },
     ]);
     expect(wrong).toMatchObject({ tp: 0, fp: 1, fn: 1 });
     expect(wrong.f1).toBe(0);
 
     const missed = scoreF1([
       { contract_id: 'c', contract_type: 'NDA', term_name: 't', expected: 'A', actual: null,
-        expectedPage: 1, actualPage: null, confidence: 0, outcome: 'fn' },
+        expectedPage: 1, actualPage: null, confidence: 0, outcome: 'fn', rule: 'none' },
     ]);
     expect(missed).toMatchObject({ tp: 0, fp: 0, fn: 1 });
   });
@@ -85,7 +85,7 @@ describe('F1 scoring (spec 17 §2)', () => {
   });
 });
 
-describe('value matching (spec 17 §2)', () => {
+describe('value matching — rules shared by v1 and v2 (spec 17 §2)', () => {
   it('treats duration forms as equivalent', () => {
     expect(valuesMatch('36 months', 'thirty-six (36) months')).toBe(true);
     expect(valuesMatch('three (3) years', '36 months')).toBe(true);
@@ -105,18 +105,74 @@ describe('value matching (spec 17 §2)', () => {
   });
 });
 
+describe('value matching — what v2 added, and what it still rejects', () => {
+  it('v2 accepts a defined-term parenthetical that v1 rejected', () => {
+    const expected = 'Ashgrove Therapeutics Limited and Northwind Diagnostics plc';
+    const actual =
+      'Ashgrove Therapeutics Limited ("the Disclosing Party") and Northwind Diagnostics plc ("the Receiving Party")';
+    expect(matchValues(expected, actual, 'v1').matched).toBe(false);
+    expect(matchValues(expected, actual, 'v2')).toMatchObject({ matched: true, rule: 'defined-terms' });
+  });
+
+  it('v2 accepts a fuller paraphrase containing every content word', () => {
+    const expected = 'Injunctive relief for irreparable harm';
+    const actual =
+      'Breach may cause irreparable harm; non-breaching party entitled to seek injunctive relief.';
+    expect(matchValues(expected, actual, 'v1').matched).toBe(false);
+    expect(matchValues(expected, actual, 'v2')).toMatchObject({ matched: true, rule: 'token-subset' });
+  });
+
+  it('v2 accepts inflected forms of the same word', () => {
+    expect(
+      matchValues(
+        'Supplier indemnifies Customer against third-party infringement claims',
+        'Supplier shall defend, indemnify and hold harmless Customer from any third-party claim alleging that the deliverables infringe any patent',
+        'v2',
+      ).matched,
+    ).toBe(true);
+  });
+
+  it('v2 still rejects a different fact', () => {
+    expect(matchValues('the State of Delaware', 'the State of New York', 'v2').matched).toBe(false);
+    expect(matchValues('two (2) years', 'three (3) years', 'v2').matched).toBe(false);
+  });
+
+  it('v2 still rejects differing numbers even inside matching prose', () => {
+    // The token comparison never treats two different numbers as one token,
+    // so a loosened matcher cannot wave through a wrong amount or duration.
+    expect(
+      matchValues(
+        'liability capped at $5,000,000 in aggregate',
+        'liability capped at $2,000,000 in aggregate',
+        'v2',
+      ).matched,
+    ).toBe(false);
+  });
+
+  it('v2 still rejects a partial answer that drops facts the label carries', () => {
+    // Neither side contains the other: the model omitted where notice goes.
+    expect(
+      matchValues(
+        'by email to the addresses set out in the Statement of Work, with confirmation of receipt',
+        'Written notice delivered by email with confirmation of receipt',
+        'v2',
+      ).matched,
+    ).toBe(false);
+  });
+});
+
 describe('calibration arithmetic (spec 17 §2)', () => {
   it('weights buckets by sample count', () => {
     const outcomes = [
       // 10 rows at 95% confidence, all correct → gap 0.05
       ...Array.from({ length: 10 }, () => ({
         contract_id: 'c', contract_type: 'NDA' as const, term_name: 't', expected: 'A', actual: 'A',
-        expectedPage: 1, actualPage: 1, confidence: 95, outcome: 'tp' as const,
+        expectedPage: 1, actualPage: 1, confidence: 95, outcome: 'tp' as const, rule: 'exact' as const,
       })),
       // 1 row at 55% confidence, wrong → gap 0.55
       {
         contract_id: 'c', contract_type: 'NDA' as const, term_name: 't', expected: 'A', actual: 'B',
-        expectedPage: 1, actualPage: 1, confidence: 55, outcome: 'wrong' as const,
+        expectedPage: 1, actualPage: 1, confidence: 55, outcome: 'wrong' as const, rule: 'none' as const,
       },
     ];
     const result = calibration(outcomes);

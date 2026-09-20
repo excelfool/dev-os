@@ -1,11 +1,11 @@
 import { CUSTOM_TERM_CASES } from '../datasets/custom-terms';
-import { valuesMatch } from '../lib/matching';
+import { matchValues, type MatcherVersion, type MatchRule } from '../lib/matching';
 import { scoreF1, type TermOutcome } from './extraction-f1';
 import { contractById } from '../lib/dataset';
 import type { ExtractionRun } from '../lib/extract';
 
 /** F1 over the injected custom terms (spec 17 §2, target ≥ 80%). */
-export function customTermF1(runs: ExtractionRun[]) {
+export function customTermF1(runs: ExtractionRun[], matcher: MatcherVersion = 'v2') {
   const outcomes: TermOutcome[] = [];
 
   for (const testCase of CUSTOM_TERM_CASES) {
@@ -20,10 +20,15 @@ export function customTermF1(runs: ExtractionRun[]) {
       const actualValue = actual?.value ?? null;
 
       let outcome: TermOutcome['outcome'];
+      let rule: MatchRule = 'none';
       if (expected.expected_value === null && actualValue === null) outcome = 'tn';
       else if (expected.expected_value === null) outcome = 'fp';
       else if (actualValue === null) outcome = 'fn';
-      else outcome = valuesMatch(expected.expected_value, actualValue) ? 'tp' : 'wrong';
+      else {
+        const match = matchValues(expected.expected_value, actualValue, matcher);
+        rule = match.rule;
+        outcome = match.matched ? 'tp' : 'wrong';
+      }
 
       outcomes.push({
         contract_id: testCase.contract_id,
@@ -35,6 +40,7 @@ export function customTermF1(runs: ExtractionRun[]) {
         actualPage: actual?.page_number ?? null,
         confidence: actual?.confidence_score ?? 0,
         outcome,
+        rule,
       });
     }
   }

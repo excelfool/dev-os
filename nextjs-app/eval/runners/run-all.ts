@@ -5,6 +5,7 @@ loadEnv();
 import { runExtractions } from '../lib/extract';
 import { ALL_CONTRACTS, PROVENANCE, PROVENANCE_NOTE } from '../lib/dataset';
 import { extractionF1, toReportRows } from './extraction-f1';
+import type { MatcherVersion } from '../lib/matching';
 import { pageAccuracy } from './page-accuracy';
 import { termCoverage } from './term-coverage';
 import { customTermF1 } from './custom-term-f1';
@@ -25,15 +26,24 @@ async function main() {
   const args = new Set(process.argv.slice(2));
   const offline = args.has('--offline');
   const memoryOnly = args.has('--memory-only');
+  // The matcher is the instrument. A report says which version scored it, and
+  // a re-score writes to its own release so an earlier measurement is never
+  // overwritten by a later instrument.
+  const matcher: MatcherVersion = [...args].includes('--matcher=v1') ? 'v1' : 'v2';
+  const releaseSuffix = [...args].find((a) => a.startsWith('--release-suffix='))?.split('=')[1] ?? '';
   const refresh = args.has('--refresh');
   const skipChat = args.has('--no-chat') || offline;
-  const release = releaseTag();
+  // The cache is keyed by the EXTRACTION run, not by the scoring run, so a
+  // re-score under a different matcher reuses the same billed calls.
+  const cacheRelease = releaseTag();
+  const release = cacheRelease + releaseSuffix;
 
   const supabase = serviceClient();
   const operatorId = offline ? 'offline' : await evalOperatorId(supabase);
 
   console.log(`\nContractIQ eval · release ${release}`);
   console.log(`  dataset: ${ALL_CONTRACTS.length} contracts, provenance=${PROVENANCE}`);
+  console.log(`  matcher: ${matcher}`);
   console.log(`  ${PROVENANCE_NOTE}\n`);
 
   if (memoryOnly) {
@@ -52,12 +62,12 @@ async function main() {
   }
 
   console.log('extraction');
-  const runs = await runExtractions({ supabase, operatorId, release, refresh: refresh && !offline, offline });
+  const runs = await runExtractions({ supabase, operatorId, release: cacheRelease, refresh: refresh && !offline, offline });
 
-  const f1 = extractionF1(runs);
+  const f1 = extractionF1(runs, matcher);
   const pages = pageAccuracy(f1.outcomes);
   const coverage = termCoverage(runs);
-  const custom = customTermF1(runs);
+  const custom = customTermF1(runs, matcher);
   const calib = calibration(f1.outcomes);
 
   let chat = null;
@@ -100,6 +110,11 @@ async function main() {
   const summaryPath = writeSummary(release, {
     release,
     prompt_version: promptVersion,
+    matcher,
+    matcher_note:
+      matcher === 'v1'
+        ? 'The matcher the first measurement was taken with: exact, substring, duration, date and currency equivalence only.'
+        : 'Adds defined-term stripping and content-token subset matching with light stemming. See eval/lib/matching.ts and the by_rule breakdown for how many true positives each rule produced.',
     dataset: {
       provenance: PROVENANCE,
       note: PROVENANCE_NOTE,
@@ -107,7 +122,17 @@ async function main() {
       nda: ALL_CONTRACTS.filter((c) => c.contract_type === 'NDA').length,
       msa: ALL_CONTRACTS.filter((c) => c.contract_type === 'MSA').length,
     },
-    f1: { overall: f1.overall, nda: f1.nda, msa: f1.msa, by_term: f1.byTerm },
+    f1: { overall: f1.overall, nda: f1.nda, msa: f1.msa, by_rule: f1.byRule, by_term: f1.byTerm },
+    known_label_errors: [
+      {
+        rows: ['msa-03 · Notice Period', 'msa-04 · Notice Period'],
+        scored_as: 'false positive',
+        note:
+          'Left as labelled on purpose. The UK-style MSAs have no notices clause, so the label says absent, ' +
+          'but the model returned the termination notice period, which is defensible. Correcting the label ' +
+          'would raise F1 without the model changing, so the label stands and the error is recorded here.',
+      },
+    ],
     page_accuracy: pages,
     term_coverage: coverage,
     custom_term_f1: custom.score,
