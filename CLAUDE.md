@@ -31,14 +31,14 @@ When done, show the user what was created and ask:
 ### Stage 2 — Implementation Specs
 **Skill:** `/implementation-specs`
 **Input:** `docs/engineering/engineering-doc.md` (from Stage 1)
-**Output:** `docs/specs/` — detailed spec files + `docs/specs/supabase-schema.sql` + `.env.example`
+**Output:** `docs/implementation/` — detailed spec files + `docs/implementation/supabase-schema.sql` + `.env.example`
 
 Read the approved engineering plan and generate granular, runnable implementation specs. The LLM decides what spec files are needed based on the plan. Always includes:
-- `docs/specs/supabase-schema.sql` — paste-and-run SQL for Supabase SQL Editor (tables, RLS policies, indexes, triggers)
+- `docs/implementation/supabase-schema.sql` — paste-and-run SQL for Supabase SQL Editor (tables, RLS policies, indexes, triggers)
 - `.env.example` — every environment variable the app needs, grouped by service
 
 When done, show the user what was created and ask:
-> "All implementation specs are in `docs/specs/`. The Supabase schema SQL is ready to run. Review the specs and let me know when you're ready for Stage 3."
+> "All implementation specs are in `docs/implementation/`. The Supabase schema SQL is ready to run. Review the specs and let me know when you're ready for Stage 3."
 
 ---
 
@@ -55,11 +55,11 @@ When done:
 ---
 
 ### Stage 4 — Feature Implementation
-**Input:** Spec files from `docs/specs/`
+**Input:** Spec files from `docs/implementation/`
 **Process:** Build one feature at a time
 
 For each feature:
-1. Read the relevant spec file(s) from `docs/specs/`
+1. Read the relevant spec file(s) from `docs/implementation/`
 2. Tell the user which feature you are about to implement and what files will be created or changed
 3. Wait for their confirmation before writing any code
 4. Implement the feature
@@ -83,35 +83,46 @@ For each implemented feature:
 4. Run the full test suite and fix any failures before proceeding
 
 When all tests pass, ask:
-> "All tests are passing. Ready to move to Stage 6 — Deploy?"
+> "All tests are passing. Ready to move to Stage 6 — Security Fixes?"
 
 ---
 
-### Stage 6 — Deploy
-**Input:** Tested, passing codebase from Stage 5
+### Stage 6 — Security Fixes
+**Skill:** `/security-foundation`
+**Input:** Tested, passing codebase from Stage 5 + all engineering docs and specs
+**Output:** `docs/security/security-plan.md` + `supabase/rls-policies.sql` + `src/lib/security/`
+
+Review all engineering and spec documents, audit the codebase, identify every security surface, and implement all required security controls. Covers auth, protected routes, API validation, rate limiting, prompt injection protection, token limits, chat security, file upload security, environment variable protection, and audit logging.
+
+When done, show the user what was created and ask:
+> "Security fixes are complete. All controls are documented in `docs/security/security-plan.md` and the service files are ready in `src/lib/security/`. Ready to move to Stage 7 — Deploy?"
+
+---
+
+### Stage 7 — Deploy
+**Input:** Security-hardened codebase from Stage 6
 **Output:** Live production deployment
 
 Steps:
 1. Confirm environment variables are set in the deployment platform
 2. Run the production build locally to catch any build errors
-3. Deploy to the target platform (Vercel, Supabase, etc.)
+3. Deploy to Netlify, with Supabase as the database and environment variables configured in the Netlify dashboard. Every git push to main triggers an automatic redeploy.
 4. Smoke test the live deployment against critical flows
 5. Confirm the app is live and working
 
 When deployed and verified, ask:
-> "App is live. Ready to move to Stage 7 — Security Fixes?"
+> "App is live. Ready to move to Stage 8 — Memory Layer?"
 
 ---
 
-### Stage 7 — Security Fixes
-**Skill:** `/security-foundation`
-**Input:** Live deployed app + all engineering docs and specs
-**Output:** `docs/security/security-plan.md` + `supabase/rls-policies.sql` + `src/lib/security/`
+### Stage 8 — Memory Layer
+**Input:** Deployed app from Stage 7
+**Output:** Persistent, multi-turn conversation memory for the chat assistant
 
-Review all engineering and spec documents, audit the deployed app, identify every security surface, and implement all required security controls. Covers auth, protected routes, API validation, rate limiting, prompt injection protection, token limits, chat security, file upload security, environment variable protection, and audit logging.
+Give the chat assistant persistent memory so it can answer follow-up questions within a session and across page refreshes. The Claude API is stateless — each call starts fresh with no memory of prior calls — so conversation history must be explicitly stored and loaded into the `messages[]` array on every request.
 
 When done, show the user what was created and ask:
-> "Security fixes are complete. All controls are documented in `docs/security/security-plan.md` and the service files are ready in `src/lib/security/`."
+> "The memory layer is in place. The chat assistant now holds context across refreshes."
 
 ---
 
@@ -133,8 +144,8 @@ When done, show the user what was created and ask:
 |---|---|---|
 | `docs/engineering/engineering-doc.md` | `/engineering-planner` | High-level architecture, flows, DB design, API spec |
 | `docs/engineering/implementation-specs.md` | `/engineering-planner` | Per-feature specs (flow, DB, API, component, edge cases) |
-| `docs/specs/*.md` | `/implementation-specs` | Additional granular specs derived from the engineering docs |
-| `docs/specs/supabase-schema.sql` | `/implementation-specs` | Run this in Supabase SQL Editor to create all tables |
+| `docs/implementation/*.md` | `/implementation-specs` | Additional granular specs derived from the engineering docs |
+| `docs/implementation/supabase-schema.sql` | `/implementation-specs` | Run this in Supabase SQL Editor to create all tables |
 | `.env.example` | `/implementation-specs` | All environment variables — copy to `.env.local` and fill in values |
 | `docs/security/security-plan.md` | `/security-foundation` | Security controls, audit log, RLS policies |
 
