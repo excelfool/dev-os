@@ -27,6 +27,17 @@ export type Credentials = z.infer<typeof credentialsSchema>;
  */
 export function safeNextPath(next: string | null | undefined, fallback = '/dashboard'): string {
   if (!next) return fallback;
-  if (!next.startsWith('/') || next.startsWith('//')) return fallback;
+
+  // Browsers strip control characters before navigating, so `/\tevil.com`
+  // becomes `/evil.com` — and `/\t/evil.com` becomes `//evil.com`.
+  if (/[\u0000-\u001f\u007f]/.test(next)) return fallback;
+
+  // Backslashes are normalised to forward slashes in URLs, so `/\evil.com`
+  // navigates to //evil.com — a different origin. Checking only for a literal
+  // "//" let a phishing link through the real login page and bounced the user
+  // to the attacker's site after a genuine sign-in.
+  const normalised = next.replace(/\\/g, '/');
+  if (!normalised.startsWith('/') || normalised.startsWith('//')) return fallback;
+
   return next;
 }

@@ -5,6 +5,7 @@ import { enforceRateLimit } from '@/lib/security/rate-limit';
 import { chatMessageSchema } from '@/lib/validation/chat.schema';
 import { callLlm } from '@/lib/ai/openai-client';
 import { classifyQuery } from '@/lib/ai/query-classifier';
+import { detectPromptInjection } from '@/lib/security/prompt-injection';
 import { CITATION_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
 import { assembleChatMessages, validateCitations, type HistoryMessage } from '@/lib/services/chat-service';
 import { getServerConfig } from '@/lib/utils/server-config';
@@ -107,6 +108,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await enforceRateLimit(user.id, 'chat');
 
     const { message } = chatMessageSchema.parse(await request.json());
+
+    // Screened BEFORE the session is touched and before any model call, so a
+    // blocked attempt costs nothing and leaves no conversation history.
+    const injection = detectPromptInjection(message);
+    if (injection.blocked) {
+      await recordEvent(supabase, {
+        userId: user.id,
+        contractId: contract.id,
+        eventType: 'prompt_injection_blocked',
+        metadata: { rule: injection.rule },
+      });
+      throw appError('PROMPT_INJECTION');
+    }
 
     // 4. Session
     const sessionId = await ensureSession(supabase, contract.id, user.id);

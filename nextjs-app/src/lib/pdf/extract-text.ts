@@ -1,4 +1,5 @@
 import 'server-only';
+import { sanitiseForLlm } from '@/lib/security/prompt-injection';
 
 /**
  * Text extraction, performed exactly once at upload (spec 04 §3).
@@ -49,7 +50,15 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractedPdf> {
       bodies.push(normalisePageBody(found?.text ?? ''));
     }
 
-    const text = bodies.map((body, index) => `[PAGE ${index + 1}]\n${body}`).join('\n\n');
+    // A contract body is attacker-controlled, and `[PAGE N]` is load-bearing:
+    // the extraction prompt, the citation validator and page-utils all trust a
+    // whole-line marker to attribute a citation to a page. A PDF containing a
+    // literal "[PAGE 99]" line could therefore move a citation to a page the
+    // text is not on. Forgeries are defanged HERE, before the genuine markers
+    // are inserted — the only point at which the two are still distinguishable.
+    const text = bodies
+      .map((body, index) => `[PAGE ${index + 1}]\n${sanitiseForLlm(body)}`)
+      .join('\n\n');
 
     const withoutMarkers = text.replace(/^\[PAGE \d+\]$/gm, ' ');
     const wordCount = withoutMarkers.split(/\s+/).filter(Boolean).length;

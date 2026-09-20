@@ -1,5 +1,6 @@
 import { termsFor } from '@/lib/ai/term-library';
 import type { ContractType } from '@/types/domain';
+import { sanitiseCustomTermName } from '@/lib/security/prompt-injection';
 
 /**
  * Extraction prompt, composed in the fixed order of spec 06 §2:
@@ -207,7 +208,7 @@ export function buildExtractionSystemPrompt(
 
   const custom =
     customTermNames.length > 0
-      ? `\n\nAdditional terms the user asked for:\n${customTermNames.map((n) => `- ${n}`).join('\n')}`
+      ? `\n\nAdditional terms the user asked for:\n${customTermNames.map((n) => `- ${sanitiseCustomTermName(n)}`).join('\n')}`
       : '';
 
   return [
@@ -220,7 +221,14 @@ export function buildExtractionSystemPrompt(
   ].join('\n\n');
 }
 
-/** The user message is the full contract_text, unmodified, markers included. */
+/**
+ * The user message is the full contract_text, unmodified, markers included.
+ *
+ * Forged `[PAGE N]` lines are neutralised in `extract-text.ts`, where the
+ * genuine markers are inserted — that is the only point at which the two can
+ * still be told apart. By the time the text reaches here they are
+ * indistinguishable, and stripping them here would destroy page attribution.
+ */
 export function buildExtractionUserMessage(contractText: string): string {
   return contractText;
 }

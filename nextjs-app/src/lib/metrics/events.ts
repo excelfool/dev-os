@@ -16,7 +16,14 @@ export type ActivityEventType =
   | 'review_completed'
   | 'export_generated'
   | 'pdf_render_failed'
-  | 'onboarding_tip_dismissed';
+  | 'onboarding_tip_dismissed'
+  /**
+   * Security-foundation audit. The metadata carries the rule that fired and
+   * never the message — FORBIDDEN_KEYS already rejects content, and the
+   * blocked text is the one thing that must not be persisted from a request we
+   * are treating as hostile.
+   */
+  | 'prompt_injection_blocked';
 
 /** Keys that could carry contract or chat content. Rejected outright. */
 const FORBIDDEN_KEYS = new Set(['content', 'text', 'value', 'source_sentence']);
