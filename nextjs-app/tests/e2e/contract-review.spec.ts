@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { SHORT_NDA } from '../integration/pdf-fixtures';
-import { NDA_EXTRACTION, processedContract, scriptStub, signUp } from './helpers';
+import { NDA_EXTRACTION, processedContract, scriptStub, signUp, gotoAfterAuth } from './helpers';
 
 /**
  * Spec 04 §7, 05 §6, 07 §8, 10 §6 — the core journey, end to end, in a browser:
@@ -24,7 +24,7 @@ test.describe('the full contract review journey', () => {
     await scriptStub(page.request, [NDA_EXTRACTION]);
 
     // --- upload -----------------------------------------------------------
-    await page.goto('/contracts/new');
+    await gotoAfterAuth(page, '/contracts/new');
 
     // The dropzone is locked until a contract type is chosen (spec 04 §1).
     await expect(page.getByText('Choose a contract type first.')).toBeVisible();

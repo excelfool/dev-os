@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { recordEvent } from '@/lib/metrics/events';
@@ -28,6 +28,18 @@ export function InlineTermEditor({
   const [draft, setDraft] = useState(value ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * `autoFocus` is silently ignored on a disabled input. Reopening the editor
+   * while the previous save is still in flight therefore mounted it disabled,
+   * skipped the autofocus, and never focused it once it enabled — the editor
+   * was open with focus nowhere, which strands a keyboard user (spec 16 §7).
+   * Focusing from an effect covers both the plain case and that one.
+   */
+  useEffect(() => {
+    if (isEditing && !isSaving) inputRef.current?.focus();
+  }, [isEditing, isSaving]);
 
   async function save() {
     const next = draft.trim();
@@ -99,7 +111,7 @@ export function InlineTermEditor({
   return (
     <div className="flex flex-col gap-1">
       <Input
-        autoFocus
+        ref={inputRef}
         value={draft}
         disabled={isSaving}
         aria-label="Edit extracted value"

@@ -63,6 +63,10 @@ export async function signUp(page: Page, label: string): Promise<string> {
   await page.getByLabel('Password').fill('Password12345');
   await page.getByRole('button', { name: 'Create account' }).click();
   await page.waitForURL('**/dashboard', { timeout: 20_000 });
+  // WebKit reports the URL change before the dashboard has settled, and a
+  // second navigation to /dashboard then interrupts an immediate goto(). Wait
+  // for content a fresh account is guaranteed to render.
+  await page.getByText('No contracts reviewed yet').waitFor({ timeout: 20_000 });
   return email;
 }
 
@@ -132,4 +136,23 @@ export async function forceTextViewer(page: Page, contractId: string): Promise<v
       body: JSON.stringify({ error: { code: 'NO_FILE', message: 'No file.' } }),
     }),
   );
+}
+
+/**
+ * `AuthForm` does `router.replace('/dashboard')` then `router.refresh()`. The
+ * refresh starts a second navigation to /dashboard that can land after the page
+ * has rendered, and in WebKit it cancels a goto() issued in between with
+ * "interrupted by another navigation". Waiting on load state or on dashboard
+ * content does not close the window, because the refresh may not have started
+ * yet. One retry does, and keeps the failure visible if it is anything else.
+ */
+export async function gotoAfterAuth(page: Page, path: string): Promise<void> {
+  try {
+    await page.goto(path);
+  } catch (error) {
+    if (!(error instanceof Error) || !/interrupted by another navigation/.test(error.message)) {
+      throw error;
+    }
+    await page.goto(path);
+  }
 }
