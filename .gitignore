@@ -1,1 +1,26 @@
+# Local agent memory
 .claude/agent-memory/
+
+# Dependencies
+node_modules/
+
+# Next.js build output — .next-test and .next-e2e are the isolated build
+# directories the integration and E2E harnesses compile into (NEXT_DIST_DIR).
+.next/
+.next-test/
+.next-e2e/
+*.tsbuildinfo
+
+# Secrets. .env.local holds the Supabase service-role key and the OpenAI key.
+.env
+.env.local
+.env*.local
+
+# Test artefacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# OS
+.DS_Store

@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white font-sans text-body text-grey-900;
+  }
+
+  /* Visible focus ring everywhere — never `outline: none` without a replacement
+     (spec 16 §4). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+  }
+
+  /* Every animation and smooth scroll honours the user's motion preference
+     (spec 16 §4 item 9). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Content visible to screen readers only — used for live regions and the
+     accessible names on icon-only controls. */
+  .sr-only-live {
+    @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  /* Flash applied to a source sentence when a page chip or citation chip
+     navigates to it (spec 07 §3). */
+  .highlight-flash {
+    animation: highlight-flash 1.5s ease-out;
+  }
+}
+
+@keyframes highlight-flash {
+  0%,
+  60% {
+    background-color: theme('colors.warning.100');
+  }
+  100% {
+    background-color: transparent;
+  }
+}
