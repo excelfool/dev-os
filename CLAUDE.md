@@ -119,7 +119,7 @@ When deployed and verified, ask:
 **Input:** Deployed app from Stage 7
 **Output:** Persistent, multi-turn conversation memory for the chat assistant
 
-Give the chat assistant persistent memory so it can answer follow-up questions within a session and across page refreshes. The Claude API is stateless — each call starts fresh with no memory of prior calls — so conversation history must be explicitly stored and loaded into the `messages[]` array on every request.
+Give the chat assistant persistent memory so it can answer follow-up questions within a session and across page refreshes. The OpenAI API (Chat Completions, GPT-4o) is stateless — each call starts fresh with no memory of prior calls — so conversation history must be explicitly stored and loaded into the `messages[]` array on every request.
 
 When done, show the user what was created and ask:
 > "The memory layer is in place. The chat assistant now holds context across refreshes."
