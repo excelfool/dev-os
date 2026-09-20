@@ -35,11 +35,25 @@ export function CompleteReviewButton({
   }
 
   if (completedAt) {
+    /**
+     * Spec 10 §1 requires BOTH the confirmation toast and the "Review complete"
+     * state. Returning early here made the toast unreachable: marking complete
+     * sets `completedAt`, which lands on this branch before the toast could
+     * ever render. Same shape as the signup error state (deviation 8) — a
+     * state written but never reachable. Found by driving this in a browser.
+     */
     return (
-      <p className="inline-flex items-center gap-2 text-body text-success-700">
-        <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
-        Review complete · {formatDate(completedAt)}
-      </p>
+      <div className="flex items-center gap-3">
+        <p className="inline-flex items-center gap-2 text-body text-success-700">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+          Review complete · {formatDate(completedAt)}
+        </p>
+        {toast && (
+          <span role="status" className="text-caption text-success-700">
+            Review marked complete
+          </span>
+        )}
+      </div>
     );
   }
 
