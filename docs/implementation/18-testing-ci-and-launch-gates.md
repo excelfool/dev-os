@@ -9,6 +9,7 @@
 | Layer | Framework | Scope | Coverage target |
 |---|---|---|---|
 | **Unit** | Vitest + React Testing Library | `[PAGE N]` parsing and page attribution, token estimation, confidence conversion 0.0–1.0 → 0–100 and clamping, source-sentence verification and the confidence cap, colour-band boundaries (49/50, 79/80), custom-term validation and the 5-term cap, query classifier, citation parsing, cost calculation, error-code → user-message mapping, `targetPage` behaviour of **both** viewers | **≥ 85%** statements on `src/lib/**`; **100%** on `ai/`, `validation/`, `errors/` |
+| **Hook / component state** | Vitest + `@testing-library/react` under `jsdom`, in `tests/hooks/` | React state interleavings that no other layer can order: a fetch resolving against a pending state update. Today: `useChat`'s mount-time history load landing mid-turn — once with the turn's own rows (which rendered the answer twice) and once empty (which wiped the user's question) — plus the merge of history that had not loaded when the turn began | Every such interleaving driven by hand, never by racing. **No `waitFor` on a condition the test itself controls** |
 | **Integration** | Vitest + Supertest against the Route Handlers, backed by a **real local Supabase** (never a mocked DB) with a stubbed OpenAI client | Every endpoint in spec 12: happy path, each validation rejection (oversize, > 20 pages, > 15,000 tokens, non-PDF, scanned, corrupt), quota and rate-limit 429s, the Storage-failure path returning `201` with `storage_available: false`, OpenAI timeout / invalid-JSON paths leaving `status='error'` with **no partial terms**, retry after error without re-upload, cascade deletes, the `last_accessed_at` touch | **≥ 80%** of routes; **every** documented error code exercised at least once |
 | **RLS / security** | Vitest against local Supabase with **two real test accounts** | Every table and Storage: B can neither read, update nor delete A's rows via the anon key; signed URLs expire; `rate_limits` is unreachable from a client; the built client bundle contains no server key names | **100% of tables and Storage policies.** This suite **gates the build** — it is the executable form of PRD Assumption 9 |
 | **AI / eval** | Vitest + the `eval/` runners | Deterministic tests every PR (spec 17 §6); live-model runs every deploy: extraction F1, page accuracy ≥ 92%, custom-term F1 ≥ 80%, chat groundedness ≤ 5%, and the hallucination regression test; calibration monthly | A green regression suite is a release gate; a red metric **blocks the deploy** |
@@ -16,6 +17,21 @@
 | **PDF rendering compatibility** | Playwright + a screenshot/heuristic harness over the **50-contract real-world corpus** (spec 17) | Each file: PDF.js renders every page without throwing, each page canvas is non-blank, and the page count matches `pdf-parse`. Any failing file **must degrade correctly** — the text viewer takes over **and** the "Download PDF" link is present, with the failure recorded | **≥ 95%** of the corpus renders cleanly; **100% of the remainder must hit the fallback path**. A file that neither renders nor falls back **blocks the release**. Run during beta and re-run on every `pdfjs-dist` upgrade |
 | **Accessibility** | axe-core via Playwright | Every page and both viewers, light and dark; keyboard-only traversal of the full core flow; focus management in modals | **Zero serious/critical violations — a CI gate** |
 | **Performance** | k6 + a Playwright timing spec | **100 concurrent analyses** sustained without error-rate or latency degradation; P95 end-to-end ≤ 30 s; chat P95 ≤ 15 s; a headroom run at **1,000 concurrent users** validating the horizontal-scaling claim | Reported per release; a regression blocks launch |
+
+**Why the hook layer exists (added 2026-09-20).** The chat panel rendered one
+turn's answer twice, roughly two runs in five. The cause was inside `useChat`:
+the mount-time history GET applied its result unconditionally, so a load that
+landed mid-turn overwrote state the turn was still building on. Neither existing
+layer can reach that. Integration tests call the Route Handlers directly and
+have no hook at all. Playwright cannot order a promise resolution against a
+React state update from outside the browser — three attempts to force the
+interleaving failed, because React StrictMode issues two loads per mount and the
+live effect is not reliably the second to resolve. Deferring both fetches inside
+the hook's own environment makes the order stated rather than raced for, and the
+bug reproduced on the first run.
+
+RTL was already named in the Unit row of the table above but was never
+installed; `jsdom` and `@testing-library/react` are now devDependencies.
 
 ---
 
@@ -30,7 +46,7 @@
 
 ## 3. CI pipeline
 
-**Every PR:** typecheck → lint → unit → integration (local Supabase) → RLS suite → deterministic AI tests → build → **client-bundle secret scan** → axe-core → Playwright E2E.
+**Every PR:** typecheck → lint → unit → hook → integration (local Supabase) → RLS suite → deterministic AI tests → build → **client-bundle secret scan** → axe-core → Playwright E2E.
 
 **On merge to `main`:** the live-model eval regression suite and the k6 smoke run, with results archived to `eval/reports/`.
 

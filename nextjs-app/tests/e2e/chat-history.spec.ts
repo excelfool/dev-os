@@ -110,25 +110,6 @@ async function ask(page: Page, question: string): Promise<void> {
   await page.getByRole('button', { name: 'Send question' }).click();
 }
 
-/**
- * KNOWN, SEPARATE BUG — not what these tests cover.
- *
- * The assistant's answer sometimes renders TWICE for a single turn: measured at
- * 2 runs in 5, with exactly one POST, one model call and exactly two rows in
- * the database. The duplicate is render-only; the data is correct.
- *
- * `useChat` starts a history GET on mount and does not discard its result once
- * a turn has begun, so a load that lands mid-turn can leave the assistant in
- * the list that the POST's own functional append then adds again. React
- * StrictMode's double mount makes it visible in dev (two GETs per mount). Two
- * attempts to force that interleaving deterministically from Playwright did not
- * reproduce it, so no regression test is claimed for it here.
- *
- * Assertions below therefore use `.first()` where a duplicate would otherwise
- * trip strict mode. What these tests actually verify — the class, the prompt
- * and the absence of a repair call — is unaffected by it.
- */
-
 test.describe('conversational memory — the two turns that failed live', () => {
   test('a demonstrative follow-up is never told to answer only from the document', async ({
     page,
@@ -139,15 +120,15 @@ test.describe('conversational memory — the two turns that failed live', () => 
     // T1 — a grounded contract question.
     await scriptStub(page.request, [GROUNDED_ANSWER]);
     await ask(page, 'What is the governing law');
-    await expect(chat(page).getByText(/State of Delaware/).first()).toBeVisible();
-    await expect(chat(page).getByRole('button', { name: 'Page 1' }).first()).toBeVisible();
+    await expect(chat(page).getByText(/State of Delaware/)).toHaveCount(1);
+    await expect(chat(page).getByRole('button', { name: 'Page 1' })).toBeVisible();
 
     // T2 — the follow-up. Its subject is only recoverable from T1.
     await scriptStub(page.request, [
       'You asked about the governing law, which means Delaware law applies to disputes.',
     ]);
     await ask(page, 'What does that mean in practice?');
-    await expect(chat(page).getByText(/Delaware law applies to disputes/).first()).toBeVisible();
+    await expect(chat(page).getByText(/Delaware law applies to disputes/)).toHaveCount(1);
 
     const sent = systemBlocks((await stubRequests(page.request))[0]!).join(' ');
 
@@ -170,20 +151,20 @@ test.describe('conversational memory — the two turns that failed live', () => 
 
     await scriptStub(page.request, [GROUNDED_ANSWER]);
     await ask(page, 'What is the governing law');
-    await expect(chat(page).getByText(/State of Delaware/).first()).toBeVisible();
+    await expect(chat(page).getByText(/State of Delaware/)).toHaveCount(1);
 
     // T3 — a hard refresh, to prove the turn below runs against reloaded
     // history rather than in-memory state.
     await page.reload();
     await page.getByRole('button', { name: 'Chat with Contract' }).click();
-    await expect(chat(page).getByText('What is the governing law').first()).toBeVisible();
-    await expect(chat(page).getByText(/State of Delaware/).first()).toBeVisible();
+    await expect(chat(page).getByText('What is the governing law')).toHaveCount(1);
+    await expect(chat(page).getByText(/State of Delaware/)).toHaveCount(1);
 
     // T4 — the lesson's own HISTORY example. It contains no contract noun, so
     // there is nothing here for the contract path to find.
     await scriptStub(page.request, ['So far you have asked about the governing law.']);
     await ask(page, 'What have I asked you so far');
-    await expect(chat(page).getByText('So far you have asked about the governing law.').first()).toBeVisible();
+    await expect(chat(page).getByText('So far you have asked about the governing law.')).toHaveCount(1);
     await expect(chat(page).getByText(REFUSAL)).toHaveCount(0);
 
     const requests = await stubRequests(page.request);
@@ -210,7 +191,7 @@ test.describe('conversational memory — the two turns that failed live', () => 
 
     await scriptStub(page.request, [GROUNDED_ANSWER]);
     await ask(page, 'What is the governing law');
-    await expect(chat(page).getByText(/State of Delaware/).first()).toBeVisible();
+    await expect(chat(page).getByText(/State of Delaware/)).toHaveCount(1);
 
     const sent = systemBlocks((await stubRequests(page.request))[0]!).join(' ');
     expect(sent).toContain('Answer only from the document text provided');
