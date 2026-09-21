@@ -13,13 +13,14 @@ export const dynamic = 'force-dynamic';
  * the client string is never interpolated (spec 13 §7).
  */
 export async function GET(request: Request) {
-  return withErrorHandling({ route: '/api/contracts', method: 'GET' }, async () => {
+  return withErrorHandling({ route: '/api/contracts', method: 'GET' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const url = new URL(request.url);
     const query = contractsQuerySchema.parse(Object.fromEntries(url.searchParams));

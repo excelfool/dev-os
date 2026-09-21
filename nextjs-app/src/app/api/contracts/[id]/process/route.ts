@@ -31,7 +31,7 @@ const STALE_PROCESSING_MS = 5 * 60 * 1000;
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   return withErrorHandling(
     { route: '/api/contracts/[id]/process', method: 'POST' },
-    async () => {
+    async (ctx) => {
       const cfg = getServerConfig();
       const supabase = createServerSupabaseClient();
       const requestStartedAt = Date.now();
@@ -42,6 +42,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
       const { data: contract } = await supabase
         .from('contracts')

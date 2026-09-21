@@ -33,7 +33,86 @@ function normalisePageBody(raw: string): string {
     .trim();
 }
 
+/**
+ * Why this exists — the production-only upload 500 (2026-09-20).
+ *
+ * pdf-parse loads pdfjs's LEGACY build, and that build still evaluates
+ * `const SCALE_MATRIX = new DOMMatrix()` at module top level. In Node, pdfjs
+ * tries to supply DOMMatrix from `@napi-rs/canvas` via a dynamic
+ * `createRequire(...)("@napi-rs/canvas")`. Netlify bundles this route with
+ * `pdf-parse` marked external, so its tree ships through Next's file trace —
+ * and the trace cannot follow that dynamic require, so the native canvas
+ * binary never reaches the function. The require fails (pdfjs only warns),
+ * the polyfill is skipped, and `import('pdf-parse')` itself throws
+ * "ReferenceError: DOMMatrix is not defined". `next dev` runs unbundled from
+ * node_modules where canvas resolves, which is why local never showed it.
+ *
+ * The legacy entry was the first preference and is already what is loaded;
+ * it does not avoid the reference. pdfjs 6.x moved it off the top level, but
+ * pdf-parse pins 5.4.296, and a cross-major override of a transitive
+ * dependency is a larger risk than this. Shipping the ~10 MB canvas binary via
+ * `included_files` was rejected too: text extraction never calls DOMMatrix,
+ * so that would bundle a native library to define a class nothing invokes.
+ *
+ * So: the narrowest fix. Define DOMMatrix only if absent, only on the server,
+ * right before the import. Where canvas does load, the guard leaves its real
+ * DOMMatrix in place. Verified by running the real upload route in a Node
+ * process with no DOM globals and `@napi-rs` hidden — the exact production
+ * condition, which returned 500 before this and 201 after.
+ *
+ * The class is a 2D affine subset, enough that pdfjs's render-path helpers
+ * would behave rather than explode if ever reached; `getText()` never reaches
+ * them.
+ */
+function ensureDomMatrix(): void {
+  if (typeof globalThis.DOMMatrix !== 'undefined') return;
+
+  class MinimalDOMMatrix {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+
+    constructor(init?: number[] | MinimalDOMMatrix) {
+      if (Array.isArray(init)) {
+        const [a, b, c, d, e, f] =
+          init.length === 16 ? [init[0]!, init[1]!, init[4]!, init[5]!, init[12]!, init[13]!] : init;
+        Object.assign(this, { a, b, c, d, e, f });
+      } else if (init) {
+        Object.assign(this, { a: init.a, b: init.b, c: init.c, d: init.d, e: init.e, f: init.f });
+      }
+    }
+
+    get is2D() { return true; }
+    get isIdentity() {
+      return this.a === 1 && this.b === 0 && this.c === 0 && this.d === 1 && this.e === 0 && this.f === 0;
+    }
+
+    multiply(o: MinimalDOMMatrix) {
+      return new MinimalDOMMatrix([
+        this.a * o.a + this.c * o.b, this.b * o.a + this.d * o.b,
+        this.a * o.c + this.c * o.d, this.b * o.c + this.d * o.d,
+        this.a * o.e + this.c * o.f + this.e, this.b * o.e + this.d * o.f + this.f,
+      ]);
+    }
+    preMultiplySelf(o: MinimalDOMMatrix) { Object.assign(this, o.multiply(this)); return this; }
+    multiplySelf(o: MinimalDOMMatrix) { Object.assign(this, this.multiply(o)); return this; }
+    translate(tx = 0, ty = 0) { return this.multiply(new MinimalDOMMatrix([1, 0, 0, 1, tx, ty])); }
+    scale(sx = 1, sy = sx) { return this.multiply(new MinimalDOMMatrix([sx, 0, 0, sy, 0, 0])); }
+    inverse() {
+      const det = this.a * this.d - this.b * this.c;
+      if (det === 0) return new MinimalDOMMatrix([NaN, NaN, NaN, NaN, NaN, NaN]);
+      return new MinimalDOMMatrix([
+        this.d / det, -this.b / det, -this.c / det, this.a / det,
+        (this.c * this.f - this.d * this.e) / det, (this.b * this.e - this.a * this.f) / det,
+      ]);
+    }
+    invertSelf() { Object.assign(this, this.inverse()); return this; }
+    toFloat32Array() { return new Float32Array([this.a, this.b, this.c, this.d, this.e, this.f]); }
+  }
+
+  (globalThis as unknown as { DOMMatrix: unknown }).DOMMatrix = MinimalDOMMatrix;
+}
+
 export async function extractPdfText(buffer: Buffer): Promise<ExtractedPdf> {
+  ensureDomMatrix();
   const { PDFParse } = await import('pdf-parse');
 
   const parser = new PDFParse({ data: new Uint8Array(buffer) });

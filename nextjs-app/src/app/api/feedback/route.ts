@@ -11,13 +11,14 @@ export const dynamic = 'force-dynamic';
  * moderation, no side effects beyond the row.
  */
 export async function POST(request: Request) {
-  return withErrorHandling({ route: '/api/feedback', method: 'POST' }, async () => {
+  return withErrorHandling({ route: '/api/feedback', method: 'POST' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const input = feedbackSchema.parse(await request.json());
 

@@ -29,8 +29,13 @@ test.describe('deleting a contract', () => {
 
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
 
-    await expect(row).toHaveCount(0);
+    // Toast FIRST. It appears the moment the DELETE returns and the component
+    // clears it 5s later, while the row's disappearance waits on a react-query
+    // refetch after router.refresh(). Checking the row first let that wait
+    // outlast the toast under full-suite load, and the toast assertion then
+    // found nothing — a flake on both engines, passing standalone.
     await expect(page.getByText('Contract and all associated data deleted.')).toBeVisible();
+    await expect(row).toHaveCount(0);
 
     // The contract is gone, not merely hidden from the list.
     const response = await page.request.get(`/api/contracts/${contractId}`);

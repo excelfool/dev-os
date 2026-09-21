@@ -9,7 +9,7 @@
 
 ```ts
 // Runs `select 1` against Postgres with a 2s timeout.
-// 200 { status: "ok", commit: COMMIT_SHA, db: "ok" }
+// 200 { status: "ok", commit: COMMIT_REF (Netlify) ?? COMMIT_SHA, db: "ok" }
 // 503 { status: "degraded", commit, db: "error" }
 ```
 No auth, no user data, no caching (`Cache-Control: no-store`). Polled by **Uptime Robot** at 1-minute intervals with alerts to the team Slack channel — the evidence for the 99.5% uptime SLA.

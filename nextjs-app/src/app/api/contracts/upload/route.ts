@@ -25,7 +25,7 @@ const PDF_MAGIC = '%PDF-';
  * request.
  */
 export async function POST(request: Request) {
-  return withErrorHandling({ route: '/api/contracts/upload', method: 'POST' }, async () => {
+  return withErrorHandling({ route: '/api/contracts/upload', method: 'POST' }, async (ctx) => {
     const cfg = getServerConfig();
     const supabase = createServerSupabaseClient();
     const requestStartedAt = Date.now();
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     // 2. Rate limit
     await enforceRateLimit(user.id, 'upload');

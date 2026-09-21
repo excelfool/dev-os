@@ -13,13 +13,14 @@ export const dynamic = 'force-dynamic';
  * makes the correction-rate metric meaningful.
  */
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  return withErrorHandling({ route: '/api/key-terms/[id]', method: 'PATCH' }, async () => {
+  return withErrorHandling({ route: '/api/key-terms/[id]', method: 'PATCH' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     let value: string;
     try {

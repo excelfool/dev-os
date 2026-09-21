@@ -19,7 +19,7 @@ const alreadyProcessed = () =>
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   return withErrorHandling(
     { route: '/api/contracts/[id]/custom-terms', method: 'POST' },
-    async () => {
+    async (ctx) => {
       const cfg = getServerConfig();
       const supabase = createServerSupabaseClient();
 
@@ -28,6 +28,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
       const { data: contract } = await supabase
         .from('contracts')

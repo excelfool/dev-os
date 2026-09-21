@@ -51,7 +51,7 @@ async function ensureSession(
 
 /** GET /api/contracts/{id}/chat (spec 08 §2). */
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  return withErrorHandling({ route: '/api/contracts/[id]/chat', method: 'GET' }, async () => {
+  return withErrorHandling({ route: '/api/contracts/[id]/chat', method: 'GET' }, async (ctx) => {
     const cfg = getServerConfig();
     const supabase = createServerSupabaseClient();
 
@@ -59,6 +59,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const { data: contract } = await supabase
       .from('contracts')
@@ -83,7 +84,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
 /** POST /api/contracts/{id}/chat (spec 08 §3). */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  return withErrorHandling({ route: '/api/contracts/[id]/chat', method: 'POST' }, async () => {
+  return withErrorHandling({ route: '/api/contracts/[id]/chat', method: 'POST' }, async (ctx) => {
     const cfg = getServerConfig();
     const supabase = createServerSupabaseClient();
 
@@ -92,6 +93,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const { data: contract } = await supabase
       .from('contracts')

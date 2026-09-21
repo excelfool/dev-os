@@ -10,13 +10,14 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** POST /api/nps (spec 10 §3). At most one response per user per 30 days. */
 export async function POST(request: Request) {
-  return withErrorHandling({ route: '/api/nps', method: 'POST' }, async () => {
+  return withErrorHandling({ route: '/api/nps', method: 'POST' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const input = npsSchema.parse(await request.json());
 

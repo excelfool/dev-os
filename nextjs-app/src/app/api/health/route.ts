@@ -19,7 +19,9 @@ export const dynamic = 'force-dynamic';
 const DB_TIMEOUT_MS = 2_000;
 
 export async function GET() {
-  const commit = process.env.COMMIT_SHA ?? 'dev';
+  // Netlify exposes the deployed commit as COMMIT_REF; COMMIT_SHA is kept for
+  // any other CI that sets it. Without this the live site reported "dev".
+  const commit = process.env.COMMIT_REF ?? process.env.COMMIT_SHA ?? 'dev';
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
   try {

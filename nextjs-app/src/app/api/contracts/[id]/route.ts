@@ -14,13 +14,14 @@ export const dynamic = 'force-dynamic';
  * `updated_at` (spec 06 §3a).
  */
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  return withErrorHandling({ route: '/api/contracts/[id]', method: 'GET' }, async () => {
+  return withErrorHandling({ route: '/api/contracts/[id]', method: 'GET' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const { data: contract } = await supabase
       .from('contracts')
@@ -68,13 +69,14 @@ export async function GET(_request: Request, { params }: { params: { id: string 
  * deletion, and the nightly job sweeps orphans.
  */
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  return withErrorHandling({ route: '/api/contracts/[id]', method: 'DELETE' }, async () => {
+  return withErrorHandling({ route: '/api/contracts/[id]', method: 'DELETE' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const { data: contract } = await supabase
       .from('contracts')

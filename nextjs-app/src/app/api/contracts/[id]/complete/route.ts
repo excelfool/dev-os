@@ -13,13 +13,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   return withErrorHandling(
     { route: '/api/contracts/[id]/complete', method: 'POST' },
-    async () => {
+    async (ctx) => {
       const supabase = createServerSupabaseClient();
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
       const { data: contract } = await supabase
         .from('contracts')

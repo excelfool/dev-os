@@ -12,13 +12,14 @@ export async function DELETE(
 ) {
   return withErrorHandling(
     { route: '/api/contracts/[id]/custom-terms/[termId]', method: 'DELETE' },
-    async () => {
+    async (ctx) => {
       const supabase = createServerSupabaseClient();
 
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
       const { data: contract } = await supabase
         .from('contracts')

@@ -14,12 +14,13 @@ export const dynamic = 'force-dynamic';
  * and returns 401 to an anonymous caller.
  */
 export async function GET(request: Request) {
-  return withErrorHandling({ route: '/api/system-status', method: 'GET' }, async () => {
+  return withErrorHandling({ route: '/api/system-status', method: 'GET' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     const { data, error } = await supabase
       .from('system_status')

@@ -22,13 +22,14 @@ const STORAGE_PAGE_SIZE = 100;
  * auth user, which cascades the rest.
  */
 export async function DELETE() {
-  return withErrorHandling({ route: '/api/account', method: 'DELETE' }, async () => {
+  return withErrorHandling({ route: '/api/account', method: 'DELETE' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw appError('UNAUTHENTICATED');
+    ctx.userId = user.id;
 
     // 1. Capture the address BEFORE anything is deleted — the profile row is
     //    about to go.
