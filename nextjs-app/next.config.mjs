@@ -43,6 +43,11 @@ const nextConfig = {
   // function"), which is a confusing failure to debug from a test.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
+  // Next sends `X-Powered-By: Next.js` by default. It is free version
+  // disclosure: it tells a scanner which framework to look up advisories for,
+  // and this app is pinned to next@14.2.5, which carries a known advisory
+  // chain. Nothing depends on the header.
+  poweredByHeader: false,
   // `next build` must fail on any type error (spec 00 §6).
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: false },

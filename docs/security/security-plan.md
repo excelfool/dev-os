@@ -63,7 +63,7 @@ test written for exactly that risk, and that test stays.
 | §7 | File upload security | **Magic-byte validation** (`%PDF-`), not the declared MIME type. Size → magic bytes → pages → tokens. Filenames sanitised to `[A-Za-z0-9._-]`, so no path traversal. Private bucket, 1-hour signed URLs, no public URLs. |
 | §8 | Environment variables | `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are server-only; the admin client is `import 'server-only'`. `npm run scan:secrets` is a CI gate over the built client bundle. No secret logging. |
 | — | RLS | 15 tables, RLS on all of them, 37 policies, every one scoped to `user_id = auth.uid()`. Proven by the cross-account RLS suite. |
-| — | Headers | CSP with `frame-ancestors 'none'`, HSTS preload, `nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy`. |
+| — | Headers | CSP with `frame-ancestors 'none'`, HSTS preload, `nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy`. Pinned by `tests/e2e/security-headers.spec.ts`; see §8 for the two header decisions. |
 | — | Error handling | Users only ever see taxonomy copy; stacks stay server-side. No `dangerouslySetInnerHTML` anywhere. |
 
 ---
@@ -125,3 +125,49 @@ default.
 | CSRF | Not separately implemented. Supabase SSR cookies are `SameSite=Lax`, which blocks cross-site `POST`, and every state-changing route is `POST`/`PATCH`/`DELETE` with a JSON body. Worth a deliberate decision before public launch rather than relying on the default. |
 | Injection guard coverage | Pattern-based, so it is a speed bump and not a boundary. The real control remains architectural: no tools, no write path, output never executed. Revisit if the assistant ever gains an action. |
 | `next@14.2.5` advisory chain | Unchanged from the Stage 5 handoff — still pinned, still carrying a critical advisory. Out of scope here, but it is the largest known security debt in the project. |
+
+---
+
+## 8. Response header decisions
+
+Both of these came out of a manual header check against a running server, not
+out of the audit — which is itself the finding: **the headers had no test at
+all.** The production CSP was verified by hand during Stage 4 and never pinned,
+so nothing would have caught a regression. `tests/e2e/security-headers.spec.ts`
+now asserts every header against a real server, and the `X-Powered-By` case was
+mutation-checked to confirm it fails when the setting is removed.
+
+### `X-Powered-By` — now disabled
+
+**Was being sent.** Next sets `X-Powered-By: Next.js` by default, and
+`poweredByHeader: false` was missing from `next.config.mjs`.
+
+It is free version disclosure: it tells a scanner which framework to look up
+advisories for, and this app is pinned to `next@14.2.5`, which carries a known
+critical advisory chain (see §7). Low severity on its own, but there is no
+argument for sending it — nothing depends on the header.
+
+### `X-XSS-Protection` — deliberately absent, do not add it
+
+**To be straight about the provenance: this was not a decision I made during
+the audit.** Spec 13 §3 omits the header, the audit checked the headers that
+are present rather than enumerating ones that are not, and I did not flag it.
+
+Having now looked at it deliberately: **omitting it is correct, and it should
+not be added.**
+
+- **It is deprecated and inert.** Chrome removed the XSS Auditor in v78, Edge
+  dropped it when it moved to Chromium, and Firefox never shipped it. On any
+  current browser the header does nothing at all.
+- **Where it still acts, it has been harmful.** The auditor's filtering was
+  itself exploitable — it could be induced to block legitimate script, and to
+  leak cross-origin information through its own behaviour. `1; mode=block` is
+  now understood as a liability rather than a control, which is why OWASP's
+  guidance is to omit the header or send `0` and rely on CSP.
+- **The actual control is already there.** The CSP in §3 is what constrains
+  script execution, and it is asserted.
+
+A checklist that lists `X-XSS-Protection` is describing 2016. If a reader adds
+it back as a "fix", `tests/e2e/security-headers.spec.ts` fails and points at
+this section.
+
