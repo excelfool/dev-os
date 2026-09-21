@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, contractHref } from './StatusBadge';
 import { DeleteContractDialog } from './DeleteContractDialog';
+import { useDashboardToast } from './dashboard-toast';
 import { formatDate } from '@/lib/utils/format';
 import type { ContractStatus, ContractType } from '@/types/domain';
 
@@ -42,7 +43,7 @@ const COLUMNS: Array<{ key: SortColumn | null; label: string }> = [
 
 export function ContractsTable() {
   const router = useRouter();
-  const [toast, setToast] = useState<string | null>(null);
+  const { show: showToast } = useDashboardToast();
   const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
   const params = useSearchParams();
   const queryClient = useQueryClient();
@@ -86,8 +87,9 @@ export function ContractsTable() {
 
   /**
    * Spec 11 §5 step 5: optimistic removal with rollback on failure, and a
-   * confirmation toast. Neither was implemented — the row only disappeared
-   * once the refetch came back, and nothing confirmed the deletion.
+   * confirmation toast. The toast is NOT local state: deleting the last
+   * contract unmounts this component on the next refresh (the page switches
+   * to its empty state), so a local toast died with it. See dashboard-toast.
    */
   async function remove(id: string) {
     setPendingRemoval((prev) => [...prev, id]);
@@ -96,8 +98,7 @@ export function ContractsTable() {
       if (res.ok || res.status === 404) {
         await queryClient.invalidateQueries({ queryKey: ['contracts'] });
         router.refresh();
-        setToast('Contract and all associated data deleted.');
-        setTimeout(() => setToast(null), 5000);
+        showToast('Contract and all associated data deleted.');
         return;
       }
       // Rollback: the row comes back rather than vanishing on a failed delete.
@@ -120,11 +121,6 @@ export function ContractsTable() {
 
   return (
     <section className="flex flex-col gap-subsection" aria-label="All contracts">
-      {toast && (
-        <p role="status" className="rounded-card bg-success-50 px-4 py-2 text-caption text-success-700">
-          {toast}
-        </p>
-      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-h5 text-grey-900">All contracts</h2>
         <div className="flex items-center gap-2">

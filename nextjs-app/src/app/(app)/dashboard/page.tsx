@@ -6,6 +6,7 @@ import {
   type RecentContract,
 } from '@/components/dashboard/RecentContractsList';
 import { ContractsTable } from '@/components/dashboard/ContractsTable';
+import { DashboardToast } from '@/components/dashboard/dashboard-toast';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata = { title: 'Dashboard · ContractIQ' };
@@ -59,6 +60,10 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-component px-4 py-12">
       <h1 className="text-h2 text-grey-900">Dashboard</h1>
+
+      {/* Above the branch below, so a confirmation survives the switch to the
+          empty state when the last contract is deleted. */}
+      <DashboardToast />
 
       {summary.total === 0 ? (
         <EmptyState />

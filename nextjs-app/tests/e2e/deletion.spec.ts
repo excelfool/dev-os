@@ -29,13 +29,17 @@ test.describe('deleting a contract', () => {
 
     await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
 
-    // Toast FIRST. It appears the moment the DELETE returns and the component
-    // clears it 5s later, while the row's disappearance waits on a react-query
-    // refetch after router.refresh(). Checking the row first let that wait
-    // outlast the toast under full-suite load, and the toast assertion then
-    // found nothing — a flake on both engines, passing standalone.
-    await expect(page.getByText('Contract and all associated data deleted.')).toBeVisible();
     await expect(row).toHaveCount(0);
+
+    // This was the user's only contract, so the refresh flips the dashboard to
+    // its empty state — a different branch of the page tree. The toast lived
+    // in ContractsTable, which that switch unmounts, so it showed for a few
+    // hundred milliseconds and vanished with the table. Spec 11 §5 requires
+    // the confirmation; it must outlive the component that triggered it.
+    await expect(
+      page.getByText('No contracts reviewed yet — upload your first contract to begin'),
+    ).toBeVisible();
+    await expect(page.getByText('Contract and all associated data deleted.')).toBeVisible();
 
     // The contract is gone, not merely hidden from the list.
     const response = await page.request.get(`/api/contracts/${contractId}`);
