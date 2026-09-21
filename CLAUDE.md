@@ -1,6 +1,6 @@
 # Project Guide
 
-This project uses a structured, step-by-step workflow to go from a product idea to a fully built app. Three skills drive the process. Follow the stages in order and **never move to the next stage without explicit user approval**.
+This project uses a structured, step-by-step workflow to go from a product idea to a fully built app. Five skills drive the process. Follow the stages in order and **never move to the next stage without explicit user approval**.
 
 ---
 
@@ -15,16 +15,17 @@ After completing any stage, stop. Present what was produced. Ask the user if the
 ### Stage 1 — Engineering Plan
 **Skill:** `/engineering-planner`
 **Input:** A PRD or product description from the user
-**Output:** `docs/engineering/engineering-doc.md` + `docs/engineering/implementation-specs.md`
+**Output:** `docs/engineering/engineering-doc.md`
 
-Transform the user's requirements into two documents:
+Transform the user's requirements into one document:
 - `engineering-doc.md` — high-level architecture (stack, flows, DB design, API spec, folder structure)
-- `implementation-specs.md` — one detailed spec block per feature (user flow, DB schema, DB tasks, API routes, state management, component spec, design, edge cases)
+
+Per-feature implementation specs are **not** produced here; they are generated at Stage 2 under `docs/implementation/`.
 
 Before generating, use `AskUserQuestion` to resolve any missing architectural decisions (auth strategy, database, LLM provider, user roles, etc.).
 
 When done, show the user what was created and ask:
-> "Both engineering documents are ready in `docs/engineering/`. Review them and let me know when you're happy to move to Stage 2."
+> "The engineering document is ready in `docs/engineering/`. Review it and let me know when you're happy to move to Stage 2."
 
 ---
 
@@ -122,7 +123,26 @@ When deployed and verified, ask:
 Give the chat assistant persistent memory so it can answer follow-up questions within a session and across page refreshes. The OpenAI API (Chat Completions, GPT-4o) is stateless — each call starts fresh with no memory of prior calls — so conversation history must be explicitly stored and loaded into the `messages[]` array on every request.
 
 When done, show the user what was created and ask:
-> "The memory layer is in place. The chat assistant now holds context across refreshes."
+> "The memory layer is in place. The chat assistant now holds context across refreshes. Ready to move to Stage 9 — Evaluation?"
+
+---
+
+### Stage 9 — Evaluation
+**Input:** Deployed app from Stage 8 + `eval/` (runners, datasets, red-team set)
+**Output:** `eval/reports/<release>.json`
+
+Run the evaluation suite against the deployed release and write one report per release. The report carries these metrics, each with a verdict of `PASS`, `FAIL` or `SKIPPED`:
+- HHH (% helpful, % honest, % harmful — per the 29-question questionnaire)
+- Extraction F1
+- Page accuracy
+- Confidence calibration
+- Red-team pass rate
+- Judge precision (and recall) against human `hhh_scores` rows
+
+A metric that cannot be measured yet is `SKIPPED` with a reason — never `PASS`.
+
+When done, show the user the report and ask:
+> "Evaluation report is in `eval/reports/`. Ready to set launch thresholds?"
 
 ---
 
@@ -130,7 +150,7 @@ When done, show the user what was created and ask:
 
 | Skill | Command | What it does |
 |---|---|---|
-| Engineering Planner | `/engineering-planner` | PRD → `docs/engineering/engineering-doc.md` + `docs/engineering/implementation-specs.md` |
+| Engineering Planner | `/engineering-planner` | PRD → `docs/engineering/engineering-doc.md` |
 | Implementation Specs | `/implementation-specs` | Engineering docs → granular spec files + `supabase-schema.sql` + `.env.example` |
 | Frontend Setup | `/frontend-setup` | Scaffolds a Next.js 14 App Router project |
 | Design System | `/design-system` | Enforces brand colors, typography, spacing, and component styles on all UI code |
@@ -143,11 +163,11 @@ When done, show the user what was created and ask:
 | File | Created by | Purpose |
 |---|---|---|
 | `docs/engineering/engineering-doc.md` | `/engineering-planner` | High-level architecture, flows, DB design, API spec |
-| `docs/engineering/implementation-specs.md` | `/engineering-planner` | Per-feature specs (flow, DB, API, component, edge cases) |
-| `docs/implementation/*.md` | `/implementation-specs` | Additional granular specs derived from the engineering docs |
+| `docs/implementation/*.md` | `/implementation-specs` | Per-feature granular specs (flow, DB, API, component, edge cases) derived from the engineering doc |
 | `docs/implementation/supabase-schema.sql` | `/implementation-specs` | Run this in Supabase SQL Editor to create all tables |
 | `.env.example` | `/implementation-specs` | All environment variables — copy to `.env.local` and fill in values |
 | `docs/security/security-plan.md` | `/security-foundation` | Security controls, audit log, RLS policies |
+| `eval/reports/<release>.json` | Stage 9 — Evaluation | Per-release HHH, F1, page accuracy, calibration, red-team pass rate, judge precision — each PASS / FAIL / SKIPPED |
 
 ---
 
