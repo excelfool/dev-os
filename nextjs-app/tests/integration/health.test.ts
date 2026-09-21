@@ -25,8 +25,15 @@ describe('GET /api/health', () => {
     expect(body.db).toBe('ok');
   });
 
-  it("reports Netlify's COMMIT_REF as the commit, not 'dev'", async () => {
+  it('ignores COMMIT_REF in the RUNTIME environment', async () => {
+    // The harness started the app with COMMIT_REF=abc1234deadbeef in its
+    // environment. Netlify's function runtime has no such variable — it is
+    // build-time only — so the value must come from the generated build-info
+    // file, never from process.env at request time. The earlier version of
+    // this test asserted the opposite and passed only because `next dev`
+    // compiles and serves in one process.
     const body = await (await fetch(`${BASE_URL}/api/health`)).json();
-    expect(body.commit).toBe('abc1234deadbeef');
+    expect(body.commit).not.toBe('abc1234deadbeef');
+    expect(body.commit).toBe('dev');
   });
 });

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { publicConfig } from '@/lib/utils/config';
+import { BUILD_COMMIT } from '@/generated/build-info';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,9 +20,11 @@ export const dynamic = 'force-dynamic';
 const DB_TIMEOUT_MS = 2_000;
 
 export async function GET() {
-  // Netlify exposes the deployed commit as COMMIT_REF; COMMIT_SHA is kept for
-  // any other CI that sets it. Without this the live site reported "dev".
-  const commit = process.env.COMMIT_REF ?? process.env.COMMIT_SHA ?? 'dev';
+  // Captured at BUILD time by scripts/write-build-info.mjs. Netlify's
+  // COMMIT_REF is a build-time variable that is absent from the function's
+  // runtime environment, so a process.env read here reported "dev" live while
+  // passing locally, where dev compiles and serves in one process.
+  const commit = BUILD_COMMIT;
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
   try {

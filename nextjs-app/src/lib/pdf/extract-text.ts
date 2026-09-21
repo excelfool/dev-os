@@ -23,6 +23,21 @@ export interface ExtractedPdf {
 
 export class CorruptPdfError extends Error {}
 
+/**
+ * pdfjs exception names that describe the DOCUMENT rather than the runtime.
+ * `InvalidPDFException` is what a truncated file and non-PDF bytes both raise
+ * ("Invalid PDF structure."); the others are the remaining document-level
+ * classes pdfjs exports. Matched by name, not instanceof, because the class
+ * objects live inside pdf-parse's nested pdfjs copy.
+ */
+const CORRUPT_DOCUMENT_EXCEPTIONS = new Set([
+  'InvalidPDFException',
+  'MissingPDFException',
+  'PasswordException',
+  'FormatError',
+  'UnexpectedResponseException',
+]);
+
 const ZERO_WIDTH_AND_FORM_FEED = /[\f​-‍﻿]/g;
 
 function normalisePageBody(raw: string): string {
@@ -144,7 +159,15 @@ export async function extractPdfText(buffer: Buffer): Promise<ExtractedPdf> {
 
     return { text, pageCount, wordCount };
   } catch (err) {
-    throw new CorruptPdfError(err instanceof Error ? err.message : 'unreadable PDF');
+    // Only pdfjs's own DOCUMENT exceptions mean the file is bad. Anything else —
+    // a missing runtime global, a bundle without the worker or its font data, a
+    // failed fake-worker setup — is a defect in our runtime, and mapping it here
+    // told the user their file was corrupt (live site, 2026-09-20). Those are
+    // rethrown so they surface as INTERNAL with the real message in the log.
+    if (err instanceof Error && CORRUPT_DOCUMENT_EXCEPTIONS.has(err.name)) {
+      throw new CorruptPdfError(err.message);
+    }
+    throw err;
   } finally {
     await parser.destroy().catch(() => {
       /* nothing actionable if teardown fails */

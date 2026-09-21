@@ -62,6 +62,9 @@ export async function withErrorHandling(
           userId: ctx.userId ?? null,
           route: ctx.route,
           unexpected: String(err),
+          // First frames only: enough to name the module that threw without
+          // dumping a full trace into every log line.
+          stack: err instanceof Error ? err.stack?.split('\n').slice(1, 4).map((l) => l.trim()) : undefined,
         }),
       );
     }
