@@ -34,3 +34,6 @@ nextjs-app/.netlify/
 
 # Emitted by Netlify's edge-function bundler during `netlify build` — local only.
 nextjs-app/deno.lock
+
+# Instructor golden-set PDFs — downloaded from pdf_source_url, never committed.
+nextjs-app/eval/datasets/msa-instructor/pdfs/

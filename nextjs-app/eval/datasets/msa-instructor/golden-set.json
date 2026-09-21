@@ -1,0 +1,2258 @@
+{
+  "name": "MSA golden set (instructor)",
+  "version": "instructor-2026-09",
+  "source": "Key_term_name__questions_and_benchmarked_data.xlsx",
+  "note": "PDFs are Google Drive links in pdf_source_url; download each into eval/datasets/msa-instructor/pdfs/<tab>.pdf before running. Intuit and Expel PDFs already exist in the AI-COURSE vault (Evaluating Part 2 item raw/). Term names are normalised to the Intuit tab's names; question_as_asked keeps each tab's wording. Two known label errors on Notice Period recorded in document 02 apply to the synthetic set, not this one.",
+  "contracts": [
+    {
+      "contract_name": "Expel MSA",
+      "tab": "Expel",
+      "pdf_source_url": "https://drive.google.com/file/d/1D-dbh0AaZCuNG4uhIVGYtiw72Co3f9O3/view?usp=drive_link",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "EXPEL, INC.",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "DMC XYZ, Inc",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "2022-03-21",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "2022-09-21",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "25000.0",
+          "benchmark_location": "Section 1.5, Page 1",
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "6.0",
+          "benchmark_location": "Section 10.1, Page 5",
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 10.2, Page 5",
+          "question_as_asked": "Does this contract renews automatically?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "6.0",
+          "benchmark_location": "Section 10.1, Page 5",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renwal ?"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 10.2, Page 5",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "72.0",
+          "benchmark_location": "Section 13.14, Page 8",
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 10.2, Page 5",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "Section 10.2, Page 5",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "Section 10.2, Page 5",
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "45.0",
+          "benchmark_location": "Section 10.1, Page 5",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "THE MAXIMUM\nLIABILITY OF EITHER PARTY ARISING OUT OF OR\nIN ANY WAY CONNECTED TO THIS AGREEMENT\nSHALL NOT EXCEED THE FEES PAID OR DUE TO\nBE PAID BY CUSTOMER TO RESELLER PARTNER\nAND/OR EXPEL DURING THE TWELVE (12)\nMONTH PERIOD IMMEDIATELY PRECEDING THE\nEVENT, ACT, OR OMISSION GIVING RISE TO THE\nLIABILITY.",
+          "benchmark_location": "Section 7.2, Page 4",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent Required",
+          "benchmark_location": "Section 13.4, Page 7",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 8.4, Page 5",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 8.2, Page 4",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Each party will defend at its expense any suit\nbrought against the other party, and will pay any\nsettlement the other party makes or approves, or any\ndamages finally awarded in such suit, insofar as such\nsuit is based on a claim by any third party alleging 1)\ninfringement of a party’s Intellectual Property Rights\nor 2) a breach of warranty. Neither party shall have\nany obligation under this section or otherwise with\nrespect to any infringement or breach of warranty\nclaim if (a) the Software or Services are not used in\naccordance with this Agreement; (b) the Software or\nthe Services are used with other products,\nequipment, software, or data not supplied or\napproved by Expel; or (c) the Software and Services\nare modified by anyone other than Expel and its\nauthorized agents.",
+          "benchmark_location": "Section 9.1, Page 5",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "Each party will defend at its expense any suit\nbrought against the other party, and will pay any\nsettlement the other party makes or approves, or any\ndamages finally awarded in such suit, insofar as such\nsuit is based on a claim by any third party alleging 1)\ninfringement of a party’s Intellectual Property Rights\nor 2) a breach of warranty. Neither party shall have\nany obligation under this section or otherwise with\nrespect to any infringement or breach of warranty\nclaim if (a) the Software or Services are not used in\naccordance with this Agreement; (b) the Software or\nthe Services are used with other products,\nequipment, software, or data not supplied or\napproved by Expel; or (c) the Software and Services\nare modified by anyone other than Expel and its\nauthorized agents.",
+          "benchmark_location": "Section 9.1, Page 5",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9.2, Page 5",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of Delaware",
+          "benchmark_location": "Section 13.6, Page 7",
+          "question_as_asked": "What is the gorverning law for this agreement?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 13.9, Page 7",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "License Grant:\n\nExpel grants the Customer a non-exclusive, non-transferable license to access and use the Services during the specified term.\nOwnership and Limitations:\n\nThe Services, Software, and all materials provided by Expel, including Intellectual Property Rights, are the exclusive property of Expel and its suppliers.\nCustomer is restricted from modifying, sublicensing, reverse engineering, or disclosing the Software to unauthorized parties.\nLicense to Reports:\n\nWhile the Report template and related Intellectual Property Rights belong to Expel, the content of any Reports becomes the property of Customer upon creation.\nExpel retains a non-exclusive right to use, reproduce, modify, create derivative works, and display the Reports for internal business purposes.\nReservation of Rights:\n\nAll rights in and to the Services and Software not expressly granted to Customer are reserved by Expel and its suppliers.\nNo express or implied license or right is granted to Customer regarding the Software and Services, including obtaining possession of source code or technical material.\nOpen Source Software:\n\nCertain software provided with the Software may be subject to open source licenses. Expel retains ownership of the Software and complies with open source licensing terms.\nAggregated Anonymous Data:\n\nExpel may aggregate metadata and usage data into non-personally identifiable Aggregated Anonymous Data.\nExpel owns the Aggregated Anonymous Data and may use it for internal analysis, improving services, and creating reports, but cannot publicly identify Customer as the source.",
+          "benchmark_location": "Section 3, Page 2,3",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "License to Access and Use:\n\nCustomer is granted a non-exclusive, non-transferable license to access and use the Services during the specified term.\nOwnership of Reports:\n\nThe content of Reports created by Expel becomes the property of Customer upon creation.\nLicense to Share Information:\n\nCustomer may reasonably share information and access to the Software with its information technology and security auditors for the sole purpose of conducting routine audits.\nLimitations on Software Use:\n\nCustomer is restricted from modifying, sublicensing, reverse engineering, or disclosing the Software to unauthorized parties.\nReservation of Rights:\n\nAll rights in and to the Services and Software not expressly granted to Customer are reserved by Expel and its suppliers.",
+          "benchmark_location": "Section 3, Page 2,3",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "PaaS",
+      "tab": "PaaS",
+      "pdf_source_url": "https://drive.google.com/file/d/1nK8OVRJ2oFus04F-2pmOqUBnjIOeOIKO/view?usp=drive_link",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Alpha Beta Company Inc",
+          "benchmark_location": "1",
+          "question_as_asked": "What is the Service Provider Name"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "Alcime LLC",
+          "benchmark_location": "1",
+          "question_as_asked": "What is the Customer Name?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "2023-02-04",
+          "benchmark_location": "1",
+          "question_as_asked": "What is the Contract start date?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "2025-02-04",
+          "benchmark_location": "1",
+          "question_as_asked": "what is the Contract end date / Expiration Date?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "24.0",
+          "benchmark_location": "1",
+          "question_as_asked": "What is the total term period or duration of this contract? Provide answer in the form of number of months if possible"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "140000.0",
+          "benchmark_location": "8",
+          "question_as_asked": "What is the total amount to be paid by the customer?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of California",
+          "benchmark_location": "9",
+          "question_as_asked": "What is the Governing Law? Provide just the name of the governing law"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "8",
+          "question_as_asked": "Will this agreement Automatically Renew? Answer Yes or No"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "4",
+          "question_as_asked": "What is the duration before which either party may terminate the Agreement? Provide answer in the form of number of days if possible"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "48.0",
+          "benchmark_location": "12",
+          "question_as_asked": "What is the duration of Data Breach Notice? Provide answer in the form of number of hours if possible"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Quarterly",
+          "benchmark_location": "8",
+          "question_as_asked": "What is the billing frequency of this agreement?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "12.0",
+          "benchmark_location": "8",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "45.0",
+          "benchmark_location": "8",
+          "question_as_asked": "Notice of termination for convenience"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Net 30",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "4",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "4",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "4",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "4",
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "60.0",
+          "benchmark_location": "4",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "8",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "If any portion of the fees are\nreceived by PSP after the payment due date as set forth\nherein, then a late penalty fee shall be assessed, equal to\n1.5% of the payment amount then due by Client.",
+          "benchmark_location": "8",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "in no event shall the aggregate liability of either party  arising out of or related to this agreement exceed the total amount paid or payable by client under the order giving rise to the liability in the twelve (12) months preceding the first incident out of which the liability arose.",
+          "benchmark_location": "8.0",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent Required",
+          "benchmark_location": "9.0",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "10",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "12.0",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Client shall indemnify defend and\nhold PSP and its Affiliates and its and their respective\nofficers, directors, managers, members, shareholders,\nemployees, representatives and agents harmless from and\nagainst any Claim made or brought by a third party to the extent such\nClaim relates to or arises out of: (i) Client’s or a thirdparty’s\nuse of the PSP Data or Platform other than as\nexpressly authorized in this Agreement; (ii) Client’s failure\nto comply with all applicable laws, rules and regulations in\nits use of the PSP Data or Platform; or (iii) Client’s breach\nof its confidentiality obligations or representations or\nwarranties; in each case, except to the extent of PSP’ gross\nnegligence or willful misconduct.",
+          "benchmark_location": "9.0",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "PSP shall indemnify, defend, and hold\nClient harmless from and against any and all losses,\ndamages, liabilities, costs (including reasonable out-ofpocket\nattorneys’ fees) (collectively, “Losses”) incurred\nby any of such parties resulting from any third-party\nclaim, suit, action, or proceeding (each, a “Claim”)\nbased on (i) Client’s actual or alleged allegation that\nClient’s access to and authorized use of the PSP Data in\naccordance with the terms set forth in this\nAgreement or (i) infringe, misappropriate or\notherwise violate any third party intellectual property\nright. Notwithstanding the foregoing, PSP shall have no\nobligation to indemnify Client pursuant for Claims to the\nextent arising from: (a) impermissible modification or\ncombination of PSP Data by Client; (b) Client or its\nAuthorized Users use of the PSP Data or Platform not\nin accordance with the Agreement (and which was not\notherwise approved by PSP); (c) Client’s Derivative\nWorks; or (d) Client’s use of the PSP Data or Platform\nin combination with unauthorized modules,\nhardware, software or services not supplied or specified in\nwriting by PSP or in a manner or for a purpose for which\nthey were not designed.",
+          "benchmark_location": "8.0",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "No",
+          "benchmark_location": "Section 10.1",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "8",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "8",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "No",
+          "benchmark_location": "8.0",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "9.0",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "8.0",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "4",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "PSP retains all rights\nand licenses, and owns all right, title and interest in and to\nthe Platform, PSP Data, and derivatives thereof. Other than\nas expressly set forth in this Agreement, no license or other\nrights in or to the PSP Data or intellectual property are\ngranted to Client, and all such licenses and rights are hereby\nexpressly reserved.",
+          "benchmark_location": "6.0",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "Client retains all\nrights and licenses, and owns all right, title, and interest in\nall Client Data the Client provides to PSP.",
+          "benchmark_location": "6.0",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Adverity MSA",
+      "tab": "Adverity",
+      "pdf_source_url": "https://drive.google.com/file/d/1HRgJCsWK13JIyZAdo8gE04-bCPdwXJIX/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Adverity Inc",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Service Provider Name"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "New Age XYZ tech",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Customer Name?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "2023-05-28",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Contract start date?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "2023-11-28",
+          "benchmark_location": "1.0",
+          "question_as_asked": "what is the Contract end date / Expiration Date?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "6.0",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the total term period or duration of this contract? Provide answer in the form of number of months if possible"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "30000.0",
+          "benchmark_location": "3.0",
+          "question_as_asked": "What is the total amount to be paid by the customer?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of New York",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the Governing Law? Provide just the name of the governing law"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Will this agreement Automatically Renew? Answer Yes or No"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the duration before which either party may terminate the Agreement? Provide answer in the form of number of days if possible"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "24.0",
+          "benchmark_location": "7.0",
+          "question_as_asked": "What is the duration of Data Breach Notice? Provide answer in the form of number of hours if possible"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Annually",
+          "benchmark_location": "3.0",
+          "question_as_asked": "What is the billing frequency of this agreement?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "12.0",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "90.0",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renwal ?"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Net 30",
+          "benchmark_location": "3.0",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "3.0",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "If any amounts invoiced are not received by Adverity by the due date, then, without limiting Adverity’s rights or remedies,\na.        such charges may accrue late interest at the statutory commercial interest rate;\nb.        Adverity shall be entitled to a no-fault and no-damage lump-sum compensation in the amount of 40.00 USD for reimbursement of debts collection costs for each outstanding debt; and\nc.        Adverity may condition future Subscription renewals and Commercial Agreements on payment terms different than those specified in Section IV.3.",
+          "benchmark_location": "3.0",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "Irrespective of Section IX.1 Adverity’s total liability for\nCustomer’s claims arising in any contract year under\nor in connection with this MSA shall be limited to:\na. the total of all fees paid by Customer to\nAdverity in a 12-month period preceding the\ndamaging event; or\nb. 50,000 USD, whichever is higher.",
+          "benchmark_location": "10.0",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent Required with Exceptions",
+          "benchmark_location": "12.0",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "6.0",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "VIII.2. Indemnification by Customer\nCustomer shall defend Adverity against any claim, demand, suit or proceeding made or brought against Adverity by a third party alleging that Customer Data, or Customer’s use of the Application Services in breach of this MSA, infringes or misappropriates the intellectual property rights of a third party or violates applicable law (a “Claim Against Adverity”), and shall indemnify Adverity for any damages, attorneys’ fees and other costs finally awarded against Adverity as a result of, or for any amounts paid by Adverity under a court-approved settlement of, a Claim Against Adverity; provided that Adverity:\na.        promptly gives Customer written notice of the Claim Against Adverity;\nb.        gives Customer sole control of the defense or settlement of the Claim Against Adverity (provided that Customer may not settle any Claim Against Adverity unless the settlement unconditionally releases Adverity of all liability); and\nc.        provide to Customer all reasonable assistance, at Customer’s expense.",
+          "benchmark_location": "10.0",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "Adverity shall defend Customer against any claim, demand, suit, or proceeding made or brought against Customer by a third party alleging that the use of the Application Services as permitted hereunder infringes or misappropriates the intellectual property rights of a third party (a “Claim Against Customer”), and shall indemnify Customer for any damages, attorneys’ fees and other costs finally awarded against Customer as a result of, and for amounts paid by Customer under a court approved settlement of, a Claim Against Customer; provided that Customer:",
+          "benchmark_location": "9.0",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "10.0",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "9.0",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "11.0",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "60.0",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "Adverity undertakes to maintain adequate insurance\ncover for potential liability claims which may arise\nunder or in connection with this MSA.",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "11.0",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "Subject to the limited rights expressly granted\nhereunder, Adverity reserves all rights, title, and\ninterest in and to the Application Services, including all\nrelated intellectual property rights. No rights are\ngranted to Customer hereunder other than as\nexpressly set forth herein.",
+          "benchmark_location": "5.0",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "Customer shall own all Customer Data, including all reports, statistics, and other data to the extent generated solely from Customer Data, and all intellectual property rights therein. Notwithstanding the foregoing, Adverity shall have the right to collect and use Customer Data in relation to the provision of the Services to Customer.",
+          "benchmark_location": "6.0",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Stripe MSA",
+      "tab": "Stripe",
+      "pdf_source_url": "https://drive.google.com/file/d/1lZ1IjAn4D1N0ff1Epo1n6Wnh6GItlOLk/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Stripe Inc",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "New day XYZ company",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "2023-07-23",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "2023-11-23",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "15000.0",
+          "benchmark_location": "Section 4.4(b), Page 7",
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "4.0",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "No",
+          "benchmark_location": "Section 8.5, Page 10",
+          "question_as_asked": "Does this contract renews automatically?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renwal ?"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.1 (C), Page 8",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "1.0",
+          "benchmark_location": "Section 9.4, Page 12",
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.1 (b), Page 8",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.1 (b), Page 8",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "7.0",
+          "benchmark_location": "Section 6.1 (a), Page 8",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "To the maximum extent permitted by Law, the Stripe Parties will not be liable to you or your Affiliates in relation to this Agreement or the Services during and after the Term, whether in contract, negligence, strict liability, tort or other legal or equitable theory, for losses, damages, or costs exceeding in the aggregate the greater of (i) the total amount of Fees you paid to Stripe (excluding all pass-through fees levied by Financial Partners) during the 3-month period immediately preceding the event giving rise to the liability; and (ii) $500 USD.",
+          "benchmark_location": "Section 12.2 (b), Page 15",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent Required",
+          "benchmark_location": "Section 15.8, Page 19",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 7.3, Page 9",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 8.3, Page 10",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "11.1 Stripe IP Infringement.\n(a) Defense and Indemnification. Stripe will defend you against any IP Claim and indemnify you against all IP Claim Losses.\n(b) Limitations. Stripe’s obligations in this Section 11.1 do not apply if the allegations do not specify that the Stripe Technology, Services, or Mark of Stripe or its Affiliate is the basis of the IP Claim, or to the extent the IP Claim or IP Claim Losses arise out of:\n(i) the use of the Stripe Technology or Services in combination with software, hardware, data, or processes not provided by Stripe;\n(ii) failure to implement, maintain and use the Stripe Technology or Services in accordance with the Documentation and this Agreement;\n(iii) your breach of this Agreement; or\n(iv) your negligence, fraud or willful misconduct.\n(c) Process. You must promptly notify Stripe of the IP Claim for which you seek indemnification; however, any delay or failure to notify will not relieve Stripe of its obligations under this Section 11, except to the extent Stripe has been prejudiced by the delay or failure. You must give Stripe sole control and authority to defend and settle the IP Claim, but (i) you may participate in the defense and settlement of the IP Claim with counsel of your own choosing at your own expense; and (ii) Stripe will not enter into any settlement that imposes any obligation on you (other than payment of money, which Stripe will pay) without your consent. You must reasonably assist Stripe in defending the IP Claim.\n(d) Other Stripe Actions. Stripe may in its discretion and at no additional expense to you:\n(i) modify the Stripe Technology or Services so that they are no longer claimed to infringe or misappropriate IP Rights of a third party;\n(ii) replace the affected Stripe Technology or Services with a non-infringing alternative.",
+          "benchmark_location": "Section 11.1, Page 13,14",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "(a) Defense. You will defend the Stripe Parties against any Claim made against any of the Stripe Parties to the extent arising out of or relating to:\n(i) your breach of any of your representations, warranties or obligations under this Agreement;\n(ii) your use of the Services, including use of Personal Data;\n(iii) an allegation that any of the Marks you license to Stripe, or your Content, infringes on or misappropriates the rights, including IP Rights, of the third party making the Claim; or\n(iv) a User Party’s negligence, willful misconduct or fraud.\n(b) Indemnification. You will indemnify the Stripe Parties against all Stripe Losses arising out of or relating to Claims described in this Section 11.2.",
+          "benchmark_location": "Section 11.2, Page 13,14",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 11.1 (C), Page 14",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of California",
+          "benchmark_location": "Section 8.3, Page 10",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 13.2 (d), Page 17",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 6",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 6",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Celonis MSA",
+      "tab": "Celonis",
+      "pdf_source_url": "https://drive.google.com/file/d/1HKiffcA5IWymGqOMu4rHoJYxlYSzoF8d/view?usp=drive_link",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Celonis",
+          "benchmark_location": "Annex C, Page 10, 13",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Annually",
+          "benchmark_location": "Section 6.1 (i), Page 2",
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9.1, Page 3",
+          "question_as_asked": "Does this contract renews automatically?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "12.0",
+          "benchmark_location": "Section 9.1, Page 4",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "Section 9.1, Page 4",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renewal ? If yes then how many days of notice period is needed to stop automatic renewal of contract."
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Net 30",
+          "benchmark_location": "Section 6.1, Page 2",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9.2, Page 4",
+          "question_as_asked": "Does this contract allows for termination for material breach?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "Undue Delay",
+          "benchmark_location": "Section 13.2, Page 6",
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9.2, Page 4",
+          "question_as_asked": "Does this contract allows for termination for cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract allows for termination without cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.2, Page 12",
+          "question_as_asked": "Does this contract allows for termination for convenience?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "Section 6.2, Page 12",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "Section 9.2, Page 4",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.1 (iv), Page 3",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "Without prejudice to any other rights We may have, if We have not received payment for any overdue invoices, We may\ncharge You interest at the rate of 1% per month or lesser if such amount is required by applicable law on any overdue\nsums from the due date until the date of receipt of payment by Us (inclusive).",
+          "benchmark_location": "Section 6.1 (iv), Page 3",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "Subject to Section 12.4, Our aggregate liability to You for or in respect of any loss or damage suffered by You under or in\nconnection with the Cloud Service provided under the Agreement (whether due to breach of contract, tort (including\nnegligence) or otherwise) shall be limited to the total amount of Subscription Fees payable in the twelve (12) months\npreceding the date of the event for which the liability arises.",
+          "benchmark_location": "Section 12.1, Page 5",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent Required",
+          "benchmark_location": "Section 16.2, Page 7",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 7.3, Page 3.\nClause 12, Page 25",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Subject to Sections 11.3 and 11.4, in the event of an Infringement Claim, We shall, at Our sole option and expense, (i) modify the\ninfringing Services so that they cease to be infringing without loss of substantial functionality; (ii) replace the infringing portion\nof the Services with non-infringing software or services; or (iii) procure a license to enable You to legally continue using the\nServices.\nIf We do not provide You with one of the options above, We may, at Our sole discretion, terminate Your Order for the affected\nServices with immediate effect and reimburse You any prepaid Fees covering the remainder of the Subscription Term and\nterminate Your access and use of the affected Services.\n\n11.4 We shall not be liable to You for Infringement Claims where the infringement is caused by:\ni. unauthorized changes You have made or that have been made on Your behalf to the Services or output thereof;\nii. Your use of the Services or output thereof outside the scope of the Agreement, Your Subscription, the applicable Order or\nthe materials accompanying the Cloud Service.",
+          "benchmark_location": "Section11.1,11.3, Page 5",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "Subject to Sections 11.3 and 11.4, We undertake at Our own expense to defend You or, at Our option, to settle any third-party\nclaim or action brought against You alleging that Your use of the Services (or any part thereof) in accordance with the terms\nof the Agreement infringes the Proprietary Rights of a third party (“Infringement Claim”) and shall be responsible for any\ndamages awarded against You or agreed upon in settlement by Us as a result of or in connection with any such Infringement\nClaim.\n\n11.3 We shall only be liable for any Infringement Claim provided You:\ni. provide Us with prompt written notice of the Infringement Claim;\nii. do not enter into any settlement of the Infringement Claim without Our prior written consent; and do not undertake any\nother action in response to any Infringement Claim that is prejudicial to Our rights;\niii. permit Us to exclusively control the defence, negotiations and any settlement of the Infringement Claim;\niv. provide Us with reasonable information and assistance for the Infringement Claim; and\nv. use all commercially reasonable efforts to mitigate against any of Your losses, damages or costs related to the\nInfringement Claim.",
+          "benchmark_location": "Section11.2, 11.4, Page 5",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section11.3 (i), Page 5",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "Laws of England and Wales",
+          "benchmark_location": "Section 16.4, Page 7",
+          "question_as_asked": "What is the gorverning law for this agreement?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 6.1 (v), Page 3",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 6.1 (v), Page 3",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "All Intellectual Property Rights in the Cloud Service, Celonis Materials, Services are owned by and shall remain the sole and\nexclusive property of Celonis or its licensors. We have, and may in the course of performing Professional Services hereunder,\ndevelop certain general ideas, concepts, know-how, methods, techniques, processes and skills pertaining to the Cloud\nService and Celonis Materials (\"Residual Knowledge\"). We shall not be prohibited or enjoined from using Residual Knowledge,\nother than Customer Materials and Customer Confidential Information, for any purpose, including providing services to other\ncustomers. For avoidance of doubt, all Customer Materials are owned by You and shall remain Your sole and exclusive\nproperty.",
+          "benchmark_location": "Section 4,Page 11",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "For avoidance of doubt, all Customer Materials are owned by You and shall remain Your sole and exclusive\nproperty.",
+          "benchmark_location": "Section 4,Page 11",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Salesforce MSA",
+      "tab": "Salesforce",
+      "pdf_source_url": "https://drive.google.com/file/d/1XiZdDDbJUfu_OKSVqlGUlmijQFuan9OQ/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "SFDC",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Service Provider Name"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Customer Name?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Contract start date?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 11.1 Page 8",
+          "question_as_asked": "what is the Contract end date / Expiration Date?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 11.1 Page 8",
+          "question_as_asked": "What is the total term period or duration of this contract? Provide answer in the form of number of months if possible"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 5.2, Page 15",
+          "question_as_asked": "What is the total amount to be paid by the customer?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "California and\ncontrolling United\nStates federal law",
+          "benchmark_location": "Section 12.9, Page 10",
+          "question_as_asked": "What is the Governing Law? Provide just the name of the governing law"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 11.2 Page 8",
+          "question_as_asked": "Will this agreement Automatically Renew? Answer Yes or No"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "Section 11.2 Page 8",
+          "question_as_asked": "What is the duration before which either party may terminate the Agreement? Provide answer in the form of number of days if possible"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of Data Breach Notice? Provide answer in the form of number of hours if possible"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Annually",
+          "benchmark_location": "Section 5.2, Page 5",
+          "question_as_asked": "What is the billing frequency of this agreement?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "12.0",
+          "benchmark_location": "Section 11.2 Page 8",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Section 11.2 Page 8",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renwal ?"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Net 30",
+          "benchmark_location": "Section 5.2, Page 5",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 11.3 Page 8",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 11.3 Page 8",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "Section 11.3 Page 8",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 11 Page 8",
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 5.3, Page 5",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "Late interest at the rate of 1.5% of the outstanding balance per month, or the maximum rate permitted by law, whichever is lower. SFDC may condition future subscription renewals and Order Forms on payment terms shorter than those specified in the “Invoicing and Payment” section above.\n\nIf any charge owing by Customer under this or any other agreement for services is 30 days or more overdue, (or 10 or more days overdue in the case of amounts Customer has authorized SFDC to charge to Customer’s credit card), SFDC may, without limiting its other rights and remedies, accelerate Customer’s unpaid fee\nobligations under such agreements so that all such obligations become immediately due and payable, and suspend Services until\nsuch amounts are paid in full, provided that, other than for customers paying by credit card or direct debit whose payment has\nbeen declined, SFDC will give Customer at least 10 days’ prior notice that its account is overdue, in accordance with the\n“Manner of Giving Notice” section below for billing notices, before suspending services to Customer.",
+          "benchmark_location": "Section 5.3, 5.4, Page 5",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "IN NO EVENT SHALL THE AGGREGATE LIABILITY OF EACH PARTY TOGETHER WITH ALL OF ITS AFFILIATES ARISING OUT OF OR RELATED TO THIS AGREEMENT EXCEED THE TOTAL AMOUNT PAID BY CUSTOMER AND ITS AFFILIATES HEREUNDER FOR THE SERVICES GIVING RISE TO THE LIABILITY IN THE TWELVE MONTHS PRECEDING THE FIRST INCIDENT OUT OF WHICH THE LIABILITY AROSE. THE\nFOREGOING LIMITATION WILL APPLY WHETHER AN ACTION IS IN CONTRACT OR TORT AND REGARDLESS\nOF THE THEORY OF LIABILITY, BUT WILL NOT LIMIT CUSTOMER'S AND ITS AFFILIATES’ PAYMENT\nOBLIGATIONS UNDER THE “FEES AND PAYMENT” SECTION ABOVE.",
+          "benchmark_location": "Section 10.1, Page 8",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 12.8, Page 9",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 6.2, Page 6",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 2.2, Page 4",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Customer will defend SFDC and its Affiliates against any claim, demand, suit or proceeding\nmade or brought against SFDC by a third party (a) alleging that the combination of a Non-SFDC Application or configuration\nprovided by Customer and used with the Services, infringes or misappropriates such third party’s intellectual property rights, or\n(b) arising from (i) Customer’s use of the Services or Content in an unlawful manner or in violation of the Agreement, the\nDocumentation, or Order Form, (ii) any Customer Data or Customer’s use of Customer Data with the Services, or (iii) a\nNon-SFDC Application provided by Customer(each a “Claim Against SFDC”), and will indemnify SFDC from any damages,\nattorney fees and costs finally awarded against SFDC as a result of, or for any amounts paid by SFDC under a settlement\napproved by Customer in writing of, a Claim Against SFDC, provided SFDC (A) promptly gives Customer written notice of the\nClaim Against SFDC, (B) gives Customer sole control of the defense and settlement of the Claim Against SFDC (except that\nCustomer may not settle any Claim Against SFDC unless it unconditionally releases SFDC of all liability), and (C) gives\nCustomer all reasonable assistance, at Customer’s expense. The above defense and indemnification obligations do not apply if a\nClaim Against SFDC arises from SFDC’s breach of this Agreement, the Documentation or applicable Order Forms.",
+          "benchmark_location": "Section 9.2 , Page 8",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "SFDC will defend Customer against any claim, demand, suit or proceeding made or brought\nagainst Customer by a third party alleging that any Purchased Service infringes or misappropriates such third party’s intellectual\nproperty rights (a “Claim Against Customer”), and will indemnify Customer from any damages, attorney fees and costs finally\nawarded against Customer as a result of, or for amounts paid by Customer under a settlement approved by SFDC in writing of,\na Claim Against Customer, provided Customer (a) promptly gives SFDC written notice of the Claim Against Customer, (b)\ngives SFDC sole control of the defense and settlement of the Claim Against Customer (except that SFDC may not settle any\nClaim Against Customer unless it unconditionally releases Customer of all liability), and (c) gives SFDC all reasonable\nassistance, at SFDC’s expense. If SFDC receives information about an infringement or misappropriation claim related to a\nService, SFDC may in its discretion and at no cost to Customer (i) modify the Services so that they are no longer claimed to\ninfringe or misappropriate, without breaching SFDC’s warranties under “SFDC Warranties” above, (ii) obtain a license for\nCustomer’s continued use of that Service in accordance with this Agreement, or (iii) terminate Customer’s subscriptions for that\nService upon 30 days’ written notice and refund Customer any prepaid fees covering the remainder of the term of the\nterminated subscriptions. The above defense and indemnification obligations do not apply if (I) the allegation does not state\nwith specificity that the Services are the basis of the Claim Against Customer; (II) a Claim Against Customer arises from the\nuse or combination of the Services or any part thereof with software, hardware, data, or processes not provided by SFDC, if the\nServices or use thereof would not infringe without such combination; (III) a Claim Against Customer arises from Services under an Order Form for which there is no charge; or (IV) a Claim against Customer arises from Content, a Non-SFDC\nApplication or Customer’s breach of this Agreement, the Documentation or applicable Order Forms.",
+          "benchmark_location": "Section 9.1 , Page 7",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9.2 , Page 8",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 9, Page 7,8",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 5, Page 5",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Section 5, Page 5",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "Reservation of Rights. Subject to the limited rights expressly granted hereunder, SFDC, its Affiliates, its licensors and Content\nProviders reserve all of their right, title and interest in and to the Services and Content, including all of their related intellectual\nproperty rights. No rights are granted to Customer hereunder other than as expressly set forth herein.\n\nLicense by Customer to SFDC. Customer grants SFDC, its Affiliates and applicable contractors a worldwide, limited-term\nlicense to host, copy, use, transmit, and display any Non-SFDC Applications and program code created by or for Customer\nusing a Service or for use by Customer with the Services, and Customer Data, each as appropriate for SFDC to provide and\nensure proper operation of the Services and associated systems in accordance with this Agreement. If Customer chooses to use\na Non-SFDC Application with a Service, Customer grants SFDC permission to allow the Non-SFDC Application and its\nprovider to access Customer Data and information about Customer’s usage of the Non-SFDC Application as appropriate for the\ninteroperation of that Non-SFDC Application with the Service. Subject to the limited licenses granted herein, SFDC acquires no\nright, title or interest from Customer or its licensors under this Agreement in or to any Customer Data, Non-SFDC Application\nor such program code.\n\nLicense by Customer to Use Feedback. Customer grants to SFDC and its Affiliates a worldwide, perpetual, irrevocable,\nroyalty-free license to use, distribute, disclose, and make and incorporate into its services any suggestion, enhancement request,\nrecommendation, correction or other feedback provided by Customer or Users relating to the operation of SFDC’s or its\nAffiliates’ services.",
+          "benchmark_location": "Section 6, Page 6",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "Access to and Use of Content. Customer has the right to access and use applicable Content subject to the terms of applicable\nOrder Forms, this Agreement and the Documentation",
+          "benchmark_location": "Section 6.2, Page 6",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Lumen MSA",
+      "tab": "Lumen",
+      "pdf_source_url": "https://drive.google.com/file/d/1Qbtw4JqF9AdDCAKIn3JkYcQWop9xiOZc/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "LUMEN TECHNOLOGIES EUROPE LIMITED",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Monthly",
+          "benchmark_location": "Page 2, Section 10.2",
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes, Service will continue month to month at the expiration of service terms at Lumin's rates",
+          "benchmark_location": "Page 1, Section 3",
+          "question_as_asked": "Does this contract renews automatically?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "No",
+          "benchmark_location": "Page 1, Section 3",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renewal ? If yes then how many days of notice period is needed to stop automatic renewal of contract."
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 2, Section 10.2",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 2, Section 9.1",
+          "question_as_asked": "Does this contract allows for termination for material breach?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "Undue Delay",
+          "benchmark_location": "Section 7, Page 6",
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Section 4, 8, Page 1, 2",
+          "question_as_asked": "Does this contract allows for termination for cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract allows for termination without cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Does this contract allows for termination for convenience?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 1, Section 4(a)",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 2, Section 10.2",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "1.5% per month or highest rate allowed by law, reasonable attorneys' fees, third-party collection costs",
+          "benchmark_location": "PAge 2, Section 10.2",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "breach of warranty or otherwise under or in connection with this Agreement will not exceed 100% of charges paid or payable by Customer pursuant to this Agreement during the 12 month period immediately prior to accrual of the first claim.",
+          "benchmark_location": "Page 2, Sectrion 9.1(c)",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent",
+          "benchmark_location": "Page 3, Section 15.2",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "No",
+          "benchmark_location": "Page 4 Section 15.6",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5, Section 1",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Customer indemnify Lumen from claims related to Customer Provided Services and liable for claims related to Service ordered by Customer affiliates",
+          "benchmark_location": "Page 3, section 15.2",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "N/A",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "England",
+          "benchmark_location": "Page 4, Section 15.7",
+          "question_as_asked": "What is the gorverning law for this agreement?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 2, Section 10.2",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 2, Section 10.2",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 3, Section 10.5",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the provision for maintenance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "N/A",
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "Intellectual Property Ownership; Use of Name and Marks. Nothing in the Agreement or the performance of it will convey, license, or otherwise transfer any right, title, or interest in any intellectual property or other proprietary rights held by either party or its licensors. Neither party will use the name or marks of the other party or any of its affiliates for any purpose or issue any press release or public statement relating to this Agreement without the other party's prior written consent.",
+          "benchmark_location": "Page 4, Section 15.6",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "Intellectual Property Ownership; Use of Name and Marks. Nothing in the Agreement or the performance of it will convey, license, or otherwise transfer any right, title, or interest in any intellectual property or other proprietary rights held by either party or its licensors. Neither party will use the name or marks of the other party or any of its affiliates for any purpose or issue any press release or public statement relating to this Agreement without the other party's prior written consent.",
+          "benchmark_location": "Page 4, Section 15.6",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Armorblox MSA",
+      "tab": "Armorblox",
+      "pdf_source_url": "https://drive.google.com/file/d/13Oyv0pnqwfBtHBGWTRVjp6rgxIbVMedf/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Armorblox, Inc.",
+          "benchmark_location": "Page 3",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 7 , Section 9.1",
+          "question_as_asked": "Does this contract renews automatically?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "1 year",
+          "benchmark_location": "Page 7 , Section 9.1",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 7 , Section 9.1",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renewal ? If yes then how many days of notice period is needed to stop automatic renewal of contract."
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "30.0",
+          "benchmark_location": "Page 5, Section 4",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 8 , Section 9.2",
+          "question_as_asked": "Does this contract allows for termination for material breach?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 8",
+          "question_as_asked": "Does this contract allows for termination for cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "Does this contract allows for termination without cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "Does this contract allows for termination for convenience?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30 days",
+          "benchmark_location": "Page 8 , Section 9.2",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "THE GREATER OF (A) $500,000 OR (B) TWO TIMES THE FEES PAID AND\nPAYABLE TO ARMORBLOX UNDER THE ORDER FORM UNDER WHICH LIABILITY ARISES IN THE TWELVE\n(12) MONTHS PRIOR TO THE EVENT GIVING RISE TO THE LIABILITY.",
+          "benchmark_location": "Page 7, Section 8.3",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent",
+          "benchmark_location": "Page 9, Section 10.3",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": null,
+          "benchmark_location": null,
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": ". Armorblox will defend Customer from any unaffiliated third party claim to the extent the claim alleges that Customer's use of the Armorblox Platform as provided by Armorblox to Customer under this Agreement, when used as permitted by this Agreement, infringes or misappropriates such third party's U.S. patent or copyright. Armorblox shall have no obligation or liability for any claim of infringement or misappropriation that arises out of or relates to: (i) a combination of the Armorblox Platform with a nonArmorblox application, product, data or business process; (ii) damages attributable to a non-Armorblox application, product, data or business process; (iii) modifications made other than expressly permitted by Armorblox; or (iv) continued use of any product or service for which Armorblox has provided Customer notice to discontinue use due to such a claim and / or modifications or substitutes if use of such modifications or substitutes would have prevented the claim. This Section states Customer's sole and exclusive remedy and the entire liability of Armorblox for infringement claims and actions. Customer will defend Armorblox from any unaffiliated third party claim to the extent such claim alleges a violation by Customer of the third party's rights.",
+          "benchmark_location": "PAge 6, Section 7.1",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": ". Armorblox will defend Customer from any unaffiliated third party claim to the extent the claim alleges that Customer's use of the Armorblox Platform as provided by Armorblox to Customer under this Agreement, when used as permitted by this Agreement, infringes or misappropriates such third party's U.S. patent or copyright. Armorblox shall have no obligation or liability for any claim of infringement or misappropriation that arises out of or relates to: (i) a combination of the Armorblox Platform with a nonArmorblox application, product, data or business process; (ii) damages attributable to a non-Armorblox application, product, data or business process; (iii) modifications made other than expressly permitted by Armorblox; or (iv) continued use of any product or service for which Armorblox has provided Customer notice to discontinue use due to such a claim and / or modifications or substitutes if use of such modifications or substitutes would have prevented the claim. This Section states Customer's sole and exclusive remedy and the entire liability of Armorblox for infringement claims and actions. Customer will defend Armorblox from any unaffiliated third party claim to the extent such claim alleges a violation by Customer of the third party's rights.",
+          "benchmark_location": "PAge 6, Section 7.2",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "6.0",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of California",
+          "benchmark_location": "Page 9, Section 10.6",
+          "question_as_asked": "What is the gorverning law for this agreement?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 9, Section 10.6",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5, Section 4",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "30days",
+          "benchmark_location": "Page 5, Section 4",
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the provision for maintenance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "As between the parties, Customer owns\nall right, title and interest (including all intellectual property rights) in and to Customer Data. As between the\nparties, Armorblox owns all right, title and interest (including all intellectual property rights) in and to the\nServices, including the Armorblox Platform, the Analytics, and improvements, modifications, enhancements\nand all derivative works of or included with the Services, including the general know-how and machine\nlearning developed over time.",
+          "benchmark_location": "Page 4, Section 2.4",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "As between the parties, Customer owns\nall right, title and interest (including all intellectual property rights) in and to Customer Data. As between the\nparties, Armorblox owns all right, title and interest (including all intellectual property rights) in and to the\nServices, including the Armorblox Platform, the Analytics, and improvements, modifications, enhancements\nand all derivative works of or included with the Services, including the general know-how and machine\nlearning developed over time.",
+          "benchmark_location": "Page 4, Section 2.4",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Square MSA",
+      "tab": "Square",
+      "pdf_source_url": "https://drive.google.com/file/d/1rPByQa72lpL_AYkSqD8Hlfm3EyIXkUUB/view?usp=drive_link",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Marqeta, Inc.",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the service provider?"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "Square Inc.",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the name of the customer or client?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "Mentioned Signed Date 4/19/2016",
+          "benchmark_location": "Page 1",
+          "question_as_asked": "What is the start date or commencement date of this agreement?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "4/19/2018",
+          "benchmark_location": "Page 3, section 3(a)",
+          "question_as_asked": "What is the end date of this agreement?"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "Page 17",
+          "question_as_asked": "What is the total amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Not Mentioned",
+          "benchmark_location": "Page 17",
+          "question_as_asked": "What is the billing frequency for the amount or fees or payment to be paid by the customer to service provider according to this agreement?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "2 years for services\n3years for CashAPP Program",
+          "benchmark_location": "Page 3 & 4, Section 3(a)",
+          "question_as_asked": "What is the intial term period for this agreement?"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 4",
+          "question_as_asked": "Does this contract renews automatically?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "1 year",
+          "benchmark_location": "Page 88 Section 2",
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "180 days",
+          "benchmark_location": "Page 88 Section 2",
+          "question_as_asked": "Do customer has to send a notice to stop the auto renewal ? If yes then how many days of notice period is needed to stop automatic renewal of contract."
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Not mentioned",
+          "benchmark_location": "Page 17",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5",
+          "question_as_asked": "Does this contract allows for termination for material breach?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "5 days",
+          "benchmark_location": "Page 5 , Section b(iv)",
+          "question_as_asked": "During a data breach incident what is the duration of notice period for a party to inform the other party about the breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5, Section b",
+          "question_as_asked": "Does this contract allows for termination for cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 127 , Section c",
+          "question_as_asked": "Does this contract allows for termination without cause?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5, Section b (F)",
+          "question_as_asked": "Does this contract allows for termination for convenience?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "90 days",
+          "benchmark_location": "Page 5",
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "30 to 90 days",
+          "benchmark_location": "Page 5, Section b",
+          "question_as_asked": "What is the duration of notice period to be provided by each party before termination of contract?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 19, Section v",
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "Any undisputed amounts not paid on or before\ntheir due date shall incur interest until paid at the [***] rate of one and [***], prorated for any partial [***]. Payment for\nstatements and invoices shall be due and payable by electronic funds transfer in U.S. dollars by Client.",
+          "benchmark_location": "Page 17 , Section (iii)",
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "General Terms and Conditions, shall not exceed the aggregate Fees earned by Marqeta hereunder during\nthe twelve (12) months immediately preceding the date such claim arose (“Liability Cap”).",
+          "benchmark_location": "Page 31",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent",
+          "benchmark_location": "Page 129, Section 12(c)",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "(a) General. Each Party may receive (“Receiving Party”) or otherwise become familiar with Confidential Information about the other\nParty (“Disclosing Party”). “Confidential Information” means the terms of this Addendum and information about the Disclosing Party’s\ntechnology, customer information, business activities, operations, and its trade secrets (as defined under Applicable Law), which are\nproprietary or confidential. Confidential Information also includes (without limitation) (i) existing or contemplated products, services, designs,\ntechnology, processes, technical data, engineering, techniques, methodologies and concepts and any related information, (ii) information\nrelating to business plans, sales or marketing methods and customer lists or requirements of a Party, (iii) all information about current and\npotential future customers of a Party",
+          "benchmark_location": "Page 125, Section 6(a)",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "YES<Deleting any Personal Data in its possession or control at the expiration or termination of this Agreement unless the other\nParty has received the same information independent of this Agreement or otherwise agreed between the Parties, and subject to the\nParties’ data retention policies and Issuing Bank requirements. In the event of any unauthorized, unlawful, and/or unintended\nprocessing, access, disclosure, exposure, alteration, loss, or destruction of Personal Data by a Party, such Party will immediately\nnotify the other Party and will investigate and remediate such incident and provide appropriate response and redress to the Persons\neffected and will inform the other Party of such actions.",
+          "benchmark_location": "Page 50 , Section (C)",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "a. Marqeta Indemnification. Subject to Client’s compliance with Section 14(c) of these General Terms and Conditions, Marqeta agrees\nto defend, indemnify and hold harmless Client and its Affiliates, and their respective officers, directors, agents, and employees from and\nagainst any and all Damages as a result of a third party Claim arising out of or related to (i) Marqeta’s breach (or, as to defense\nobligations only, alleged breach) of this Agreement; (ii) Marqeta’s gross negligence, willful misconduct or fraudulent acts or omissions;\n(iii) Marqeta’s violation of any Applicable Law; or (iv) the infringement of the U.S. Intellectual Property Rights of any third party\narising from the permitted use of the Marqeta System under this Agreement. Notwithstanding the foregoing, the indemnification\nobligations set forth in subsection (iii) of the previous sentence shall not apply to any Damages to the extent they arise from or relate to\n(1) the combination of the Marqeta System or the Marqeta Card with information, services, materials or products not supplied by\nMarqeta, (2) any modification of the Marqeta System or Marqeta Card which is not made by or on behalf of Marqeta, (3) any failure by\nClient to use any modified version of the Marqeta System or Marqeta Card which is provided by Marqeta in order to avoid a claim of\ninfringement, or (4) any use of the Marqeta System or Cards other than as permitted hereunder.\nb. Client Indemnification. Subject to Marqeta’s compliance with Section 13(c) of these General Terms and Conditions, Client agrees to\ndefend, indemnify and hold harmless Marqeta, Issuing Bank and each of their respective officers, directors, agents and employees from\nand against any and all Damages as a result of a third party Claim arising out of or related to (i) Client’s breach (or, as to defense\nobligations only, alleged breach) of this Agreement; (ii) the gross negligence, willful misconduct or fraudulent acts or omissions of\nClient or any Client Personnel or Retail Partner; (iii) the violation of any Applicable Law by Client or any Client Personnel or Retail\nPartner; (iv) a claim that the Client Materials infringe the Intellectual Property Rights of any third party; or (v) the business and services\nof Client or any Retail Partner to the extent such Claims and Damages are not otherwise indemnifiable by Marqeta pursuant to Section\n13(a) of these General Terms and Conditions.",
+          "benchmark_location": "Page 27 , Section 13 (a) , (b)",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "Client Indemnification. Subject to Marqeta’s compliance with Section 13(c) of these General Terms and Conditions, Client agrees to\ndefend, indemnify and hold harmless Marqeta, Issuing Bank and each of their respective officers, directors, agents and employees from\nand against any and all Damages as a result of a third party Claim arising out of or related to (i) Client’s breach (or, as to defense\nobligations only, alleged breach) of this Agreement; (ii) the gross negligence, willful misconduct or fraudulent acts or omissions of\nClient or any Client Personnel or Retail Partner; (iii) the violation of any Applicable Law by Client or any Client Personnel or Retail\nPartner; (iv) a claim that the Client Materials infringe the Intellectual Property Rights of any third party; or (v) the business and services\nof Client or any Retail Partner to the extent such Claims and Damages are not otherwise indemnifiable by Marqeta pursuant to Section\n13(a) of these General Terms and Conditions.",
+          "benchmark_location": "Page 27 , Section 13 b",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "Indemnification Procedure. The Party seeking indemnification, as the indemnitee, will provide the other Party, as the indemnitor,\nprompt written notice of any third party Claim for which indemnity is sought, although failure to provide prompt notice shall not relieve\nthe indemnitor of its indemnification obligations unless such failure materially prejudices indemnitor in defending such Claim. If the\nindemnitor is so notified, the indemnitor will promptly engage experienced and competent counsel, and will have sole control of the\ndefense and all negotiations for the compromise or settlement of such Claim, and will pay any Damages in respect of such Claim and\nreimburse the indemnitee for its reasonable expenses incurred in cooperation with and providing assistance to the indemnitor; provided,\nhowever, that the indemnitor may not settle any such Claim without the indemnitee’s consent if the proposed settlement would be in the\nindemnitee’s name or impose pecuniary or other liability or an admission of fault or guilt on the indemnitee or would require the\nindemnitee to be bound by an injunction of any kind. The indemnitee shall provide reasonable information and assistance in connection\nwith such defense and settlement (at the indemnitor’s expense)",
+          "benchmark_location": "Page 27 , Section 13 c\nPage 128 , Section c",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of California",
+          "benchmark_location": "Page 33",
+          "question_as_asked": "What is the gorverning law for this agreement?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "PAge 127 ,33",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 126 , Section 8(a)\nPage 140",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?  please provide answer in yes or no if possible."
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "Not mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "INSURANCE.\ni. General. Each Party Servicer shall maintain, throughout the Term, an appropriate insurance policy, the limit of which shall be no\nless than [***] per occurrence or [***] aggregate, for each of the following categories:\n1. a comprehensive general liability policy, including, but not limited to, contractual liability, bodily injury, death and/or property\ndamage;\n2. a comprehensive crime policy, including employee dishonesty/fidelity coverage, with respect to the work or operations done in\nconnection with this Agreement;\n3. a comprehensive errors and omissions policy; and\n4. a workers’ compensation policy in at least the minimum amounts required by any applicable statute or regulation",
+          "benchmark_location": "Page 29, Section d(ii)\nPage 128 ,Section 10",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "Insurance Requirements. Each policy required by this Section 13 shall be carried in the name of the Party. A copy of each policy\nand any certificates of insurance evidencing the existence of such policy shall be provided to the other Party promptly following\nsuch Party’s written or e-mail request. Each insurance policy must be written by insurance carriers that have an A.M. Best rating\nof “A” or better or are otherwise acceptable to the other Party and shall name the other Party and Issuing Bank as an additional\ninsured. Each party shall promptly provide notice to the other Party in the event of any notice of nonrenewal or cancellation,\nlapse, termination or reduction in any insurance coverage required to be maintained pursuant to this Section 13(d)(ii).",
+          "benchmark_location": "Page 29",
+          "question_as_asked": "What is the provision for maintenance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "Not mentioned",
+          "benchmark_location": null,
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "Marqeta may provide Client Affiliate with project deliverables, plans, Documentation, reports, analyses,\nand other tangible materials in connection with this Addendum (collectively, the “Deliverables”). Marqeta owns all right, title, and interest,\nincluding all intellectual property rights, in and to the Deliverables, the Services, and the System and all derivatives thereof. Marqeta grants to\nClient Affiliate a [***] exclusively in connection with Client Affiliate’s receipt of the Services",
+          "benchmark_location": "Page 125, Section 5(c)",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "arqeta grants to the Client Affiliate a [***] exclusively in connection with the Client Affiliate’s receipt of the Services. The redacted portion [***] likely contains specific terms of the license or rights granted to the Client Affiliate. This suggests that there is a specific grant of rights to the customer, but the exact nature of these rights is not disclosed in the provided content.",
+          "benchmark_location": "Page 15",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    },
+    {
+      "contract_name": "Intuit MSA",
+      "tab": "Intuit",
+      "pdf_source_url": "https://drive.google.com/file/d/1kJpujNVGU7Bk8nu35s3BZCtAWo-gHiqb/view?usp=sharing",
+      "contract_type": "MSA",
+      "terms": [
+        {
+          "term_name": "Service Provider Name",
+          "benchmark_answer": "Arvato Services Inc.",
+          "benchmark_location": "1.0",
+          "question_as_asked": "What is the Service Provider Name"
+        },
+        {
+          "term_name": "Customer Name",
+          "benchmark_answer": "Intuit Inc.",
+          "benchmark_location": "6,10",
+          "question_as_asked": "What is the Customer Name?"
+        },
+        {
+          "term_name": "Contract start date",
+          "benchmark_answer": "2003-05-28",
+          "benchmark_location": "1,8,10",
+          "question_as_asked": "What is the Contract start date?"
+        },
+        {
+          "term_name": "Contract end date",
+          "benchmark_answer": "2006-05-28",
+          "benchmark_location": "Page 3 , Section 6(a)",
+          "question_as_asked": "what is the Contract end date / Expiration Date?"
+        },
+        {
+          "term_name": "Term Period In Months",
+          "benchmark_answer": "Mentioned 3years means (3*12)=36 Months",
+          "benchmark_location": "Page 3 , Section 6(a)",
+          "question_as_asked": "What is the total term period or duration of this contract? Provide answer in the form of number of months if possible"
+        },
+        {
+          "term_name": "Deal Value",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the total amount to be paid by the customer?"
+        },
+        {
+          "term_name": "Governing Law",
+          "benchmark_answer": "State of California",
+          "benchmark_location": "Page 6 , Section 14(d)",
+          "question_as_asked": "What is the Governing Law? Provide just the name of the governing law"
+        },
+        {
+          "term_name": "Auto Renewal",
+          "benchmark_answer": "No",
+          "benchmark_location": "Page 3 , Section 6(a)",
+          "question_as_asked": "Will this agreement Automatically Renew? Answer Yes or No"
+        },
+        {
+          "term_name": "Termination Notice In Days",
+          "benchmark_answer": "20 days",
+          "benchmark_location": "Page 3, Section 6(b)",
+          "question_as_asked": "What is the duration before which either party may terminate the Agreement? Provide answer in the form of number of days if possible"
+        },
+        {
+          "term_name": "Data Breach Notice In Hours",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the duration of Data Breach Notice? Provide answer in the form of number of hours if possible"
+        },
+        {
+          "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+          "benchmark_answer": "Monthly",
+          "benchmark_location": "Page 2, Section4(a)",
+          "question_as_asked": "What is the billing frequency of this agreement?"
+        },
+        {
+          "term_name": "Renewal Period (Months)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the renewal period for this contract?"
+        },
+        {
+          "term_name": "Notice to not auto renew (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "Do customer has to send a notice to stop the auto renwal ?"
+        },
+        {
+          "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "benchmark_answer": "Net 20",
+          "benchmark_location": "Page 2, Section4(c)",
+          "question_as_asked": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?"
+        },
+        {
+          "term_name": "Termination for Breach (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 3 , Section 6(b)",
+          "question_as_asked": "Does this contract allows for termination for material breach?"
+        },
+        {
+          "term_name": "Termination for cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 3 , Section 6(b)",
+          "question_as_asked": "Does this contract allows for termination for cause?"
+        },
+        {
+          "term_name": "Termination without cause (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 3 , Section 6(c)",
+          "question_as_asked": "Does this contract allows for termination without cause?"
+        },
+        {
+          "term_name": "Termination for convenience (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "Does this contract allows for termination for convenience?"
+        },
+        {
+          "term_name": "Notice of termination for convenience (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?"
+        },
+        {
+          "term_name": "Late Payment Charges (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "Do customer need to pay charges or pentalties for the late payment of invoice?"
+        },
+        {
+          "term_name": "Late Payment Penalty",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "How are the late payment pentalties or fees charged to customers ?"
+        },
+        {
+          "term_name": "Limitations of liability (Amount)",
+          "benchmark_answer": "$5,000,000 or amounts paid by Intuit to Contractor in the past 12 months",
+          "benchmark_location": "Page 6",
+          "question_as_asked": "What is the amount covered in the clause for limitations of liability ?"
+        },
+        {
+          "term_name": "Assignment (consent, No consent, N/A)",
+          "benchmark_answer": "Consent",
+          "benchmark_location": "Page 6, Section 14(b)",
+          "question_as_asked": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?"
+        },
+        {
+          "term_name": "Name and logo use (Yes, No, N/A)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": "Page 4, Section 7",
+          "question_as_asked": "Does this contract allows the service provider to use the name and logo of customer?"
+        },
+        {
+          "term_name": "Deletion of Data (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 4, Section 9(a)",
+          "question_as_asked": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?"
+        },
+        {
+          "term_name": "Customer Indemnity",
+          "benchmark_answer": "Intuit agrees to defend, indemnify and hold Contractor and its affiliates, and all of their respective officers, directors, agents and employees, harmless from and against any and all Claims\nasserted by a third party arising out of or related to, and incurred by such indemnitee in connection with: (i) any infringement or misappropriation of any patent, invention, trade secret, copyright,\ntrademark, proprietary information nondisclosure or other proprietary rights resulting from the use of any Intuit Materials or Intuit resources by Contractor in the performance of the Services or\nprovision of any deliverables, other than claims based upon or arising out of any combination, operation or use of any Intuit Materials or Intuit resources with systems, software or other resources\nnot provided by Intuit if combined, operated or used in a manner other than that to which the parties have agreed; (ii) the damage to or loss or destruction of any real or tangible personal property in\nthe possession or under the control of Intuit, except to the extent proximately caused by Contractor or its agents or employees; (iii) the death or bodily injury of any agent, employee, subcontractor,\ncustomer, business invitee or business visitor of Intuit, except to the extent proximately caused by Contractor or its agents or employees; or (iv) the negligent acts, omissions and/or willful\nmisconduct of Intuit in using the Services provided by Contractor, or in supplying the Intuit Materials or any Intuit resources, under this Agreement. Notwithstanding the foregoing, Intuit shall have\nno duty to indemnify Contractor for Claims to the extent arising from the Contractor Materials or Contractor Provided Systems, whether provided, distributed or otherwise used or handled by Intuit\nor by Contractor on behalf of Intuit.",
+          "benchmark_location": "Page 5, Section 11(b)",
+          "question_as_asked": "What are the terms for customer indemnification?"
+        },
+        {
+          "term_name": "Service Provider indemnity",
+          "benchmark_answer": "Contractor defends, indemnifies Intuit from claims, liabilities, losses, damages, actions, judgments, costs, expenses including attorneys' fees arising from IP infringement, misconduct, death/bodily injury except caused by Intuit; Intuit indemnifies Contractor from claims arising from Intuit's misconduct using services or materials; Notice of claims must be given promptly; Indemnifying Party directs defense, settlement; Indemnified may employ separate counsel if conflict of interest or defense not assumed; No liability for settlements without written consent; Indemnifying Party obligations not relieved by lack of notice except if damage from lack of actual notice.",
+          "benchmark_location": "Page 5, Section 11(b)",
+          "question_as_asked": "What are the terms for service provider indemnification?"
+        },
+        {
+          "term_name": "Customer notice for indemnitiy claim",
+          "benchmark_answer": "The party seeking indemnification under Section 11(a) or 11(b), as the case may be (the “Indemnified Party”), will give prompt written notice to the other party (the “Indemnifying Party”).\n(The failure by an Indemnified Party to give notice as provided, above, shall not relieve the Indemnifying Party of its obligations under this Section 11(c), except to the extent that the failure results\nin the failure of actual notice and the Indemnifying Party is damaged as a result of the failure to give notice.)",
+          "benchmark_location": "Page 5, Section 11(c)",
+          "question_as_asked": "Do customer or client needs to send a notice for claiming the indemnification?"
+        },
+        {
+          "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 5, Section 11(c)",
+          "question_as_asked": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?"
+        },
+        {
+          "term_name": "Price increase (Yes, No, N/A)",
+          "benchmark_answer": "Yes",
+          "benchmark_location": "Page 3, Section (d)",
+          "question_as_asked": "Does this contract has provision for increase the fees or payment or price ?"
+        },
+        {
+          "term_name": "Notice for price increase (days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the duration of notice for notifying customer about the increase in price or fees?"
+        },
+        {
+          "term_name": "Insurance Clause",
+          "benchmark_answer": "Insurance. Contractor will, at Contractor’s expense, maintain its current insurance policies that cover Contractor’s activities under this Agreement and the activities of Contractor’s\nemployees, agents and representatives. Contractor will name Intuit as an additional insured on such policy. Contractor shall provide Intuit with a certificate of insurance evidencing such coverage.\nIn addition, Contractor will provide Intuit with written notice of any cancellation or reduction in coverage or limits",
+          "benchmark_location": "Page 5 . Section 12",
+          "question_as_asked": "What is the insurance clause according to this agreement?"
+        },
+        {
+          "term_name": "Maintenance of Insurance",
+          "benchmark_answer": "Contractor will, at Contractor’s expense, maintain its current insurance policies that cover Contractor’s activities under this Agreement and the activities of Contractor’s employees, agents and representatives.",
+          "benchmark_location": "Page 5 . Section 12",
+          "question_as_asked": "What is the provision for maintainance of insurance in this agreement?"
+        },
+        {
+          "term_name": "Provide notice for insurance (Days)",
+          "benchmark_answer": "N/A",
+          "benchmark_location": null,
+          "question_as_asked": "What is the notice period for providing the insurance?"
+        },
+        {
+          "term_name": "Service Provider Intellectual Property Rights",
+          "benchmark_answer": "Contractor shall own all intellectual property rights in and to the Contractor Materials and Intuit shall own all intellectual property rights in and to the Intuit Materials.",
+          "benchmark_location": "Page 4, Section 8(a)",
+          "question_as_asked": "What are the intellectual property rights for the service provider in this agreement?"
+        },
+        {
+          "term_name": "Customer Intellectual property rights",
+          "benchmark_answer": "Contractor shall own all intellectual property rights in and to the Contractor Materials and Intuit shall own all intellectual property rights in and to the Intuit Materials.",
+          "benchmark_location": "Page 4, Section 8(a)",
+          "question_as_asked": "What are the intellectual property rights for customer in this agreement?"
+        }
+      ],
+      "term_count": 36
+    }
+  ]
+}
