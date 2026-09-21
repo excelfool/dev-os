@@ -31,3 +31,6 @@ nextjs-app/eval/reports/.cache/
 
 # Netlify CLI link/build state — local only.
 nextjs-app/.netlify/
+
+# Emitted by Netlify's edge-function bundler during `netlify build` — local only.
+nextjs-app/deno.lock
