@@ -8,14 +8,31 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# @netlify/plugin-nextjs packages EVERY route into one function,
+# ___netlify-server-handler (confirmed with `netlify build`), so this block is
+# the only one that reaches the deployed bundle. A per-route key such as
+# [functions."api/contracts/[id]/process"] matches no function and is inert.
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["pdf-parse"]
+  # pdf-parse is copied as an external, and its CJS entry loads the pdfjs
+  # worker with `workerSrc ||= "./pdf.worker.mjs"` — a dynamic import relative
+  # to dist/pdf-parse/cjs/index.cjs that the file trace cannot follow. The
+  # packaged handler therefore shipped index.cjs without the worker, and every
+  # upload failed at parse time with "Setting up fake worker failed: Cannot
+  # find module '/var/task/node_modules/pdf-parse/dist/pdf-parse/cjs/
+  # pdf.worker.mjs'" (live, 2026-09-20). Pinned here.
+  #
+  # standard_fonts/ and cmaps/ are deliberately NOT included. With both hidden,
+  # the real upload route extracts byte-identical text from a non-embedded
+  # Helvetica PDF (the common contract case): they are rendering assets. The
+  # one extraction case that would need cmaps/ is a predefined non-Identity
+  # CMap (CJK encodings), outside the product's English US/UK scope; it would
+  # surface as 500 INTERNAL naming the CMap, never as CORRUPT_PDF.
+  included_files = ["node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs"]
 
 # Upload and process are the two long-running routes. Netlify's function
 # timeout is 10s on the free tier and 26s on Pro; ContractIQ requires Pro.
 # /api/contracts/[id]/process enforces its own 24s deadline in code so it can
 # never be killed mid-run — see spec 06 §3a. Retries are skipped rather than
 # allowed to exceed the ceiling.
-[functions."api/contracts/[id]/process"]
-  included_files = []
