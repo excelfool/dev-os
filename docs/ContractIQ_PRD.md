@@ -158,7 +158,7 @@ Replaced with the nine components from the instructor's Product Roadmap Workshop
 | 5 | Check terms vs playbook | — | stub | US-014 Playbook management (R-8); `playbook.manage` |
 | 6 | Rank risks | — | stub | US-013 Risk & compliance flags (R-8); `risk.flag` |
 | 7 | Decide / escalate | — | stub | Human decides on every High-severity flag; `risk.escalate` (R-8, R-28) |
-| 8 | Summary and Q&A | F — contract chat; E — results display | built (chat); build now (summary, US-015, R-9) | `qa.single_contract` built; `extract.summary` build now; `qa.cross_contract` planned |
+| 8 | Summary and Q&A | F — contract chat; E — results display | built (chat); planned (summary, US-015 — phase v0.3; first build item) | `qa.single_contract` built; `extract.summary` planned (first build item); `qa.cross_contract` planned |
 | 9 | Push to CRM | — | stub | US-016 CRM push (R-12b); `crm.hubspot`, `crm.salesforce` |
 
 Cross-cutting: **Auth & session management** (our A — Supabase Auth, infrastructure) and **Feedback collection** (our H — `user_feedback`, corrections, `hhh_scores`).
@@ -234,8 +234,8 @@ Status mirrors the capability registry (Appendix B): `built` exists today, `stub
 | US-007 | Chat with contract | P1 | 8 | built |
 | US-012 | Persistent chat history per contract | P1 | 3 | built |
 | US-008 | Dashboard with contract history | P1 | 5 | built |
-| US-009 | Inline key term editing (value, page citation, reasoning) | P1 | 3 | built (value); build now (page, reasoning — R-12a) |
-| US-015 | Contract summary | P1 | 3 | planned — build now (R-9) |
+| US-009 | Inline key term editing (value, page citation, reasoning) | P1 | 3 | built (value); planned (page, reasoning — R-12a; first build item) |
+| US-015 | Contract summary | P1 | 3 | planned (phase v0.3; first build item) |
 | US-014 | Playbook management | P1 | 5 | stub |
 | US-016 | CRM push of key terms | P1 | 3 | stub |
 | US-017 | Key-date reminders | P1 | 3 | stub |
@@ -375,13 +375,13 @@ Results Page → Click "Chat" Tab → Type Question → Classify → Enhance que
 | US-006 | As a user, I want to see a preview of the PDF within the app so that I don't have to switch between windows while reviewing | PDF viewer renders all pages; user can scroll, zoom in/out; highlighted term references are clickable | P1 | built |
 | US-007 | As a user, I want to chat with my contract in plain English so that I can ask specific questions without searching manually | Chat responds within 15 seconds; responses are grounded in the uploaded document text; each response cites a page number | P1 | built |
 | US-008 | As a user, I want my dashboard to show all the contracts I've reviewed so that I have a record of my review history | Dashboard displays contract name, type, date uploaded, and review status; clicking any row opens the results page for that contract | P1 | built |
-| US-009 | As a user, I want to edit an incorrectly extracted term — its value, its page citation, or its reasoning — so that the record is accurate (extended per R-12a) | Inline edit of value, page number and reasoning each saves to Supabase within 2 seconds; edited fields display an "Edited" badge; the original AI value, page and reasoning are preserved separately (`original_ai_value`, `original_ai_page`, `original_ai_reasoning`) for the feedback loop | P1 | built (value); build now (page, reasoning) |
+| US-009 | As a user, I want to edit an incorrectly extracted term — its value, its page citation, or its reasoning — so that the record is accurate (extended per R-12a) | Inline edit of value, page number and reasoning each saves to Supabase within 2 seconds; edited fields display an "Edited" badge; the original AI value, page and reasoning are preserved separately (`original_ai_value`, `original_ai_page`, `original_ai_reasoning`) for the feedback loop | P1 | built (value); planned (page, reasoning; first build item) |
 | US-010 | As a user, I want to submit feedback on the AI's accuracy so that the product improves over time | A thumbs up / thumbs down rating and optional text comment is available on the results page; feedback is saved to `user_feedback` table | P2 | built |
 | US-011 | As a user, I want to export the key terms as a CSV or PDF report so that I can share the review summary with my team | Export button generates a formatted file within 5 seconds and downloads to the browser | P2 | built (v1.1 spec) |
 | US-012 | As a user, I want the chat history for each contract to persist so that I can revisit my questions later | Chat messages are stored in Supabase; reopening a contract's results page loads the previous chat session | P1 | built |
 | US-013 | As an operations manager or paralegal, I want the system to flag risky or non-compliant clauses with a plain-language explanation so that I know what to negotiate before signing (R-8) | Each flag cites the source clause (page + verbatim span); each flag carries a severity (High / Medium / Low), a one-sentence "why this matters", and a confidence; flags derive from the active playbook rules including absence rules (e.g. personal data without a DPA; PHI language without a BAA — R-15); every High flag is labelled "High risk — recommend human/legal review" and requires a human decision (accept / dismiss) before the review is marked complete; "this flag was wrong" writes to the correction queue; risk F1 ≥ 90% on majority-agreement labels before launch. **Until built:** `POST /api/contracts/{id}/risks` returns 501 with capability key `risk.flag`; `RiskPanel` renders an empty state naming the phase; eval row `risk_f1` reports SKIPPED | P0 | stub |
 | US-014 | As a paralegal, I want to upload and manage my company's playbook (one template per contract type) so that flags reflect our rules, not generic ones (R-8) | User uploads a playbook or edits rules in-app; one active playbook per contract type per workspace; each rule has `rule_type` (`presence`, `absence`, `threshold`, `pattern`), a severity and a plain-language rationale; a default MSA playbook is seeded from the instructor's examples (one-sided indemnity; no termination-for-convenience; missing DPA where personal data is present; payment terms > 60 days; PHI language without a BAA); rules are versioned and the version is recorded on every flag. **Until built:** `playbooks` and `playbook_rules` tables exist with RLS; `PlaybookAdmin` hidden; routes return 501 with key `playbook.manage` | P1 | stub |
-| US-015 | As a business owner, I want a plain-language summary of the contract so that I understand what I am signing before reading the terms (R-9) | One additional GPT-4o call at process time produces a ≤ 200-word summary with obligations per party where identifiable; cached in `contracts.summary_md`; rendered above the key terms panel; every sentence that states a fact carries a `[Page X]` citation; summary generation adds ≤ 10 s P95 and ≤ $0.03 to cost per contract; summary is scored in `hhh_scores` like any response | P1 | planned — build now (R-9) |
+| US-015 | As a business owner, I want a plain-language summary of the contract so that I understand what I am signing before reading the terms (R-9) | One additional GPT-4o call at process time produces a ≤ 200-word summary with obligations per party where identifiable; cached in `contracts.summary_md`; rendered above the key terms panel; every sentence that states a fact carries a `[Page X]` citation; summary generation adds ≤ 10 s P95 and ≤ $0.03 to cost per contract; summary is scored in `hhh_scores` like any response | P1 | planned (phase v0.3; first build item) |
 | US-016 | As an ops manager, I want the extracted key terms pushed to our CRM automatically so that the deal record is complete without re-typing (R-12b) | User connects a CRM (HubSpot or Salesforce) once; after processing, key terms with display_rank ≤ 12 are pushed to the linked CRM record; push is idempotent per contract; success and failure are written to `integration_events`; a failed push never blocks the review. **Until built:** `CrmAdapter` interface with `NullAdapter` returning `NOT_CONFIGURED`; `POST /api/contracts/{id}/push/{target}` returns 501 with key `crm.hubspot` / `crm.salesforce` | P1 | stub |
 | US-017 | As an ops manager, I want to be reminded before a contract renews or expires so that I don't get auto-renewed into unfavourable terms (R-13) | `key_dates` are derived from extracted terms (Contract end date, Notice to not auto renew, Renewal Period, Auto Renewal); reminders configurable at 30 / 60 / 90 days before each key date; delivered by email and in-app; a reminder links to the contract and the term it came from; editing a term re-derives its key date. **Until built:** `key_dates` and `reminders` tables exist; scheduler stub via `pg_cron` + the `send-notification` Edge Function (written, undeployed); capability `reminders.key_dates` | P1 | stub |
 
@@ -412,17 +412,17 @@ Rebuilt per R-17 on the instructor's five agents plus ours. `Status` mirrors the
 |---|---|---|---|---|---|
 | Ingestion & OCR agent (our PDF Text Extractor) | Uploaded file (PDF today; DOCX / scanned image declared) | Raw text with `[PAGE N]` markers stored in `contracts.contract_text` | Fully autonomous | Today: extracted text < 100 words ⇒ "Scanned PDFs are not supported yet". Once OCR ships: OCR confidence < 80% ⇒ reject and prompt re-upload | built (PDF text); stub (DOCX, OCR) |
 | Contract-type classifier | Contract text + user's selection | `detected_type` (NDA / MSA / other) | Fully autonomous | Detected type ≠ user's selection ⇒ soft warning, user confirms | built |
-| Extraction agent (Key Term Extractor) | Contract text + contract type + term library (question per term) + custom terms | JSON: `[{ term_name, value, page_number, confidence_score, source_sentence, reasoning }]` | Autonomous + review | Confidence < 50% on any term ⇒ ⚠️ and recommend manual check; a required field (parties, start date) not found ⇒ flag for review | built (reasoning field: build now) |
+| Extraction agent (Key Term Extractor) | Contract text + contract type + term library (question per term) + custom terms | JSON: `[{ term_name, value, page_number, confidence_score, source_sentence, reasoning }]` | Autonomous + review | Confidence < 50% on any term ⇒ ⚠️ and recommend manual check; a required field (parties, start date) not found ⇒ flag for review | built (reasoning field: planned; first build item) |
 | Confidence Evaluator | Extracted term + source sentence | Confidence score 0–100 | Autonomous | Always shown to user; no threshold blocks display | built |
-| Summariser | Contract text + extracted terms | Plain-language summary with `[Page X]` citations, cached in `contracts.summary_md` | Fully autonomous | User can always request the source clause | planned — build now (R-9) |
+| Summariser | Contract text + extracted terms | Plain-language summary with `[Page X]` citations, cached in `contracts.summary_md` | Fully autonomous | User can always request the source clause | planned (phase v0.3; first build item) |
 | Playbook loader | Uploaded playbook or in-app rules | Versioned `playbook_rules` for one contract type | Autonomous (parsing); human owns the rules | Every rule change is made by a human; parsed rules shown for confirmation before activation | stub |
 | Risk & Compliance agent | Extracted terms + active playbook rules | Risk flags with severity, clause citation, "why this matters", confidence | Suggests, human decides | **Always for High severity** — no auto-approval; user accepts or dismisses each High flag before review completes | stub |
-| Contract Chat agent (Summarisation & Q&A, RAG) | User question + full contract text + conversation history (+ enhanced query) | Plain-English answer with page citation, or "I cannot find this in the document" | Fully autonomous for answers; takes no action on the contract | User can always ask "show me the source clause"; ~3 unresolved turns ⇒ offer escalation to a human | built (query enhancer: build now) |
+| Contract Chat agent (Summarisation & Q&A, RAG) | User question + full contract text + conversation history (+ enhanced query) | Plain-English answer with page citation, or "I cannot find this in the document" | Fully autonomous for answers; takes no action on the contract | User can always ask "show me the source clause"; ~3 unresolved turns ⇒ offer escalation to a human | built (query enhancer: planned, phase v0.4; first build item) |
 | Comparison agent | Two contract documents | Clause-level diff with plain-language change summary | Fully autonomous | Any newly introduced High-risk clause ⇒ flagged for review | stub (v1.2) |
 | CRM pusher | Contract id + key terms (display_rank ≤ 12) | CRM record update; `integration_events` row | Fully autonomous once connected | Push failure ⇒ in-app notice; user retries; never blocks review | stub |
 | Reminder scheduler | `key_dates` derived from terms | Email + in-app reminders at 30/60/90 days | Fully autonomous | User configures offsets; editing a term re-derives the date | stub |
 | Escalation router | Chat turn count / High flag / user request | `escalations` row; hand-off to a human reviewer | Suggests | Always — a human closes every escalation | stub |
-| Feedback Logger | User rating + optional comment + contract_id; corrections; HHH review answers | Stored feedback, `term_corrections`, `hhh_scores` | Fully autonomous | — | built (`hhh_scores`: build now) |
+| Feedback Logger | User rating + optional comment + contract_id; corrections; HHH review answers | Stored feedback, `term_corrections`, `hhh_scores` | Fully autonomous | — | built (`hhh_scores`: planned; first build item) |
 
 ---
 
@@ -704,11 +704,11 @@ Each launch stage is sized so that **≥ 200 scored samples arrive per week**. B
 | Confidence score calibration | Calibration curve: predicted confidence vs. actual accuracy bucketed by 10% intervals | Calibration error ≤ 0.10 | Monthly | built |
 | Custom term extraction accuracy | F1 on a set of 10 predefined custom terms injected into 15 test contracts | ≥ 80% F1 | Every release | built |
 | Risk-detection accuracy (R-6) | F1 of flags vs majority-agreement risk labels | ≥ 90% F1 | Every release once US-013 exists | SKIPPED |
-| HHH — human | SME answers the 29-question questionnaire on ≥ 20% of weekly samples | Stage floors in §11 | Weekly | build now (`hhh_scores`) |
+| HHH — human | SME answers the 29-question questionnaire on ≥ 20% of weekly samples | Stage floors in §11 | Weekly | planned (`hhh_scores`; first build item) |
 | HHH — judge | Judge answers the questionnaire on the remaining samples | Same floors; counts only when judge P/R ≥ 0.70 | Weekly | SKIPPED until 50 human rows |
 | Judge precision / recall | Judge verdicts vs human verdicts on the overlap | ≥ 0.70 each | On every judge change | SKIPPED until 50 human rows |
 | Chat groundedness | Expert review: 50 Q&A pairs from real contracts; each response Grounded / Hallucinated / Not found (correct); now also captured by O1–O3 | ≤ 5% hallucinated responses | Monthly | built (manual) |
-| Red-team pass rate | `eval/redteam/` attack set against the chat endpoint | 100% of seed attacks blocked; no PII solicitation, no off-scope answer | Every deploy | build now |
+| Red-team pass rate | `eval/redteam/` attack set against the chat endpoint | 100% of seed attacks blocked; no PII solicitation, no off-scope answer | Every deploy | planned (first build item) |
 | End-to-end latency | P95 timing from upload submission to results panel rendered | ≤ 30 seconds | Every release | built |
 | User satisfaction (beta) | Post-review survey: "Were the extracted terms accurate?" (Yes / Partially / No) | ≥ 75% "Yes" in beta | Beta phase | planned |
 
@@ -758,7 +758,7 @@ Observability outranks evals in production: the PM sets the thresholds; engineer
 | Measure | Table / column | Status |
 |---|---|---|
 | Cost per session / per user / per task | `openai_calls` (tokens, cost_usd, user_id, contract_id, purpose) | built |
-| Time per task | `processing_runs` (started_at, finished_at per stage); chat turn latency in `chat_messages.latency_ms` | built (processing); build now (chat latency) |
+| Time per task | `processing_runs` (started_at, finished_at per stage); chat turn latency in `chat_messages.latency_ms` | built (processing); planned (chat latency; first build item) |
 | Error rate per component | `processing_runs.stage` + `error_code`; extend `stage` to name the component (1–9) | built (partly); extend |
 | Wrong guardrail triggers | `guardrail_events` (rule, input_hash, action, false_positive flag set by review) | stub (table) |
 | Wrong tool calls | n/a until tools exist — reported `SKIPPED` | SKIPPED |
@@ -952,7 +952,7 @@ From the recommendation §3. `built` = exists today; `stub` = interface + null a
 | `import.drive` / `import.dropbox` / `import.sharepoint` | PRD US-001; lectures | planned | v1.1 | registry only |
 | `classify.contract_type` | Roadmap 3 | built (detected_type) | — | — |
 | `extract.key_terms` | PRD b; Roadmap 4 | built | — | R-21 replaces the MSA library |
-| `extract.summary` | PRD step 3 | **build now (R-9)** | v0.3 | — |
+| `extract.summary` | PRD step 3 | planned (phase v0.3; first build item — R-9) | v0.3 | — |
 | `playbook.manage` | Roadmap 5; SEP19SAT 1020 | stub | Phase 1 | tables, `PlaybookAdmin` hidden, seed rules |
 | `risk.flag` | PRD c, US-002 P0; Roadmap 6 | stub | Phase 1 | `risk_flags`, route 501, `RiskPanel` hidden, `risk-f1.ts` SKIPPED |
 | `risk.escalate` | PRD HIL "always for High"; guardrails | stub | Phase 1 | `escalations`, route 501 |
@@ -960,7 +960,7 @@ From the recommendation §3. `built` = exists today; `stub` = interface + null a
 | `qa.single_contract` | PRD d | built | — | — |
 | `qa.cross_contract` | Roadmap Phase 3 | planned | Phase 3 | registry only |
 | `retrieval.full_context` | our PRD §7 | built | — | — |
-| `retrieval.query_enhancer` | Lab 2.3; demo | **build now (R-22)** | v0.4 | — |
+| `retrieval.query_enhancer` | Lab 2.3; demo | planned (phase v0.4; first build item — R-22) | v0.4 | — |
 | `retrieval.vector` | Lab 2.2/2.3; demo | stub | v2 | `contract_chunks` table, strategy class |
 | `retrieval.graph` | Lab 2.4; KG lectures | planned | v2 | registry only |
 | `retrieval.n8n` | 16SEPT Agentic RAG workflow | stub | — | external-backend adapter, config URL, 501 when unset |
@@ -969,12 +969,12 @@ From the recommendation §3. `built` = exists today; `stub` = interface + null a
 | `reminders.key_dates` | PRD US-006 | stub | v1.1 | `key_dates`, `reminders`, cron stub |
 | `crm.hubspot` / `crm.salesforce` | Roadmap 9, P0 | stub | Phase 1 | `CrmAdapter`, `integration_events`, route 501 |
 | `esign.docusign` | PRD GA | stub | GA | webhook route 501 |
-| `eval.golden_set_instructor` | key-term spreadsheet | **build now (R-21b)** | — | — |
-| `eval.hhh_human` | HHH CSV; webapp sheet | **build now (R-24)** | — | `hhh_scores`, export |
+| `eval.golden_set_instructor` | key-term spreadsheet | planned (first build item — R-21b) | — | — |
+| `eval.hhh_human` | HHH CSV; webapp sheet | planned (first build item — R-24) | — | `hhh_scores`, export |
 | `eval.hhh_judge` | LLM-as-judge lectures | stub | after 50 human rows | runner SKIPPED |
 | `eval.judge_precision` | same | stub | same | runner SKIPPED |
-| `eval.redteam` | red-teaming lectures | **build now (R-29)** | — | — |
-| `eval.foundry_export` | Sunday lab | **build now (R-32)** | — | JSONL exporter |
+| `eval.redteam` | red-teaming lectures | planned (first build item — R-29) | — | — |
+| `eval.foundry_export` | Sunday lab | planned (first build item — R-32) | — | JSONL exporter |
 | `observe.guardrail_events` | slide 36 | stub | v1.0 | table |
 | `observe.alerts` | alert-threshold | stub | v1.0 | `alert_rules`, nightly job stub |
 | `rollout.cohorts` | 200-samples rule | stub | v1.0 | `profiles.rollout_cohort` |
