@@ -1,12 +1,22 @@
-# Handoff — end of Stage 5 (partial)
+# Handoff — final state after deployment
 
 **Date:** 2026-09-20
-**State:** Stage 4 (Feature Implementation) complete. Stage 5 (Testing) partially
-complete — unit, RLS and integration layers done; E2E started, one file of five.
-**Verification at handoff:** `npm test` → **154 passing** (10 files).
-`npx playwright test` → **14 passing** (Chromium + WebKit).
-`npm run build` clean, `npm run scan:secrets` clean, `npx tsc --noEmit` clean.
-Database left at zero rows, zero storage objects.
+**State:** Stages 1–7 complete. The app is **live** at
+https://contractiqlab.netlify.app (Netlify site `contractiqlab`, Supabase project
+`bumjoxthlkdvvrcollut`), deployed from commit `e63da55`. Every git push to
+`main` redeploys. Stage 8 (memory layer) was delivered inside Stage 4/5: chat
+history persists across refresh and sessions and the four-turn memory test
+passes live in a browser.
+**Verification at handoff:** `npm test` → **211 passing** (17 files: unit, hook,
+RLS, integration). `npx playwright test` → **77 passing, 3 skipped** (Chromium +
+WebKit; the skips are the tablet-tabs fixme on each engine and the WebKit
+keyboard run). `npm run build`, `npm run scan:secrets`, `npx tsc --noEmit` all
+clean. Eval suite (spec 17) built and run; `docs/testing/testing-report.md` is
+10/10 against the running app. Live upload verified against the deployed
+function after the last fix (201, `x-nf-request-id 01M30YBS9PQ47NGG1J521YRRMC`).
+
+Read §3 (open items) and §3a (production fixes) before anything else. §4 still
+matters if you touch the UI or the CSP.
 
 ---
 
@@ -86,21 +96,59 @@ Each is also annotated at its call site in code. This table is the index.
 
 ---
 
+## 3a. Production fixes — what only the live site could show
+
+All three were invisible locally, for the same reason: `next dev` runs unbundled
+from `node_modules`, where everything resolves. Netlify's `@netlify/plugin-nextjs`
+packages every route into ONE function, `___netlify-server-handler`, and copies
+`pdf-parse` as an esbuild external, so anything pdfjs loads **dynamically** is
+missing from the function unless pinned. Verified with `netlify build`, which is
+the same packaging pipeline as the deploy — inspect
+`.netlify/functions-internal/___netlify-server-handler/` after running it.
+
+| Symptom on the live site | Cause | Fix | Commit |
+|---|---|---|---|
+| Every upload `500 INTERNAL` in ~500 ms: `ReferenceError: DOMMatrix is not defined` | pdfjs 5.4.296 (nested under pdf-parse) evaluates `new DOMMatrix()` at module top level and expects `@napi-rs/canvas` to supply it; the native binary is loaded via a dynamic `createRequire` the trace cannot follow, so it never ships. | Guarded `DOMMatrix` shim in `extract-text.ts` immediately before `import('pdf-parse')`. The legacy build was tried first and is already what loads; it contains the reference. Shipping the ~10 MB canvas binary was rejected — text extraction never calls it. | `490e49e` |
+| Upload then `422 CORRUPT_PDF` on a PDF that parses locally | The catch in `extract-text.ts` mapped **every** error to `CorruptPdfError`, so a runtime gap blamed the user's file. | Catch narrowed to pdfjs document exceptions by name (`InvalidPDFException` is what truncated files and non-PDF bytes both raise); everything else surfaces as 500 with the message, first stack frames and userId in the log. That is how the third fault identified itself. | `d9471a2` |
+| `/api/health` reported `commit:"dev"` | `COMMIT_REF` is a Netlify **build-time** variable, absent from the function runtime; a `process.env` read at request time cannot work there. `health.test.ts` had passed only because `next dev` compiles and serves in one process. | `scripts/write-build-info.mjs` runs as `prebuild` and writes `src/generated/build-info.ts`; the route imports it. The checked-in default is `"dev"`. `health.test.ts` now asserts the runtime env is **ignored**. | `d9471a2` |
+| Upload then `500`: `Setting up fake worker failed: Cannot find module '/var/task/node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs'` | pdf-parse's CJS entry sets `workerSrc ||= "./pdf.worker.mjs"` relative to its own `dist/pdf-parse/cjs/`; dynamic import, untraced, not packaged. | `included_files` on the `[functions]` block in `netlify.toml`. The old `[functions."api/contracts/[id]/process"]` key matched no function and was removed. `standard_fonts/` and `cmaps/` deliberately **not** included: with both hidden the real upload route extracts byte-identical text from a non-embedded Helvetica PDF — they are rendering assets. | `a374533` |
+
+Also in this stretch: the log context is now attached per request, so a 500
+carries `userId` (`490e49e`); and the chat double-render was a real bug in
+`useChat` (mount-time load applied unconditionally), fixed at the hook level with
+a new `tests/hooks/` layer (`d15bc9d`).
+
+Two process errors are on the record and worth knowing about: `490e49e` was
+pushed on a red run because Playwright's exit code was masked by a pipe, and
+`a374533` swept two generated files into the commit via `git add -A`. Both were
+corrected forward (`eac5f4d`, `e63da55`). Gate on exit codes directly; stage
+paths explicitly.
+
+---
+
 ## 3. Open items
+
+The first four are **reported from live use and not yet reproduced or diagnosed
+in this session**; treat the "status" column as the report, not a finding.
 
 | Item | Status | What unblocks it |
 |---|---|---|
-| **`purge-expired-pdfs` pg_cron job unscheduled** | Deliberate. `reclaim-stale-processing` **is** live. | Needs `<PROJECT_REF>` substituted and `select vault.create_secret('<SERVICE_ROLE_KEY>', 'service_role_key');` run by an operator, and the Edge Function deployed. Scheduling early would create a job failing nightly. The 90-day boundary logic is verified by exercising the function's exact query/update in SQL (89 days untouched, 91 purged, `contract_text` preserved). |
-| **`next@14.2.5` has a critical advisory chain** | Left pinned, per spec 00 §4 and an explicit instruction. | A decision to move to a later 14.2.x. `postcss` also carries a high advisory. |
+| **Possible double chat bubble on the live site** | Reported from live use after `d15bc9d`. The hook fix (`useChat` holds a mid-turn history load and merges it after the turn) passed its four hook tests, the full E2E suite with exact-count assertions, and the 10/10 testing-agent run; the live report has not been reproduced. | Reproduce on the live URL with the browser's network tab open: note whether the mount-time `GET /chat` resolves after the `POST`. If it does and a duplicate still renders, the merge in `useChat` is the place to look; if it never does, it is a different mechanism. |
+| **BOTH-path "summarize" returns the prior answer verbatim** | Reported from live use. A `both`-class turn ("summarize what you told me") came back as the previous assistant message copied, not a summary. Not reproduced here. The `both` prompt (`BOTH_SUFFIX` in `chat.v1.ts`) permits answering from the conversation; it does not instruct the model to synthesise. | Add the case to `eval/datasets/chat-memory.ts` with an `expectedContains` that a verbatim copy cannot satisfy, run `npm run eval -- --memory-only`, then adjust `BOTH_SUFFIX`. Prompt changes bump `PROMPT_VERSION`. |
+| **Notice Period nondeterminism between runs** | Observed across eval runs: the two UK-style MSAs (`msa-03`, `msa-04`) sometimes return the termination notice period as `Notice Period` and sometimes null. The label says absent and was **left as labelled** (recorded in each summary under `known_label_errors`), so the term flips between false positive and true negative run to run. | Decide the label. If a termination notice period *is* a Notice Period, relabel and the nondeterminism becomes a model-consistency question; if not, the term guidance in `term-library.ts` should say so and the prompt evaluated for it. |
+| **Localhost redirect URLs missing in Supabase** | Reported: the Supabase Auth redirect allow-list does not include the local origins, so auth flows that return via `/auth/callback` (email confirmation, password reset) cannot land on `localhost` / `127.0.0.1:3000` in development. The E2E suites are unaffected because signup returns a session directly. | Dashboard setting: Authentication → URL Configuration → add `http://localhost:3000/**` and `http://127.0.0.1:3000/**` (and the Playwright port `3200` if the callback is ever exercised in E2E). |
+| **`purge-expired-pdfs` pg_cron job unscheduled** | Deliberate. `reclaim-stale-processing` **is** live. | Needs `<PROJECT_REF>` substituted and `select vault.create_secret('<SERVICE_ROLE_KEY>', 'service_role_key');` run by an operator, and the Edge Function deployed. Scheduling early would create a job failing nightly. The 90-day boundary logic is verified in SQL (89 days untouched, 91 purged, `contract_text` preserved). |
+| **`next@14.2.5` has a critical advisory chain** | Left pinned, per spec 00 §4 and an explicit instruction. The largest known security debt. | A decision to move to a later 14.2.x. `postcss` also carries a high advisory. `X-Powered-By` is now off, so the version is at least not advertised. |
 | **RLS gate runs against the dev project, not a local Supabase** | Accepted. Spec 02 §8 says "local". | `supabase start` + `SUPABASE_DB_URL`. Consequence today: the gate needs network and real credentials, so it is not hermetic. Nothing here runs CI yet. |
-| **Chat 30/hour rate limit never exercised live** | Known gap. | Would need 24 more billed turns (~$0.08) against the real API, or a dedicated integration file with a small `RATE_LIMIT_CHAT_PER_HOUR` — the latter is cheap and is the recommended route. The same `enforceRateLimit` code path is proven on the upload and process buckets. |
+| **Chat 30/hour rate limit never exercised live** | Known gap. The same `enforceRateLimit` path is proven on the upload and process buckets. | A dedicated integration file with a small `RATE_LIMIT_CHAT_PER_HOUR` (the harness already sets per-bucket limits via env). |
+| **No dark theme** | Spec 16 §4 item 10 and §7 require axe in light **and** dark. No `darkMode` in the Tailwind config, no `dark:` variant in `src/`, nothing in `globals.css`. `accessibility.spec.ts` covers light only and says so. | Someone building it. Emulating `prefers-color-scheme: dark` renders the identical light UI, so a "dark" run would assert nothing. |
+| **No tablet tabs** | Spec 16 §2 requires tabbed Document / Terms / Chat at 768–1023px. `ResultsView` has one `lg:` breakpoint; panels stack. `responsive.spec.ts` carries a `test.fixme` so it stays visible in the report. | Someone building it. |
 | **`public/demo.gif` does not exist** | Landing page ships without the `DemoGif` section (spec 03 §4). | Someone producing the asset. Omitted rather than shipping a broken image. |
-| **Edge Functions never executed** | Both written, neither deployed. | `supabase functions deploy`. `send-notification` degrades safely today: with `SMTP_HOST` unset it logs and returns `{sent: 0}` rather than throwing, and account deletion treats the send as best-effort. |
+| **Edge Functions never executed** | Both written, neither deployed. | `supabase functions deploy`. `send-notification` degrades safely: with `SMTP_HOST` unset it logs and returns `{sent: 0}`; account deletion treats the send as best-effort. |
+| **Calibration unevidenced** | The eval's calibration runner reports 2.9% error under matcher v2 (21.8% under v1), but the corpus produces **one populated bucket** (90–100, n=97) — the model is uniformly confident, so there is no curve. Neither number is a calibration result; spec 17 asks for ten buckets each within ±10%. | A corpus that spreads confidence: SME-annotated real contracts (spec 17 §1), which do not exist yet. The whole eval corpus is synthetic and stamped `provenance: synthetic`; its F1 figures are not the spec 18 §4 launch-gate evidence. |
 | **`.env.local` holds 4 of ~50 variables** | Everything else has a working default. | SMTP, Slack webhook and the status-page URL are empty; the features that use them degrade rather than fail. |
 | **Export route (spec 15)** | Not built. | v1.1 by the spec's own scoping. |
-| **No tablet tabs** | Spec 16 §2 requires a tabbed Document / Terms / Chat layout between 768px and 1023px. `ResultsView` has one `lg:grid-cols-[58fr_42fr]` and nothing else, so at tablet width the panels simply stack. There are no tabs in the codebase. | Someone building it. `responsive.spec.ts` carries a `test.fixme` for it, so it stays visible in the report rather than being absent from it. |
-| **No dark theme** | Spec 16 §4 item 10 and §7 require axe in light **and** dark. There is no dark theme: no `darkMode` in the Tailwind config, no `dark:` variant anywhere in `src/`, nothing in `globals.css`. | Someone building it. `accessibility.spec.ts` covers light only and says so — emulating `prefers-color-scheme: dark` renders the identical light UI, so a "dark" run would assert nothing while reporting coverage. |
-| **`process.test.ts` `ALREADY_PROCESSING` assertion is flaky** | Pre-existing; not investigated. Fails under full-suite load, passes in isolation (18/18). Untouched by the chat work. | A timing-tolerant assertion. The check races the first request's completion against the second request's arrival. |
+| **`process.test.ts` `ALREADY_PROCESSING` assertion is flaky** | Pre-existing; not investigated. Fails under full-suite load, passes in isolation. | A timing-tolerant assertion; the check races the first request's completion against the second's arrival. |
 
 ---
 
@@ -232,45 +280,26 @@ Recorded in spec 02 §8.
 
 ---
 
-## 7. E2E tests remaining
+## 7. E2E and eval — what exists
 
-`tests/e2e/auth.spec.ts` exists (14 tests, Chromium + WebKit): the signup gate
-including the reported 13-character-password case, per-rule messages,
-`aria-invalid`, keyboard-only operation, signup round trip under the 10s budget,
-no field disclosure on bad credentials, and `?next=` returning to the originally
-requested page.
+All nine E2E files are written and green on Chromium + WebKit: `auth`,
+`contract-review`, `navigation`, `viewer-fallback`, `chat-history`, `keyboard`
+(Chromium only — Safari's Tab skips buttons unless macOS Full Keyboard Access is
+on), `accessibility` (axe, light theme only), `responsive` (tablet tabs as
+`fixme`), `deletion`, plus `security-headers`. Each file's header states which
+of its tests would have passed under the broken CSP, so the coverage claim is
+honest about what needs hydration. The OpenAI stub runs as its own Playwright
+`webServer` on 3300 (`tests/e2e/openai-stub.mjs`); no spec bills a call.
 
-Still to write, in rough priority order:
+`tests/hooks/` (Vitest + `@testing-library/react` under jsdom) exists because
+the chat double-render lived in an interleaving neither integration nor E2E can
+order. Spec 18 §1 records the layer and the reason.
 
-1. **`contract-review.spec.ts`** — the full journey: upload → prepare (term
-   preview, add a custom term, see its "Custom" badge) → process → results
-   (values, page chips, confidence badges) → inline edit → "Edited" badge → mark
-   review complete → dashboard badge updates. Spec 04 §7, 05 §6, 07 §8, 10 §6.
-   **The OpenAI stub is now reachable from the Playwright server** —
-   `tests/e2e/openai-stub.mjs` runs as its own `webServer` entry on port 3300
-   and the app is started with `OPENAI_BASE_URL` pointed at it. Spec files
-   script it and read its request log over `/__control/*`. No billed calls.
-2. **`navigation.spec.ts`** — clicking a page chip scrolls the viewer to that
-   page and flashes the highlight, **in both viewers**. Spec 07 §8.
-3. **`viewer-fallback.spec.ts`** — with Storage unavailable, the results page
-   renders the text viewer and all terms. The Supabase proxy from §5 makes this
-   drivable; wire it into the Playwright `webServer`.
-4. ~~**`chat-history.spec.ts`**~~ — **written 2026-09-20** (6 tests, Chromium +
-   WebKit), covering the two turns that failed live in Lab 2 Lesson 2. Still
-   owed from this file: the citation chip actually navigating the viewer, which
-   belongs with `navigation.spec.ts`.
-5. **`keyboard.spec.ts`** — the entire core flow completed with the keyboard
-   only. Spec 16 §7.
-6. **`accessibility.spec.ts`** — axe-core via `@axe-core/playwright` on every
-   route and both viewers, failing on any serious/critical violation. Spec 16 §4
-   item 10. **Not yet installed.**
-7. **`responsive.spec.ts`** — tablet tabs and the mobile bottom-sheet chat.
-8. **`deletion.spec.ts`** — delete from the dashboard removes the row and shows
-   the toast; the results page for that id then 404s. Spec 11 §5.
-
-After E2E, Stage 5 also still owes the **eval suite** (spec 17) — datasets,
-8 runners, report schema — which is a separate body of work from the test layers
-and is what the F1 and calibration launch gates in spec 18 §4 depend on.
+The eval suite (spec 17) is under `eval/`: synthetic datasets with provenance
+stamped in every report, eight runners, `npm run eval`, and two preserved
+reports for the same model output under matcher v1 (`2026-09-20`) and v2
+(`2026-09-20-matcher-v2`). Read `eval/README.md` and `eval/datasets/README.md`
+before quoting a number: the corpus is ours, not SME-annotated and not CUAD.
 
 ---
 
@@ -286,4 +315,7 @@ npm run test:unit
 npm run test:rls       # the PRD Assumption 9 gate
 npm run test:integration
 npx playwright test    # E2E, Chromium + WebKit
+npm run eval           # spec 17 live-model eval (bills ~$1–2); --offline scores the cache
+netlify build          # Netlify's own packaging; inspect .netlify/functions-internal/
+                       # (folder is linked to contractiqlab; .netlify/ is gitignored)
 ```
