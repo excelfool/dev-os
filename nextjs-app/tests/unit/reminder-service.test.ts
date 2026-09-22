@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   KEY_DATE_SOURCE_TERMS,
   addMonthsClamped,
@@ -14,6 +14,16 @@ import {
 const t = (term_name: string, value: string | null, id = term_name) => ({ id, term_name, value });
 
 describe('deriveKeyDatesFromTerms (MSA)', () => {
+  // D52: these calls use the default `today = new Date()`. Freeze it inside
+  // the first term (fixture ends 2027-03-31) so k = 0 on any run date.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 8, 22)));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('end date + notice + renewal ⇒ end_date, renewal_notice_deadline, renewal_date (no auto_renewal_check)', () => {
     const { derived, unparsed } = deriveKeyDatesFromTerms('MSA', [
       t('Contract end date', '2027-03-31'),

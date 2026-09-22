@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { KeyDatesCard } from '@/components/terms/KeyDatesCard';
 import type { KeyDate } from '@/types/domain';
@@ -40,7 +40,17 @@ function renderCard(keyDates: KeyDate[]) {
   return render(<KeyDatesCard contractId="c1" initialKeyDates={keyDates} terms={[]} />);
 }
 
-afterEach(cleanup);
+// D52: the card rolls renewals forward against today. Freeze today at
+// 2026-09-22 so the fixtures (first term ending 2027-03-31) keep meaning what
+// they say on any run date. Only Date is faked; React's timers stay real.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(Date.UTC(2026, 8, 22)));
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('first term: end and renewal are the same day (5d-2c)', () => {
   const FIRST_TERM = [

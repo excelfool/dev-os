@@ -50,10 +50,23 @@ const GOOD_SUMMARY = [
   '- Disputes are governed by the law of the State of Delaware. [Page 1]',
 ].join('\n');
 
+/**
+ * D52 measures the renewal roll-forward against the APP's clock, and the app
+ * is a separate `next dev` process, so vi.useFakeTimers() in this file cannot
+ * reach it and the harness has no clock hook. Instead the fixture's term end
+ * moves with the real clock: always 200 days ahead, so the contract is always
+ * inside its first term (k = 0) whatever day the suite runs.
+ */
+const DAY_MS = 24 * 60 * 60 * 1000;
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const TODAY_UTC_MS = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+const TERM_END = isoDay(TODAY_UTC_MS + 200 * DAY_MS);
+const NOTICE_DEADLINE = isoDay(TODAY_UTC_MS + 170 * DAY_MS); // 30 days before TERM_END
+
 const MSA_TEXT = [
   'MASTER SERVICES AGREEMENT',
   'This Master Services Agreement is made effective as of 2026-04-01 between Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client").',
-  'The initial term of this Agreement ends on 2027-03-31. The Agreement automatically renews for successive twelve (12) month periods unless either party gives written notice of non-renewal at least thirty (30) days before the end of the then-current term.',
+  `The initial term of this Agreement ends on ${TERM_END}. The Agreement automatically renews for successive twelve (12) month periods unless either party gives written notice of non-renewal at least thirty (30) days before the end of the then-current term.`,
   'Client shall pay each undisputed invoice within thirty (30) days of receipt. Invoices are issued monthly in arrears. Amounts not paid when due accrue interest at 1.5% per month.',
   'Each party\'s aggregate liability shall not exceed the fees paid in the twelve months preceding the claim. This Agreement is governed by the laws of the State of New York.',
   'The parties shall keep each other\'s confidential information secret and use it only to perform this Agreement. Either party may terminate for material breach on thirty (30) days written notice if the breach is not cured.',
@@ -68,7 +81,7 @@ function msaExtraction(overrides: { withNotice?: boolean; detectedType?: 'MSA' |
       { term_name: 'Service Provider Name', value: 'Fabrikam Consulting LLC', page_number: 1, confidence_score: 0.95, source_anchor: 'Fabrikam Consulting LLC ("Supplier")', reasoning: 'Supplier.' },
       { term_name: 'Customer Name', value: 'Tailspin Retail Group plc', page_number: 1, confidence_score: 0.95, source_anchor: 'Tailspin Retail Group plc ("Client")', reasoning: 'Client.' },
       { term_name: 'Contract start date', value: '2026-04-01', page_number: 1, confidence_score: 0.9, source_anchor: 'made effective as of 2026-04-01', reasoning: 'Effective date.' },
-      { term_name: 'Contract end date', value: '2027-03-31', page_number: 1, confidence_score: 0.9, source_anchor: 'ends on 2027-03-31', reasoning: 'End of initial term.' },
+      { term_name: 'Contract end date', value: TERM_END, page_number: 1, confidence_score: 0.9, source_anchor: `ends on ${TERM_END}`, reasoning: 'End of initial term.' },
       { term_name: 'Auto Renewal', value: 'Yes', page_number: 1, confidence_score: 0.9, source_anchor: 'automatically renews for successive twelve (12) month periods', reasoning: 'Auto-renews.' },
       { term_name: 'Renewal Period (Months)', value: '12', page_number: 1, confidence_score: 0.9, source_anchor: 'successive twelve (12) month periods', reasoning: 'Twelve months.' },
       ...(withNotice
@@ -295,9 +308,9 @@ describe('key dates (step 11c, spec 21 §7.2)', () => {
 
     // D52 as corrected in 5d-2c (8d76a01): renewal_date is the first
     // end + k × 12 months with k ≥ 0 that is not before today. The fixture's
-    // term ends 2027-03-31, still ahead, so k = 0 — the end of the current term
-    // is itself the renewal — and the 30-day notice deadline is 2027-03-01.
-    // (Before 5d-2c the anchor was k ≥ 1, i.e. 2028-03-31.) end_date and
+    // term end is always ahead (TERM_END), so k = 0 — the end of the current
+    // term is itself the renewal — and the notice deadline is 30 days before
+    // it. (Before 5d-2c the anchor was k ≥ 1, a year later.) end_date and
     // renewal_date share a date, so `kind` breaks the tie.
     const { data: dates } = await user.client
       .from('key_dates')
@@ -306,9 +319,9 @@ describe('key dates (step 11c, spec 21 §7.2)', () => {
       .order('date')
       .order('kind');
     expect((dates ?? []).map((d) => [d.kind, d.date])).toEqual([
-      ['renewal_notice_deadline', '2027-03-01'],
-      ['end_date', '2027-03-31'],
-      ['renewal_date', '2027-03-31'],
+      ['renewal_notice_deadline', NOTICE_DEADLINE],
+      ['end_date', TERM_END],
+      ['renewal_date', TERM_END],
     ]);
     const kd = (await api<{ key_dates: Array<{ kind: string; reminders: unknown[] }> }>(user, `/api/contracts/${id}/key-dates`)).body;
     expect(kd.key_dates).toHaveLength(3);
