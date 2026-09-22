@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Plus, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { scrollPageIntoView } from '@/hooks/use-target-page';
+import { usePageAnchor } from '@/hooks/use-page-anchor';
 import { useVisiblePage } from '@/hooks/use-visible-page';
 import type { DocumentViewerProps } from './types';
 
@@ -38,6 +38,8 @@ export function PdfViewer({
   // L7: the indicator is measured, not inferred from the lazy-render observer
   // below — that one deliberately fires for pages far outside the viewport.
   const currentPage = useVisiblePage(containerRef, pageRefs, targetPage, nonce);
+  // L16: a navigation made before the pages render stays on its page.
+  const { aim, reanchor } = usePageAnchor(containerRef, pageRefs);
 
   const loadDocument = useCallback(async () => {
     const res = await fetch(`/api/contracts/${contractId}/signed-url`, { method: 'POST' });
@@ -103,12 +105,14 @@ export function PdfViewer({
 
         await page.render({ canvasContext: context, viewport }).promise;
         host.replaceChildren(canvas);
+        // The page just changed height; keep the latest navigation on screen.
+        reanchor();
       } catch (err) {
         renderedRef.current.delete(key);
         onRenderFailure(err instanceof Error ? err.message : 'RENDER_FAILED');
       }
     },
-    [scale, onRenderFailure],
+    [scale, onRenderFailure, reanchor],
   );
 
   // Lazy rendering: draw a page when it approaches the viewport.
@@ -138,12 +142,9 @@ export function PdfViewer({
 
   useEffect(() => {
     if (targetPage === null) return;
-    const host = pageRefs.current.get(targetPage);
-    if (host) {
-      void renderPage(targetPage);
-      scrollPageIntoView(host);
-    }
-  }, [targetPage, nonce, renderPage]);
+    aim(targetPage);
+    void renderPage(targetPage);
+  }, [targetPage, nonce, renderPage, aim]);
 
   return (
     <div className="flex h-full flex-col">
