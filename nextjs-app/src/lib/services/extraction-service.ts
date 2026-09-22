@@ -1,7 +1,7 @@
 import 'server-only';
 import { keyTermSchema } from '@/lib/validation/key-term.schema';
 import { containsNormalised } from '@/lib/utils/normalise-text';
-import { displayRankFor } from '@/lib/ai/term-library';
+import { displayRankFor, isRequiredTerm, TERM_LIBRARY_VERSION } from '@/lib/ai/term-library';
 import type { ContractType, DetectedType } from '@/types/domain';
 
 /**
@@ -12,6 +12,26 @@ import type { ContractType, DetectedType } from '@/types/domain';
  */
 
 const UNVERIFIED_CAP = 49;
+export const REASONING_MAX_CHARS = 500;
+
+/**
+ * Spec 06 v1.1 §A: reasoning longer than 500 characters is truncated at the
+ * last sentence boundary inside the limit (hard-cut when there is none) and
+ * counted, never dropped.
+ */
+export function truncateReasoning(reasoning: string | null | undefined): {
+  reasoning: string | null;
+  truncated: boolean;
+} {
+  if (reasoning === null || reasoning === undefined) return { reasoning: null, truncated: false };
+  const trimmed = reasoning.trim();
+  if (trimmed.length === 0) return { reasoning: null, truncated: false };
+  if (trimmed.length <= REASONING_MAX_CHARS) return { reasoning: trimmed, truncated: false };
+  const window = trimmed.slice(0, REASONING_MAX_CHARS);
+  const lastBoundary = Math.max(window.lastIndexOf('. '), window.lastIndexOf('.'), window.lastIndexOf('! '), window.lastIndexOf('? '));
+  const cut = lastBoundary > 0 ? window.slice(0, lastBoundary + 1) : window;
+  return { reasoning: cut.trim(), truncated: true };
+}
 
 /** Row shape passed to the persist_key_terms RPC. */
 export interface PersistableTerm {
@@ -23,11 +43,19 @@ export interface PersistableTerm {
   is_source_verified: boolean;
   is_custom: boolean;
   display_rank: number;
+  /** v1.1 (spec 06 v1.1 §A). */
+  reasoning: string | null;
+  is_required: boolean;
+  term_library_version: string;
 }
 
 export interface ProcessedExtraction {
   terms: PersistableTerm[];
   droppedTermCount: number;
+  /** v1.1: how many reasoning strings were truncated at 500 chars. */
+  reasoningTruncatedCount: number;
+  /** v1.1 (spec 06 v1.1 §C): required standard terms the model did not find. */
+  requiredMissing: string[];
   detectedType: DetectedType;
   typeMismatch: boolean;
 }
@@ -65,6 +93,7 @@ export function processExtraction(params: {
   const processed: PersistableTerm[] = [];
   const seen = new Set<string>();
   let droppedTermCount = 0;
+  let reasoningTruncatedCount = 0;
 
   for (const item of rawTerms) {
     // 1. zod parse — a failing item is dropped and counted, never persisted
@@ -120,6 +149,10 @@ export function processExtraction(params: {
     const isCustom = customLower.has(key);
     const displayRank = isCustom ? 99 : displayRankFor(contractType, term.term_name);
 
+    // 7 (v1.1). Reasoning: one sentence, ≤ 500 chars, truncated and counted.
+    const { reasoning, truncated } = truncateReasoning(term.reasoning);
+    if (truncated) reasoningTruncatedCount += 1;
+
     processed.push({
       term_name: term.term_name.trim(),
       value,
@@ -129,6 +162,9 @@ export function processExtraction(params: {
       is_source_verified: isSourceVerified,
       is_custom: isCustom,
       display_rank: displayRank,
+      reasoning,
+      is_required: !isCustom && isRequiredTerm(contractType, term.term_name),
+      term_library_version: TERM_LIBRARY_VERSION,
     });
   }
 
@@ -151,6 +187,9 @@ export function processExtraction(params: {
       is_source_verified: false,
       is_custom: isCustom,
       display_rank: isCustom ? 99 : displayRankFor(contractType, name),
+      reasoning: null,
+      is_required: !isCustom && isRequiredTerm(contractType, name),
+      term_library_version: TERM_LIBRARY_VERSION,
     });
   }
 
@@ -161,6 +200,9 @@ export function processExtraction(params: {
   return {
     terms: processed,
     droppedTermCount,
+    reasoningTruncatedCount,
+    // §C: a required standard term with no value is flagged for review.
+    requiredMissing: processed.filter((t) => t.is_required && t.value === null).map((t) => t.term_name),
     detectedType,
     // 10. Type sanity check (spec 06 §3 step 10).
     typeMismatch: detectedType !== contractType,

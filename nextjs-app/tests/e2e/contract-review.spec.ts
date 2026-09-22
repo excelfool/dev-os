@@ -44,7 +44,8 @@ test.describe('the full contract review journey', () => {
     const contractId = page.url().match(/contracts\/([0-9a-f-]+)\//)![1]!;
 
     await expect(page.getByRole('heading', { name: /will look for these \d+ terms/ })).toBeVisible();
-    await expect(page.getByText('Governing Law')).toBeVisible();
+    // v1.1: the row also prints the question, so match the name exactly.
+    await expect(page.getByText('Governing Law', { exact: true })).toBeVisible();
 
     // A custom term is added on the client and shows its own badge.
     await page.getByRole('button', { name: 'Add Key Term' }).click();

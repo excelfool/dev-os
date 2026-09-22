@@ -47,6 +47,9 @@ export interface Contract {
   prompt_version: string;
   created_at: string;
   updated_at: string;
+  /** v1.1: OCR confidence 0–100 when the text came from OCR (spec 06 v1.1 §D). */
+  ocr_confidence?: number | null;
+  content_hash?: string | null;
 }
 
 export interface KeyTerm {
@@ -67,6 +70,13 @@ export interface KeyTerm {
   is_edited: boolean;
   edited_at: string | null;
   created_at: string;
+  /** v1.1 (spec 06 v1.1 §A). Optional until the v1.1 schema additions are applied. */
+  reasoning?: string | null;
+  original_ai_page?: number | null;
+  original_ai_reasoning?: string | null;
+  is_required?: boolean;
+  page_edited?: boolean;
+  reasoning_edited?: boolean;
 }
 
 export interface CustomTerm {

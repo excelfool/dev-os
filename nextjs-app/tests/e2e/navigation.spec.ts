@@ -45,14 +45,14 @@ const EXTRACTION = JSON.stringify({
       source_sentence: 'This Agreement is governed by the laws of the State of Delaware.',
     },
     {
-      term_name: 'Liability Cap',
+      term_name: 'Deal Value',
       value: 'Five million dollars',
       page_number: 2,
       confidence_score: 0.91,
       source_sentence: PAGE_2_SENTENCE,
     },
     {
-      term_name: 'Termination Clause',
+      term_name: 'Termination Notice In Days',
       value: 'Thirty days written notice',
       page_number: 3,
       confidence_score: 0.87,
@@ -78,7 +78,7 @@ test.describe('page-chip navigation', () => {
 
     await terms(page)
       .locator('li')
-      .filter({ hasText: 'Termination Clause' })
+      .filter({ hasText: 'Termination Notice In Days' })
       .getByRole('button', { name: 'Page 3' })
       .click();
 
@@ -98,7 +98,7 @@ test.describe('page-chip navigation', () => {
 
     await terms(page)
       .locator('li')
-      .filter({ hasText: 'Liability Cap' })
+      .filter({ hasText: 'Deal Value' })
       .getByRole('button', { name: 'Page 2' })
       .click();
 
@@ -119,7 +119,7 @@ test.describe('page-chip navigation', () => {
 
     const chip = terms(page)
       .locator('li')
-      .filter({ hasText: 'Liability Cap' })
+      .filter({ hasText: 'Deal Value' })
       .getByRole('button', { name: 'Page 2' });
 
     await chip.click();

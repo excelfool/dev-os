@@ -17,7 +17,9 @@ export function computeCostUsd(promptTokens: number, completionTokens: number): 
 export interface OpenAiCallRow {
   userId: string;
   contractId?: string | null;
-  purpose: 'extraction' | 'chat' | 'repair';
+  purpose: 'extraction' | 'chat' | 'repair' | 'summary' | 'query_enhancer' | 'judge';
+  /** The model id the call was made with (v1.1: per purpose). */
+  model?: string;
   promptTokens: number;
   completionTokens: number;
   latencyMs: number;
@@ -35,7 +37,7 @@ export async function recordOpenAiCall(
     user_id: row.userId,
     contract_id: row.contractId ?? null,
     purpose: row.purpose,
-    model: cfg.OPENAI_MODEL,
+    model: row.model ?? cfg.OPENAI_MODEL,
     prompt_tokens: row.promptTokens,
     completion_tokens: row.completionTokens,
     cost_usd: computeCostUsd(row.promptTokens, row.completionTokens),

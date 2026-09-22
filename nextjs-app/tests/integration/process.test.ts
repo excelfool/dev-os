@@ -452,7 +452,8 @@ describe('the prompt sent to the model', () => {
     const system = messages.find((m) => m.role === 'system')!.content;
     expect(system).toMatch(/Worked examples — NDA/);
     expect(system).toMatch(/Worked examples — MSA/);
-    expect(system).toMatch(/- Governing Law:/);
+    // v1.1: extraction.v2 renders each target as name + Question + Answer format.
+    expect(system).toMatch(/- Governing Law\n  Question: /);
     expect(system).toMatch(/Never infer from general legal knowledge/);
 
     const userMessage = messages.find((m) => m.role === 'user')!.content;

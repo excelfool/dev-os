@@ -13,7 +13,30 @@ import { recordOpenAiCall } from '@/lib/metrics/cost';
  * adapter change. **No fallback provider is wired at MVP — do not add one.**
  */
 
-export type LlmPurpose = 'extraction' | 'chat' | 'repair';
+export type LlmPurpose = 'extraction' | 'chat' | 'repair' | 'summary' | 'query_enhancer' | 'judge';
+
+/**
+ * Model id per purpose (spec 06 v1.1 §A, spec 01 v1.1 §B). Each falls back to
+ * OPENAI_MODEL when unset; the judge has no product fallback and returns null
+ * when unset so its runners emit SKIPPED (spec 22 §6.1).
+ */
+export function modelFor(purpose: LlmPurpose): string | null {
+  const cfg = getServerConfig();
+  const pick = (v: string | undefined) => (v && v.length > 0 ? v : cfg.OPENAI_MODEL);
+  switch (purpose) {
+    case 'extraction':
+    case 'repair':
+      return pick(cfg.OPENAI_MODEL_EXTRACTION);
+    case 'chat':
+      return pick(cfg.OPENAI_MODEL_CHAT);
+    case 'summary':
+      return pick(cfg.OPENAI_MODEL_SUMMARY);
+    case 'query_enhancer':
+      return pick(cfg.OPENAI_MODEL_ENHANCER);
+    case 'judge':
+      return cfg.OPENAI_MODEL_JUDGE && cfg.OPENAI_MODEL_JUDGE.length > 0 ? cfg.OPENAI_MODEL_JUDGE : null;
+  }
+}
 
 export interface LlmMessage {
   role: 'system' | 'user' | 'assistant';
@@ -83,6 +106,8 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
   const cfg = getServerConfig();
   const perAttemptTimeout = opts.timeoutMs ?? cfg.OPENAI_TIMEOUT_MS;
   const maxAttempts = cfg.OPENAI_MAX_RETRIES;
+  const model = modelFor(opts.purpose);
+  if (!model) throw new Error(`No model configured for purpose ${opts.purpose}`);
 
   let lastError: unknown = null;
   let lastWasTimeout = false;
@@ -103,7 +128,7 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
     try {
       const response = await getClient().chat.completions.create(
         {
-          model: cfg.OPENAI_MODEL,
+          model,
           messages: opts.messages,
           temperature: opts.temperature,
           max_tokens: opts.maxTokens,
@@ -121,6 +146,7 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
         userId: opts.userId,
         contractId: opts.contractId,
         purpose: opts.purpose,
+        model,
         promptTokens,
         completionTokens,
         latencyMs,
@@ -145,6 +171,7 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
         userId: opts.userId,
         contractId: opts.contractId,
         purpose: opts.purpose,
+        model,
         promptTokens: 0,
         completionTokens: 0,
         latencyMs,

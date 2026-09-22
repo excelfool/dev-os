@@ -25,6 +25,10 @@ function run(contractId: string, terms: Array<[string, string | null, number?, n
       is_source_verified: true,
       is_custom: false,
       display_rank: index,
+      // v1.1 PersistableTerm fields (spec 06 v1.1 §A); not scored here.
+      reasoning: null,
+      is_required: false,
+      term_library_version: 'v1.1',
     })),
     detectedType: 'NDA',
     droppedTermCount: 0,
@@ -193,7 +197,7 @@ describe('prompt assembly snapshots (spec 17 §6)', () => {
 
     const msa = buildExtractionSystemPrompt('MSA', []);
     expect(msa).toContain('Extract these MSA terms');
-    expect(msa).toContain('Liability Cap');
+    expect(msa).toContain('Limitations of liability (Amount)');
   });
 
   it('appends custom terms', () => {

@@ -24,6 +24,7 @@ export function KeyTermsPanel({
   const [showAll, setShowAll] = useState(false);
 
   const tooltips = new Map(termsFor(contractType).map((t) => [t.term_name, t.tooltip]));
+  const required = new Set(termsFor(contractType).filter((t) => t.is_required).map((t) => t.term_name));
   const primary = terms.filter((t) => t.display_rank <= 12);
   const rest = terms.filter((t) => t.display_rank > 12);
 
@@ -37,6 +38,7 @@ export function KeyTermsPanel({
             key={term.id}
             term={term}
             tooltip={tooltips.get(term.term_name)}
+            isRequired={!term.is_custom && required.has(term.term_name)}
             userId={userId}
             contractId={contractId}
           />
@@ -48,6 +50,7 @@ export function KeyTermsPanel({
               key={term.id}
               term={term}
               tooltip={tooltips.get(term.term_name)}
+              isRequired={!term.is_custom && required.has(term.term_name)}
               userId={userId}
               contractId={contractId}
             />

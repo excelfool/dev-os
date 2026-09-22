@@ -1,0 +1,260 @@
+{
+  "name": "MSA key-term library (instructor)",
+  "version": "instructor-2026-09",
+  "contract_type": "MSA",
+  "source": "Key_term_name__questions_and_benchmarked_data.xlsx (Mahesh Yadav, course material), Intuit tab",
+  "terms": [
+    {
+      "term_id": 1,
+      "term_name": "Service Provider Name",
+      "question": "What is the Service Provider Name",
+      "answer_format": "legal entity name",
+      "display_rank": 1
+    },
+    {
+      "term_id": 2,
+      "term_name": "Customer Name",
+      "question": "What is the Customer Name?",
+      "answer_format": "legal entity name",
+      "display_rank": 2
+    },
+    {
+      "term_id": 3,
+      "term_name": "Contract start date",
+      "question": "What is the Contract start date?",
+      "answer_format": "date (YYYY-MM-DD), or N/A",
+      "display_rank": 3
+    },
+    {
+      "term_id": 4,
+      "term_name": "Contract end date",
+      "question": "what is the Contract end date / Expiration Date?",
+      "answer_format": "date (YYYY-MM-DD), or N/A",
+      "display_rank": 4
+    },
+    {
+      "term_id": 5,
+      "term_name": "Term Period In Months",
+      "question": "What is the total term period or duration of this contract? Provide answer in the form of number of months if possible",
+      "answer_format": "integer months, or N/A",
+      "display_rank": 5
+    },
+    {
+      "term_id": 6,
+      "term_name": "Deal Value",
+      "question": "What is the total amount to be paid by the customer?",
+      "answer_format": "number (currency amount), or N/A",
+      "display_rank": 6
+    },
+    {
+      "term_id": 7,
+      "term_name": "Governing Law",
+      "question": "What is the Governing Law? Provide just the name of the governing law",
+      "answer_format": "name of jurisdiction only",
+      "display_rank": 7
+    },
+    {
+      "term_id": 8,
+      "term_name": "Auto Renewal",
+      "question": "Will this agreement Automatically Renew? Answer Yes or No",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 8
+    },
+    {
+      "term_id": 9,
+      "term_name": "Termination Notice In Days",
+      "question": "What is the duration before which either party may terminate the Agreement? Provide answer in the form of number of days if possible",
+      "answer_format": "integer days, or N/A",
+      "display_rank": 9
+    },
+    {
+      "term_id": 10,
+      "term_name": "Data Breach Notice In Hours",
+      "question": "What is the duration of Data Breach Notice? Provide answer in the form of number of hours if possible",
+      "answer_format": "integer hours, or N/A",
+      "display_rank": 10
+    },
+    {
+      "term_id": 11,
+      "term_name": "Billing frequency (monthly, quarterly, annually, other)",
+      "question": "What is the billing frequency of this agreement?",
+      "answer_format": "Monthly | Quarterly | Annually | Other | N/A",
+      "display_rank": 11
+    },
+    {
+      "term_id": 12,
+      "term_name": "Renewal Period (Months)",
+      "question": "What is the renewal period for this contract?",
+      "answer_format": "integer months, or N/A",
+      "display_rank": 12
+    },
+    {
+      "term_id": 13,
+      "term_name": "Notice to not auto renew (Days)",
+      "question": "Do customer has to send a notice to stop the auto renwal ?",
+      "answer_format": "integer days, or N/A",
+      "display_rank": 13
+    },
+    {
+      "term_id": 14,
+      "term_name": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+      "question": "What are the number of days within which the client is expected to make payment to the service provider after receiving an invoice?",
+      "answer_format": "Net 30 | Net 45 | Net 60 | Net 75 | Net 90 | Other | N/A",
+      "display_rank": 14
+    },
+    {
+      "term_id": 15,
+      "term_name": "Termination for Breach (Yes, No, N/A)",
+      "question": "Does this contract allows for termination for material breach?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 15
+    },
+    {
+      "term_id": 16,
+      "term_name": "Termination for cause (Yes, No, N/A)",
+      "question": "Does this contract allows for termination for cause?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 16
+    },
+    {
+      "term_id": 17,
+      "term_name": "Termination without cause (Yes, No, N/A)",
+      "question": "Does this contract allows for termination without cause?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 17
+    },
+    {
+      "term_id": 18,
+      "term_name": "Termination for convenience (Yes, No, N/A)",
+      "question": "Does this contract allows for termination for convenience?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 18
+    },
+    {
+      "term_id": 19,
+      "term_name": "Notice of termination for convenience (Days)",
+      "question": "What is the duration of notice period that each party needs to provide before applying for the termination for convenience?",
+      "answer_format": "integer days, or N/A",
+      "display_rank": 19
+    },
+    {
+      "term_id": 20,
+      "term_name": "Late Payment Charges (Yes, No, N/A)",
+      "question": "Do customer need to pay charges or pentalties for the late payment of invoice?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 20
+    },
+    {
+      "term_id": 21,
+      "term_name": "Late Payment Penalty",
+      "question": "How are the late payment pentalties or fees charged to customers ?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 21
+    },
+    {
+      "term_id": 22,
+      "term_name": "Limitations of liability (Amount)",
+      "question": "What is the amount covered in the clause for limitations of liability ?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 22
+    },
+    {
+      "term_id": 23,
+      "term_name": "Assignment (consent, No consent, N/A)",
+      "question": "Do customer needs to provide consent to the service provider before assigning its rights or obligations to another or third party?",
+      "answer_format": "Consent | No consent | N/A",
+      "display_rank": 23
+    },
+    {
+      "term_id": 24,
+      "term_name": "Name and logo use (Yes, No, N/A)",
+      "question": "Does this contract allows the service provider to use the name and logo of customer?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 24
+    },
+    {
+      "term_id": 25,
+      "term_name": "Deletion of Data (Yes, No, N/A)",
+      "question": "Does this contract has a provision that mentions that customer data will be deleted upon request by customer or after closure or termination of agreement for whatsoever reason?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 25
+    },
+    {
+      "term_id": 26,
+      "term_name": "Customer Indemnity",
+      "question": "What are the terms for customer indemnification?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 26
+    },
+    {
+      "term_id": 27,
+      "term_name": "Service Provider indemnity",
+      "question": "What are the terms for service provider indemnification?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 27
+    },
+    {
+      "term_id": 28,
+      "term_name": "Customer notice for indemnitiy claim",
+      "question": "Do customer or client needs to send a notice for claiming the indemnification?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 28
+    },
+    {
+      "term_id": 29,
+      "term_name": "Indemnify Attorney fees (Yes, No, N/A)",
+      "question": "Does this contract's indimnification terms cover the attorney's fees for both service provider and customer?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 29
+    },
+    {
+      "term_id": 30,
+      "term_name": "Price increase (Yes, No, N/A)",
+      "question": "Does this contract has provision for increase the fees or payment or price ?",
+      "answer_format": "Yes | No | N/A",
+      "display_rank": 30
+    },
+    {
+      "term_id": 31,
+      "term_name": "Notice for price increase (days)",
+      "question": "What is the duration of notice for notifying customer about the increase in price or fees?",
+      "answer_format": "integer days, or N/A",
+      "display_rank": 31
+    },
+    {
+      "term_id": 32,
+      "term_name": "Insurance Clause",
+      "question": "What is the insurance clause according to this agreement?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 32
+    },
+    {
+      "term_id": 33,
+      "term_name": "Maintenance of Insurance",
+      "question": "What is the provision for maintainance of insurance in this agreement?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 33
+    },
+    {
+      "term_id": 34,
+      "term_name": "Provide notice for insurance (Days)",
+      "question": "What is the notice period for providing the insurance?",
+      "answer_format": "integer days, or N/A",
+      "display_rank": 34
+    },
+    {
+      "term_id": 35,
+      "term_name": "Service Provider Intellectual Property Rights",
+      "question": "What are the intellectual property rights for the service provider in this agreement?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 35
+    },
+    {
+      "term_id": 36,
+      "term_name": "Customer Intellectual property rights",
+      "question": "What are the intellectual property rights for customer in this agreement?",
+      "answer_format": "verbatim clause text or short summary, or N/A",
+      "display_rank": 36
+    }
+  ]
+}

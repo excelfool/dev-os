@@ -1,18 +1,22 @@
-import { termsFor } from '@/lib/ai/term-library';
+import { DEFAULT_ANSWER_FORMAT, termsFor } from '@/lib/ai/term-library';
 import type { ContractType } from '@/types/domain';
 import { sanitiseCustomTermName } from '@/lib/security/prompt-injection';
 
 /**
- * Extraction prompt, composed in the fixed order of spec 06 §2:
- * role and constraints → few-shot block → target term list → output contract
- * → grounding rules.
+ * Extraction prompt v2 (spec 06 v1.1 §A, PRD R-16 / R-21c), composed in the
+ * fixed order of spec 06 §2: role and constraints → few-shot block → target
+ * term list → output contract → grounding rules.
  *
- * The few-shot examples are what close the zero-shot→few-shot F1 gap and are
- * hard-coded here deliberately. Any change bumps the filename version AND
- * PROMPT_VERSION (spec 06 §8).
+ * v2 asks each standard term's QUESTION and constrains the value to its
+ * ANSWER FORMAT — what makes answers comparable to the instructor golden set —
+ * and every returned object carries a one-sentence `reasoning`.
+ *
+ * extraction.v1 stays in place for the eval re-baseline (spec 06 §8).
  */
 
-const ROLE_AND_CONSTRAINTS = `You extract key terms from a single contract. Extract only from the supplied document text. Never infer from general legal knowledge. If a term is not present in the document, return \`value: null\` with a low confidence score — do not guess.`;
+export const EXTRACTION_PROMPT_VERSION = 'v2.0';
+
+const ROLE_AND_CONSTRAINTS = `You extract key terms from a single contract. Extract only from the supplied document text. Never infer from general legal knowledge. If a term is not present in the document, return \`value: null\` with a low confidence score — do not guess. For each term, answer the question exactly as a careful paralegal would, in the stated answer format. When the answer format allows \`N/A\`, use \`N/A\` only when the document does not address the term.`;
 
 const NDA_EXAMPLES = [
   {
@@ -29,14 +33,18 @@ This Agreement is entered into as of March 14, 2024 (the "Effective Date") by an
           confidence_score: 0.96,
           source_sentence:
             'This Agreement is entered into as of March 14, 2024 (the "Effective Date") by and between Northwind Systems, Inc., a Delaware corporation, and Contoso Analytics Ltd., a company registered in England and Wales.',
+          reasoning:
+            'The recital on page 1 names both contracting entities with their places of incorporation.',
         },
         {
           term_name: 'Effective Date',
-          value: 'March 14, 2024',
+          value: '2024-03-14',
           page_number: 1,
           confidence_score: 0.94,
           source_sentence:
             'This Agreement is entered into as of March 14, 2024 (the "Effective Date") by and between Northwind Systems, Inc., a Delaware corporation, and Contoso Analytics Ltd., a company registered in England and Wales.',
+          reasoning:
+            'The recital defines March 14, 2024 as the Effective Date, given here in the requested YYYY-MM-DD format.',
         },
       ],
     },
@@ -55,6 +63,8 @@ This Agreement is entered into as of March 14, 2024 (the "Effective Date") by an
           confidence_score: 0.91,
           source_sentence:
             'The obligations of confidentiality set out in Section 2 shall survive termination of this Agreement for a period of five (5) years.',
+          reasoning:
+            'Section 3 states the survival period of the confidentiality duty, which is the duration the question asks about.',
         },
         {
           term_name: 'Permitted Disclosures',
@@ -64,6 +74,8 @@ This Agreement is entered into as of March 14, 2024 (the "Effective Date") by an
           confidence_score: 0.89,
           source_sentence:
             'The Receiving Party may disclose Confidential Information to the extent required by a valid court order, provided it gives prompt written notice to the Disclosing Party.',
+          reasoning:
+            'Section 4 is the carve-out from the non-disclosure duty, so it answers which disclosures are permitted.',
         },
       ],
     },
@@ -76,11 +88,13 @@ This Agreement is entered into as of March 14, 2024 (the "Effective Date") by an
       terms: [
         {
           term_name: 'Governing Law',
-          value: 'Laws of the State of New York, without regard to conflict of laws principles',
+          value: 'State of New York',
           page_number: 4,
           confidence_score: 0.95,
           source_sentence:
             'This Agreement shall be governed by the laws of the State of New York, without regard to its conflict of laws principles.',
+          reasoning:
+            'Section 9 names New York law; the answer format asks for the jurisdiction name only.',
         },
         {
           term_name: 'Non-Solicitation',
@@ -88,6 +102,7 @@ This Agreement is entered into as of March 14, 2024 (the "Effective Date") by an
           page_number: null,
           confidence_score: 0.0,
           source_sentence: null,
+          reasoning: 'No clause in the supplied text restricts soliciting employees or clients.',
         },
       ],
     },
@@ -98,58 +113,75 @@ const MSA_EXAMPLES = [
   {
     excerpt: `[PAGE 1]
 MASTER SERVICES AGREEMENT
-Fabrikam Consulting LLC ("Supplier") will provide the professional services described in each Statement of Work executed under this Agreement to Tailspin Retail Group plc ("Client").`,
+This Master Services Agreement is made effective as of 1 July 2023 between Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client"). Supplier will provide the professional services described in each Statement of Work executed under this Agreement.`,
     output: {
       detected_type: 'MSA',
       terms: [
         {
-          term_name: 'Parties',
-          value: 'Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client")',
+          term_name: 'Service Provider Name',
+          value: 'Fabrikam Consulting LLC',
           page_number: 1,
           confidence_score: 0.95,
           source_sentence:
-            'Fabrikam Consulting LLC ("Supplier") will provide the professional services described in each Statement of Work executed under this Agreement to Tailspin Retail Group plc ("Client").',
+            'This Master Services Agreement is made effective as of 1 July 2023 between Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client").',
+          reasoning:
+            'The party defined as "Supplier" is the one providing the services, so it is the service provider.',
         },
         {
-          term_name: 'Service Scope',
-          value:
-            'Professional services described in each Statement of Work executed under the Agreement',
+          term_name: 'Customer Name',
+          value: 'Tailspin Retail Group plc',
           page_number: 1,
-          confidence_score: 0.88,
+          confidence_score: 0.95,
           source_sentence:
-            'Fabrikam Consulting LLC ("Supplier") will provide the professional services described in each Statement of Work executed under this Agreement to Tailspin Retail Group plc ("Client").',
+            'This Master Services Agreement is made effective as of 1 July 2023 between Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client").',
+          reasoning: 'The party defined as "Client" receives the services, so it is the customer.',
+        },
+        {
+          term_name: 'Contract start date',
+          value: '2023-07-01',
+          page_number: 1,
+          confidence_score: 0.93,
+          source_sentence:
+            'This Master Services Agreement is made effective as of 1 July 2023 between Fabrikam Consulting LLC ("Supplier") and Tailspin Retail Group plc ("Client").',
+          reasoning:
+            'The agreement is stated to be effective as of 1 July 2023, given in the requested YYYY-MM-DD format.',
         },
       ],
     },
   },
   {
     excerpt: `[PAGE 3]
-5.2 Client shall pay each undisputed invoice within thirty (30) days of receipt. Invoices are issued monthly in arrears.
+5.1 Supplier shall invoice Client monthly in arrears.
+5.2 Client shall pay each undisputed invoice within thirty (30) days of receipt.
 5.4 Amounts not paid when due shall accrue interest at 1.5% per month.`,
     output: {
       detected_type: 'MSA',
       terms: [
         {
-          term_name: 'Payment Terms',
-          value: 'Undisputed invoices payable within thirty (30) days of receipt (net 30)',
+          term_name: 'Billing frequency (monthly, quarterly, annually, other)',
+          value: 'Monthly',
+          page_number: 3,
+          confidence_score: 0.92,
+          source_sentence: 'Supplier shall invoice Client monthly in arrears.',
+          reasoning: 'Clause 5.1 fixes invoicing at a monthly cadence, matching the "Monthly" option.',
+        },
+        {
+          term_name: 'Net payment terms (Net 30, 45, 60, 75, 90, other)',
+          value: 'Net 30',
           page_number: 3,
           confidence_score: 0.94,
           source_sentence:
             'Client shall pay each undisputed invoice within thirty (30) days of receipt.',
+          reasoning:
+            'Clause 5.2 gives the client thirty days from receipt of an invoice, which is Net 30.',
         },
         {
-          term_name: 'Invoice Schedule',
-          value: 'Monthly in arrears',
-          page_number: 3,
-          confidence_score: 0.9,
-          source_sentence: 'Invoices are issued monthly in arrears.',
-        },
-        {
-          term_name: 'Late Payment Penalty',
-          value: 'Interest at 1.5% per month on amounts not paid when due',
+          term_name: 'Late Payment Charges (Yes, No, N/A)',
+          value: 'Yes',
           page_number: 3,
           confidence_score: 0.93,
           source_sentence: 'Amounts not paid when due shall accrue interest at 1.5% per month.',
+          reasoning: 'Clause 5.4 imposes interest on overdue amounts, so late payment attracts charges.',
         },
       ],
     },
@@ -161,13 +193,23 @@ Fabrikam Consulting LLC ("Supplier") will provide the professional services desc
       detected_type: 'MSA',
       terms: [
         {
-          term_name: 'Liability Cap',
+          term_name: 'Limitations of liability (Amount)',
           value:
-            'Aggregate liability capped at fees paid under the applicable SOW in the preceding 12 months; excludes breaches of confidentiality and indemnification obligations',
+            'Aggregate liability capped at the fees paid under the applicable Statement of Work in the twelve (12) months preceding the claim, excluding breaches of confidentiality and indemnification obligations',
           page_number: 6,
           confidence_score: 0.92,
           source_sentence:
             "Except for breaches of confidentiality and indemnification obligations, each party's aggregate liability shall not exceed the fees paid under the applicable Statement of Work in the twelve (12) months preceding the claim.",
+          reasoning:
+            'Section 11 states the cap on each party\'s liability and its two carve-outs, which is the amount the question asks for.',
+        },
+        {
+          term_name: 'Termination for convenience (Yes, No, N/A)',
+          value: null,
+          page_number: null,
+          confidence_score: 0.0,
+          source_sentence: null,
+          reasoning: 'The supplied text contains no clause allowing termination without cause.',
         },
       ],
     },
@@ -180,13 +222,15 @@ const OUTPUT_CONTRACT = `Return a single JSON object with exactly this shape:
                "value": "string|null",
                "page_number": 1,
                "confidence_score": 0.0,
-               "source_sentence": "string|null" } ] }`;
+               "source_sentence": "string|null",
+               "reasoning": "string|null" } ] }`;
 
 const GROUNDING_RULES = `Grounding rules:
 - page_number must be the 1-indexed page taken from the nearest preceding [PAGE N] marker in the document text.
 - source_sentence must be copied verbatim from the document, character for character. Do not paraphrase, re-punctuate or shorten it.
+- reasoning is one sentence explaining why the value answers the question, referencing the clause; never legal advice.
 - confidence_score is a float between 0.0 and 1.0 reflecting your own certainty.
-- Return exactly one object per requested term, standard and custom, in the order the terms are listed.
+- Return exactly one object per requested term, standard and custom, in the order the terms are listed, using the term_name exactly as listed.
 - detected_type is what the document actually appears to be, which may differ from the terms you were asked to find.`;
 
 function renderExamples(examples: typeof NDA_EXAMPLES): string {
@@ -198,17 +242,24 @@ function renderExamples(examples: typeof NDA_EXAMPLES): string {
     .join('\n\n---\n\n');
 }
 
+/** Exposed for the prompt-assembly test: every example object carries reasoning. */
+export const FEW_SHOT_EXAMPLES = { NDA: NDA_EXAMPLES, MSA: MSA_EXAMPLES };
+
+export function renderTargetTerm(term: { term_name: string; question: string; answer_format: string }): string {
+  return `- ${term.term_name}\n  Question: ${term.question}\n  Answer format: ${term.answer_format}`;
+}
+
 export function buildExtractionSystemPrompt(
   contractType: ContractType,
   customTermNames: string[],
 ): string {
-  const standard = termsFor(contractType)
-    .map((term) => (term.guidance ? `- ${term.term_name}: ${term.guidance}` : `- ${term.term_name}`))
-    .join('\n');
+  const standard = termsFor(contractType).map(renderTargetTerm).join('\n');
 
   const custom =
     customTermNames.length > 0
-      ? `\n\nAdditional terms the user asked for:\n${customTermNames.map((n) => `- ${sanitiseCustomTermName(n)}`).join('\n')}`
+      ? `\n\nAdditional terms the user asked for:\n${customTermNames
+          .map((n) => `- ${sanitiseCustomTermName(n)}\n  Answer format: ${DEFAULT_ANSWER_FORMAT}`)
+          .join('\n')}`
       : '';
 
   return [
@@ -221,14 +272,7 @@ export function buildExtractionSystemPrompt(
   ].join('\n\n');
 }
 
-/**
- * The user message is the full contract_text, unmodified, markers included.
- *
- * Forged `[PAGE N]` lines are neutralised in `extract-text.ts`, where the
- * genuine markers are inserted — that is the only point at which the two can
- * still be told apart. By the time the text reaches here they are
- * indistinguishable, and stripping them here would destroy page attribution.
- */
+/** The user message is the full contract_text, unmodified, markers included (see extraction.v1). */
 export function buildExtractionUserMessage(contractText: string): string {
   return contractText;
 }

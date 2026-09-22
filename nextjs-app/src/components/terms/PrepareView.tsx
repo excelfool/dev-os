@@ -42,6 +42,9 @@ export function PrepareView({
   const [isProcessing, setIsProcessing] = useState(startProcessing);
   const [stage, setStage] = useState<ProcessingStage>('analysing');
   const [failure, setFailure] = useState<string | null>(null);
+  const [showAllTerms, setShowAllTerms] = useState(false);
+  const expandedTerms = standardTerms.filter((t) => t.display_rank <= 12);
+  const collapsedTerms = standardTerms.filter((t) => t.display_rank > 12);
 
   const atLimit = customTerms.length >= publicConfig.maxCustomTerms;
 
@@ -146,12 +149,17 @@ export function PrepareView({
         </h2>
 
         <ul className="flex flex-col divide-y divide-grey-50">
-          {standardTerms.map((term) => (
-            <li key={term.term_name} className="flex items-center gap-2 py-3">
-              <span className="text-body text-grey-900">{term.term_name}</span>
-              <InfoTooltip label={term.tooltip}>
-                <Info aria-hidden="true" className="h-4 w-4" />
-              </InfoTooltip>
+          {[...expandedTerms, ...(showAllTerms ? collapsedTerms : [])].map((term) => (
+            <li key={term.term_name} className="flex flex-col gap-0.5 py-3">
+              <span className="flex items-center gap-2">
+                <span className="text-body text-grey-900">{term.term_name}</span>
+                <InfoTooltip label={term.tooltip}>
+                  <Info aria-hidden="true" className="h-4 w-4" />
+                </InfoTooltip>
+              </span>
+              <span className="text-caption text-grey-400">
+                We&apos;ll ask: <em>{term.question}</em>
+              </span>
             </li>
           ))}
 
@@ -172,6 +180,17 @@ export function PrepareView({
             </li>
           ))}
         </ul>
+
+        {collapsedTerms.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowAllTerms((v) => !v)}
+            aria-expanded={showAllTerms}
+            className="self-start text-body text-brand-500 underline"
+          >
+            {showAllTerms ? 'Show fewer terms' : `Show all ${standardTerms.length} terms`}
+          </button>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">

@@ -23,7 +23,29 @@ import { writeCsv, writeSummary, gate, formatGate } from '../lib/report';
  *   npm run eval -- --no-chat skips the chat runners
  */
 async function main() {
-  const args = new Set(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const args = new Set(argv);
+  // v1.1 (spec 22 §1): `--dataset msa-instructor --prompt v1|v2` runs the
+  // re-baseline against the instructor golden set and nothing else. It never
+  // touches Supabase.
+  const flag = (name: string) => {
+    const eq = argv.find((a) => a.startsWith(`${name}=`));
+    if (eq) return eq.split('=')[1];
+    const i = argv.indexOf(name);
+    return i >= 0 ? argv[i + 1] : undefined;
+  };
+  if (flag('--dataset') === 'msa-instructor') {
+    const prompt = flag('--prompt') ?? 'v2';
+    if (prompt !== 'v1' && prompt !== 'v2') throw new Error(`--prompt must be v1 or v2, got ${prompt}`);
+    const { runRebaseline } = await import('./rebaseline');
+    const maxTokensFlag = flag('--max-tokens');
+    process.exitCode = await runRebaseline(prompt, {
+      refresh: args.has('--refresh'),
+      maxTokens: maxTokensFlag ? Number(maxTokensFlag) : undefined,
+      timeoutMs: Number(flag('--timeout-ms') ?? 120_000),
+    });
+    return;
+  }
   const offline = args.has('--offline');
   const memoryOnly = args.has('--memory-only');
   // The matcher is the instrument. A report says which version scored it, and

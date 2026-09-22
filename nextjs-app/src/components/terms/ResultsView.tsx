@@ -14,8 +14,10 @@ import {
   AboutTheseResults,
   CalibrationNotice,
   DisclaimerBanner,
+  ReviewNeededNotice,
   TypeMismatchNotice,
 } from './ResultsBanners';
+import { requiredMissingNames } from '@/lib/ai/term-library';
 import { TargetPageProvider } from '@/hooks/use-target-page';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { recordEvent } from '@/lib/metrics/events';
@@ -55,6 +57,11 @@ export function ResultsView({
 
   const current = polled?.contract ?? contract;
   const terms = polled?.key_terms ?? keyTerms;
+  // Spec 06 v1.1 §C — computed from the library so it works before the
+  // is_required column exists on the row.
+  const requiredMissing = requiredMissingNames(current.contract_type as ContractType, terms);
+  const ocrConfidence =
+    typeof current.ocr_confidence === 'number' ? Math.round(current.ocr_confidence) : null;
 
   useEffect(() => {
     if (current.status === 'completed') {
@@ -105,18 +112,26 @@ export function ResultsView({
         <AboutTheseResults />
 
         <div className="grid gap-subsection lg:grid-cols-[58fr_42fr]">
-          <div className="h-[70vh] overflow-hidden rounded-card border border-grey-100">
-            <DocumentPanel
-              contractId={current.id}
-              userId={userId}
-              contractText={current.contract_text}
-              pageCount={current.page_count}
-              hasFile={current.file_path !== null}
-              pdfPurgedAt={current.pdf_purged_at}
-            />
+          <div className="flex flex-col gap-2">
+            <div className="h-[70vh] overflow-hidden rounded-card border border-grey-100">
+              <DocumentPanel
+                contractId={current.id}
+                userId={userId}
+                contractText={current.contract_text}
+                pageCount={current.page_count}
+                hasFile={current.file_path !== null}
+                pdfPurgedAt={current.pdf_purged_at}
+              />
+            </div>
+            {ocrConfidence !== null && (
+              <p className="text-caption text-grey-500">
+                Scanned document — OCR confidence {ocrConfidence}%
+              </p>
+            )}
           </div>
 
           <div className="h-[70vh] overflow-y-auto rounded-card border border-grey-100 p-4">
+            <ReviewNeededNotice names={requiredMissing} />
             <KeyTermsPanel
               terms={terms}
               contractType={current.contract_type as ContractType}

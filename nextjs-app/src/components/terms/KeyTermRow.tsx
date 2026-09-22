@@ -15,11 +15,14 @@ export function KeyTermRow({
   tooltip,
   userId,
   contractId,
+  isRequired = false,
 }: {
   term: KeyTerm;
   tooltip?: string;
   userId: string;
   contractId: string;
+  /** Spec 06 v1.1 §C: a required standard term (from the library). */
+  isRequired?: boolean;
 }) {
   const { goToPage } = useTargetPage();
   const [value, setValue] = useState(term.value);
@@ -45,6 +48,11 @@ export function KeyTermRow({
             </InfoTooltip>
           )}
           {term.is_custom && <Badge tone="brand">Custom</Badge>}
+          {isRequired && value === null && (
+            <InfoTooltip label="A required term we could not find — verify it in the document.">
+              <Badge tone="warning">Required</Badge>
+            </InfoTooltip>
+          )}
           {isEdited && (
             <InfoTooltip label="You edited this value. The original AI value is kept for accuracy tracking.">
               <Badge>Edited</Badge>
@@ -68,6 +76,13 @@ export function KeyTermRow({
           setIsEdited(true);
         }}
       />
+
+      {term.reasoning && (
+        <p className="text-caption text-grey-600">
+          <span className="font-medium text-grey-700">Why: </span>
+          {term.reasoning}
+        </p>
+      )}
 
       {term.page_number === null && term.confidence_score > 0 && (
         <p className="text-caption text-grey-400">No page reference — verify manually</p>

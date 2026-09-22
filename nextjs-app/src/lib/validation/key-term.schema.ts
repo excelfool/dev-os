@@ -17,6 +17,8 @@ export const keyTermSchema = z.object({
   page_number: z.number().int().nullable(),
   confidence_score: z.number().min(0).max(1),
   source_sentence: z.string().nullable(),
+  /** v1.1 (spec 06 v1.1 §A). Absent from a v1 response ⇒ null. */
+  reasoning: z.string().nullable().optional(),
 });
 
 export type ModelKeyTerm = z.infer<typeof keyTermSchema>;

@@ -7,7 +7,7 @@ import { callLlm } from '@/lib/ai/openai-client';
 import {
   buildExtractionSystemPrompt,
   buildExtractionUserMessage,
-} from '@/lib/ai/prompts/extraction.v1';
+} from '@/lib/ai/prompts/extraction.v2';
 import { JSON_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
 import { processExtraction, parseJsonResponse } from '@/lib/services/extraction-service';
 import { termsFor } from '@/lib/ai/term-library';
@@ -47,7 +47,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
       const { data: contract } = await supabase
         .from('contracts')
         .select(
-          'id, user_id, contract_type, contract_text, page_count, status, processing_started_at',
+          'id, user_id, contract_type, contract_text, page_count, status, processing_started_at, ocr_confidence',
         )
         .eq('id', params.id)
         .eq('user_id', user.id)
@@ -214,6 +214,11 @@ export async function POST(_request: Request, { params }: { params: { id: string
           }
 
           const terms = (persistedTerms ?? []) as Array<Record<string, unknown>>;
+          // v1.1 fields come from the processed set when the RPC's row does not
+          // yet carry them (the v1.1 columns land with the schema additions).
+          const byName = new Map(processed.terms.map((t) => [t.term_name.toLowerCase(), t]));
+          const ocrConfidence =
+            typeof contract.ocr_confidence === 'number' ? contract.ocr_confidence : null;
 
           return Response.json({
             contract_id: contract.id,
@@ -222,17 +227,31 @@ export async function POST(_request: Request, { params }: { params: { id: string
             type_mismatch_warning: processed.typeMismatch,
             term_count: terms.length,
             first_term_ready_ms: firstTermReadyMs,
-            terms: terms.map((t) => ({
-              id: t.id,
-              term_name: t.term_name,
-              value: t.value,
-              page_number: t.page_number,
-              confidence_score: t.confidence_score,
-              source_sentence: t.source_sentence,
-              is_source_verified: t.is_source_verified,
-              is_custom: t.is_custom,
-              display_rank: t.display_rank,
-            })),
+            // Spec 06 v1.1 §C — the extraction agent's second HIL trigger.
+            required_missing: processed.requiredMissing,
+            // Spec 06 v1.1 §D — OCR passthrough, only when the row carries it.
+            ...(ocrConfidence !== null ? { ocr_confidence: ocrConfidence } : {}),
+            terms: terms.map((t) => {
+              const p = byName.get(String(t.term_name).toLowerCase());
+              const reasoning = (t.reasoning as string | null | undefined) ?? p?.reasoning ?? null;
+              return {
+                id: t.id,
+                term_name: t.term_name,
+                value: t.value,
+                page_number: t.page_number,
+                confidence_score: t.confidence_score,
+                source_sentence: t.source_sentence,
+                is_source_verified: t.is_source_verified,
+                is_custom: t.is_custom,
+                display_rank: t.display_rank,
+                reasoning,
+                original_ai_page: (t.original_ai_page as number | null | undefined) ?? t.page_number ?? null,
+                original_ai_reasoning: (t.original_ai_reasoning as string | null | undefined) ?? reasoning,
+                is_required: (t.is_required as boolean | undefined) ?? p?.is_required ?? false,
+                page_edited: (t.page_edited as boolean | undefined) ?? false,
+                reasoning_edited: (t.reasoning_edited as boolean | undefined) ?? false,
+              };
+            }),
           });
         } catch (err) {
           // On any unrecoverable failure the error state is persisted so the

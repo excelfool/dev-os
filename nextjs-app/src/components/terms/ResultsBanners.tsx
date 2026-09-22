@@ -32,6 +32,21 @@ export function TypeMismatchNotice({ contractType }: { contractType: ContractTyp
   );
 }
 
+/** Spec 06 v1.1 §C — required terms the model did not find; copy verbatim. */
+export function ReviewNeededNotice({ names }: { names: string[] }) {
+  if (names.length === 0) return null;
+  const n = names.length;
+  return (
+    <div role="status" className="flex items-start gap-2 rounded-card bg-warning-50 px-4 py-3">
+      <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-warning-900" />
+      <p className="flex-1 text-caption text-warning-900">
+        We couldn&apos;t find {n} required term{n === 1 ? '' : 's'}: {names.join(', ')}. Please
+        verify these in the document before relying on this review.
+      </p>
+    </div>
+  );
+}
+
 export function CalibrationNotice() {
   return (
     <p role="status" className="rounded-card bg-warning-50 px-4 py-3 text-caption text-warning-900">

@@ -38,14 +38,21 @@ const serverSchema = z.object({
   OPENAI_BASE_URL: z.string().url().optional().or(z.literal('')),
   OPENAI_TIMEOUT_MS: num(20_000),
   OPENAI_MAX_RETRIES: num(3),
-  OPENAI_EXTRACTION_MAX_TOKENS: num(2000),
+  OPENAI_EXTRACTION_MAX_TOKENS: num(3000), // v1.1: 36-term MSA + reasoning
   OPENAI_CHAT_MAX_TOKENS: num(1000),
   OPENAI_EXTRACTION_TEMPERATURE: z.coerce.number().default(0.1),
   OPENAI_CHAT_TEMPERATURE: z.coerce.number().default(0.4),
   OPENAI_INPUT_COST_PER_1K: z.coerce.number().default(0.005),
   OPENAI_OUTPUT_COST_PER_1K: z.coerce.number().default(0.015),
   OPENAI_MONTHLY_BUDGET_USD: z.coerce.number().default(300),
-  PROMPT_VERSION: z.string().default('v1.0'),
+  PROMPT_VERSION: z.string().default('v2.0'), // v1.1: extraction.v2 is the only prompt that renders the 36-term library
+  // Per-purpose model ids (spec 01 v1.1 §B). Unset ⇒ OPENAI_MODEL. The judge is
+  // eval-only and must differ from the product models (spec 22 §6.1).
+  OPENAI_MODEL_EXTRACTION: z.string().optional().or(z.literal('')),
+  OPENAI_MODEL_CHAT: z.string().optional().or(z.literal('')),
+  OPENAI_MODEL_SUMMARY: z.string().optional().or(z.literal('')),
+  OPENAI_MODEL_ENHANCER: z.string().optional().or(z.literal('')),
+  OPENAI_MODEL_JUDGE: z.string().optional().or(z.literal('')),
   MAX_UPLOAD_MB: num(10),
   MAX_PAGES: num(20),
   MAX_TOKENS: num(15_000),
