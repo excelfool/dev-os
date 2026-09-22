@@ -1,6 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recordEvent } from '@/lib/metrics/events';
+import { addMonthsClamped, nextRenewalOccurrence } from './renewal-schedule';
 import type { ContractType } from '@/types/domain';
 
 /**
@@ -42,9 +43,6 @@ export function parseLeadingInteger(value: string | null | undefined): number | 
 function addDays(d: Date, days: number): Date {
   return new Date(d.getTime() + days * 86_400_000);
 }
-function addMonths(d: Date, months: number): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, d.getUTCDate()));
-}
 function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -52,32 +50,10 @@ function toDateString(d: Date): string {
 /** Days before the next renewal that an auto-renewal check is raised. */
 export const AUTO_RENEWAL_CHECK_LEAD_DAYS = 90;
 
-/**
- * D52 (spec 21 §7.2, 5d-2b L10): the next renewal still ahead of `today`.
- *
- * An auto-renewing contract does not renew once. Deriving `end_date + period`
- * and storing it meant a contract that has been rolling over for years still
- * advertised its FIRST renewal: live contract 93ba9b49 ends 2022-09-21 and
- * renews every 6 months, and in September 2026 the card offered "Renews on 21
- * Mar 2023" as an upcoming date with reminder toggles.
- *
- * Returns the first `end + k × period` (k ≥ 1) that is not before `today`. A
- * period of zero or less cannot advance, so it is returned as-is rather than
- * looped on.
- */
-export function nextRenewalOccurrence(endDate: Date, periodMonths: number, today: Date): Date {
-  if (periodMonths <= 0) return addMonths(endDate, periodMonths);
+// The renewal series lives in `renewal-schedule` so the derivation and the
+// read-time roll share one definition (5d-2c).
+export { addMonthsClamped, nextRenewalOccurrence } from './renewal-schedule';
 
-  const floor = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  let k = 1;
-  let occurrence = addMonths(endDate, periodMonths);
-  // Bounded: 1,200 periods is a century of monthly renewals.
-  while (occurrence.getTime() < floor && k < 1_200) {
-    k += 1;
-    occurrence = addMonths(endDate, periodMonths * k);
-  }
-  return occurrence;
-}
 /** send_at = date − offset at 08:00 UTC. */
 export function sendAtFor(date: Date, offsetDays: number): Date {
   const day = addDays(date, -offsetDays);
@@ -132,10 +108,11 @@ export function deriveKeyDatesFromTerms(
   const periodMonths = parseLeadingInteger(periodTerm?.value);
   if (periodTerm?.value && periodMonths === null) unparsed.push('renewal_date');
 
-  // D52: for an auto-renewing contract the live renewal is the next
-  // occurrence, and the notice deadline and auto-renewal check are the lead-in
-  // to THAT date. Without a parseable period there is no series to roll along,
-  // so both fall back to the end date as before.
+  // D52, corrected 5d-2c: the anchor is the end of the CURRENT term — the
+  // first `end + k × period` (k ≥ 0) that is still ahead — and the notice
+  // deadline and auto-renewal check are the lead-in to THAT date. For a
+  // contract still inside its first term that is the end date itself. Without
+  // a parseable period there is no series, so both fall back to the end date.
   const rollsForward = autoRenews && periodMonths !== null;
   const renewalDate = rollsForward ? nextRenewalOccurrence(endDate, periodMonths, today) : null;
   const anchor = renewalDate ?? endDate;

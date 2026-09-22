@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   KEY_DATE_SOURCE_TERMS,
+  addMonthsClamped,
   deriveKeyDatesFromTerms,
   nextRenewalOccurrence,
   parseIsoDate,
@@ -21,12 +22,13 @@ describe('deriveKeyDatesFromTerms (MSA)', () => {
       t('Renewal Period (Months)', '12'),
     ]);
     expect(unparsed).toEqual([]);
-    // D52 (5d-2b L10): the notice deadline is the lead-in to the RENEWAL, not
-    // to the end date. Was 2027-03-01, anchored on the end date.
+    // 5d-2c: the anchor is the end of the CURRENT term (k ≥ 0). This contract
+    // has not reached its end date yet, so the renewal it faces is that date,
+    // and notice is due 30 days before it.
     expect(derived.map((d) => [d.kind, d.date.toISOString().slice(0, 10)])).toEqual([
       ['end_date', '2027-03-31'],
-      ['renewal_notice_deadline', '2028-03-01'],
-      ['renewal_date', '2028-03-31'],
+      ['renewal_notice_deadline', '2027-03-01'],
+      ['renewal_date', '2027-03-31'],
     ]);
   });
 
@@ -37,9 +39,9 @@ describe('deriveKeyDatesFromTerms (MSA)', () => {
       t('Renewal Period (Months)', '12'),
     ]);
     expect(derived.map((d) => d.kind)).toEqual(['end_date', 'renewal_date', 'auto_renewal_check']);
-    // D52 (5d-2b L10): 90 days before the renewal (2028-03-31). Was
-    // 2026-12-31, 90 days before the end date.
-    expect(derived.find((d) => d.kind === 'auto_renewal_check')!.date.toISOString().slice(0, 10)).toBe('2028-01-01');
+    // 5d-2c: 90 days before the renewal, which for a contract still in its
+    // first term IS the end date — so this is back to the original 2026-12-31.
+    expect(derived.find((d) => d.kind === 'auto_renewal_check')!.date.toISOString().slice(0, 10)).toBe('2026-12-31');
   });
 
   it('an unparseable end date derives nothing and is reported', () => {
@@ -128,14 +130,30 @@ describe('renewal roll-forward (L10 / D52)', () => {
     expect(on(derived, 'renewal_date')).toBe('2026-09-21');
   });
 
-  it('does not roll forward when the first occurrence is already ahead', () => {
+  it('anchors on the end date itself while the contract is in its first term', () => {
     const { derived } = deriveKeyDatesFromTerms(
       'MSA',
       [t('Contract end date', '2027-03-31'), t('Auto Renewal', 'Yes'), t('Renewal Period (Months)', '12')],
       TODAY,
     );
 
-    expect(on(derived, 'renewal_date')).toBe('2028-03-31');
+    // k = 0: the renewal this contract faces is the end of the term it is in.
+    expect(on(derived, 'renewal_date')).toBe('2027-03-31');
+  });
+
+  it('gives notice 30 days before the end of the current term, not a year later', () => {
+    const { derived } = deriveKeyDatesFromTerms(
+      'MSA',
+      [
+        t('Contract end date', '2027-03-31'),
+        t('Auto Renewal', 'Yes'),
+        t('Renewal Period (Months)', '12'),
+        t('Notice to not auto renew (Days)', '30'),
+      ],
+      TODAY,
+    );
+
+    expect(on(derived, 'renewal_notice_deadline')).toBe('2027-03-01');
   });
 
   it('hangs the notice deadline off the next renewal', () => {
@@ -189,13 +207,60 @@ describe('nextRenewalOccurrence (L10 / D52)', () => {
     expect(nextRenewalOccurrence(end, 6, TODAY).toISOString().slice(0, 10)).toBe('2027-03-21');
   });
 
-  it('returns the first occurrence when it is already ahead', () => {
+  it('returns the end date itself when the term has not ended (k = 0)', () => {
     const end = new Date(Date.UTC(2027, 2, 31));
-    expect(nextRenewalOccurrence(end, 12, TODAY).toISOString().slice(0, 10)).toBe('2028-03-31');
+    expect(nextRenewalOccurrence(end, 12, TODAY).toISOString().slice(0, 10)).toBe('2027-03-31');
+  });
+
+  it('treats an end date falling exactly today as the next renewal', () => {
+    const end = new Date(Date.UTC(2026, 8, 22));
+    expect(nextRenewalOccurrence(end, 12, TODAY).toISOString().slice(0, 10)).toBe('2026-09-22');
   });
 
   it('is stable for a period of zero', () => {
     const end = new Date(Date.UTC(2022, 8, 21));
     expect(nextRenewalOccurrence(end, 0, TODAY).toISOString().slice(0, 10)).toBe('2022-09-21');
+  });
+});
+
+/**
+ * 5d-2c item 2. Adding months to a month-end date must land on a real day.
+ * Plain `Date.UTC(y, m + n, 31)` rolls over into the following month —
+ * 31 January + 1 month would become 3 March — which silently moves a renewal
+ * past the date the contract actually renews.
+ */
+describe('addMonthsClamped (5d-2c)', () => {
+  const on = (iso: string, months: number) =>
+    addMonthsClamped(new Date(`${iso}T00:00:00Z`), months).toISOString().slice(0, 10);
+
+  it('clamps 31 January + 1 month to the end of a 28-day February', () => {
+    expect(on('2027-01-31', 1)).toBe('2027-02-28');
+  });
+
+  it('clamps 31 January + 1 month to the end of a leap February', () => {
+    expect(on('2028-01-31', 1)).toBe('2028-02-29');
+  });
+
+  it('clamps 31 August + 6 months to the end of February', () => {
+    expect(on('2026-08-31', 6)).toBe('2027-02-28');
+  });
+
+  it('leaves a day that exists in the target month alone', () => {
+    expect(on('2026-09-21', 6)).toBe('2027-03-21');
+    expect(on('2027-03-31', 12)).toBe('2028-03-31');
+  });
+
+  it('clamps across a year boundary', () => {
+    expect(on('2026-12-31', 2)).toBe('2027-02-28');
+  });
+
+  it('is the identity for zero months', () => {
+    expect(on('2026-08-31', 0)).toBe('2026-08-31');
+  });
+
+  it('rolls a clamped renewal series off the ORIGINAL day each time', () => {
+    // 31 Jan + 1 month clamps to 28 Feb, but + 2 months is 31 March, not
+    // 28 March: each occurrence is measured from the end date, not the last.
+    expect(on('2027-01-31', 2)).toBe('2027-03-31');
   });
 });

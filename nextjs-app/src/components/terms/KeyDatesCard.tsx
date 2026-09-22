@@ -75,7 +75,16 @@ export function KeyDatesCard({
   const termById = new Map(terms.map((t) => [t.id, t]));
   // D52 (5d-2b L10): the same roll-forward route 29 applies, so a card
   // hydrated from server-rendered props agrees with one that fetched.
-  const visibleDates = keyDates === null ? null : rollForwardKeyDates(keyDates);
+  const rolled = keyDates === null ? null : rollForwardKeyDates(keyDates);
+
+  // 5d-2c: while a contract is still in its first term, the end date and the
+  // renewal ARE the same day — the term ends and, absent notice, it renews.
+  // Two rows carrying one date read as a bug, so they are shown as one.
+  const renewalDate = rolled?.find((k) => k.kind === 'renewal_date')?.date;
+  const endDate = rolled?.find((k) => k.kind === 'end_date')?.date;
+  const termEndIsRenewal = renewalDate !== undefined && renewalDate === endDate;
+  const visibleDates =
+    rolled === null ? null : termEndIsRenewal ? rolled.filter((k) => k.kind !== 'end_date') : rolled;
 
   return (
     <section aria-label="Key dates" className="mt-subsection flex flex-col gap-2 rounded-card border border-grey-100 p-4">
@@ -97,7 +106,10 @@ export function KeyDatesCard({
               <li key={kd.id} className="flex flex-col gap-1 py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-body text-grey-900">
-                    {LABELS[kd.kind]} · {formatDate(kd.date)}
+                    {(termEndIsRenewal && kd.kind === 'renewal_date'
+                      ? 'Term ends and auto-renews'
+                      : LABELS[kd.kind])}{' '}
+                    · {formatDate(kd.date)}
                     {passed && (
                       <span className="ml-2 rounded-badge bg-grey-50 px-1.5 py-0.5 text-caption text-grey-500">
                         Passed

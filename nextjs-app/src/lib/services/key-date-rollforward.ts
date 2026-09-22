@@ -20,6 +20,8 @@ export interface RollForwardRow {
   derived_from?: Record<string, unknown> | null;
 }
 
+import { nextRenewalOccurrence, startOfDayUtc as startOfDay } from './renewal-schedule';
+
 const ISO_DATE = /(\d{4})-(\d{2})-(\d{2})/;
 
 function parseIso(value: string | null | undefined): Date | null {
@@ -36,23 +38,16 @@ function leadingInteger(value: unknown): number | null {
   return m ? Number(m[0]) : null;
 }
 
-function addMonths(d: Date, months: number): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months, d.getUTCDate()));
-}
-
 function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Midnight UTC on `today`, so a date falling today still counts as ahead. */
-export function startOfDayUtc(today: Date): number {
-  return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-}
+export { startOfDayUtc } from './renewal-schedule';
 
 /** True when a date-only value is strictly before today. */
 export function isPast(date: string, today: Date = new Date()): boolean {
   const parsed = parseIso(date);
-  return parsed !== null && parsed.getTime() < startOfDayUtc(today);
+  return parsed !== null && parsed.getTime() < startOfDay(today);
 }
 
 /**
@@ -68,13 +63,8 @@ export function rollForwardKeyDates<T extends RollForwardRow>(rows: T[], today: 
   const periodMonths = leadingInteger(renewal.derived_from?.['Renewal Period (Months)']);
   if (!endDate || periodMonths === null || periodMonths <= 0) return rows;
 
-  const floor = startOfDayUtc(today);
-  let k = 1;
-  let next = addMonths(endDate, periodMonths);
-  while (next.getTime() < floor && k < 1_200) {
-    k += 1;
-    next = addMonths(endDate, periodMonths * k);
-  }
+  // 5d-2c: k ≥ 0 — the end of the current term is itself a renewal.
+  const next = nextRenewalOccurrence(endDate, periodMonths, today);
 
   const stored = parseIso(renewal.date);
   // Already the next occurrence — leave every row exactly as it is.

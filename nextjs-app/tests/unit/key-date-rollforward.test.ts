@@ -94,6 +94,57 @@ describe('rollForwardKeyDates (L10 / D52)', () => {
     expect(rollForwardKeyDates(rows, TODAY)).toBe(rows);
   });
 
+  it('anchors on the end date itself while the contract is in its first term (5d-2c)', () => {
+    // Derived before 5d-2c, so the stored renewal is a year past the end date.
+    const firstTerm = [
+      {
+        kind: 'end_date',
+        date: '2027-03-31',
+        is_manual: false,
+        derived_from: { 'Contract end date': '2027-03-31' },
+      },
+      {
+        kind: 'renewal_date',
+        date: '2028-03-31',
+        is_manual: false,
+        derived_from: {
+          'Contract end date': '2027-03-31',
+          'Renewal Period (Months)': '12',
+          'Auto Renewal': 'Yes',
+        },
+      },
+      {
+        kind: 'renewal_notice_deadline',
+        date: '2028-03-01',
+        is_manual: false,
+        derived_from: { 'Contract end date': '2027-03-31', 'Notice to not auto renew (Days)': '30' },
+      },
+    ];
+
+    const rolled = rollForwardKeyDates(firstTerm, TODAY);
+
+    expect(dateOf(rolled, 'renewal_date')).toBe('2027-03-31');
+    expect(dateOf(rolled, 'renewal_notice_deadline')).toBe('2027-03-01');
+  });
+
+  it('clamps a month-end renewal to a real day (5d-2c)', () => {
+    const monthEnd = [
+      {
+        kind: 'renewal_date',
+        date: '2026-08-31',
+        is_manual: false,
+        derived_from: {
+          'Contract end date': '2026-08-31',
+          'Renewal Period (Months)': '6',
+          'Auto Renewal': 'Yes',
+        },
+      },
+    ];
+
+    // 2026-08-31 is behind us; + 6 months clamps to the end of February.
+    expect(dateOf(rollForwardKeyDates(monthEnd, TODAY), 'renewal_date')).toBe('2027-02-28');
+  });
+
   it('leaves a renewal whose period cannot be read alone', () => {
     const rows = EXPEL.map((r) =>
       r.kind === 'renewal_date'
