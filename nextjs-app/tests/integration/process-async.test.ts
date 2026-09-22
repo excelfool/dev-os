@@ -188,6 +188,32 @@ describe('the background function', () => {
     expect(get.body.key_terms).toHaveLength(10);
   }, 60_000);
 
+  it('completes a job on a runtime with no native WebSocket (Netlify nodejs20.x, L3)', async () => {
+    // supabase-js needs a WebSocket global to construct a client. Node 22+ has
+    // one; Netlify's nodejs20.x does not, and the live function crashed there.
+    const g = globalThis as unknown as { WebSocket?: unknown };
+    const native = g.WebSocket;
+    delete g.WebSocket;
+    try {
+      resetOpenAiStub();
+      scriptOpenAi({ content: NDA_EXTRACTION }, { content: GOOD_SUMMARY });
+      const id = await fresh();
+      captured.length = 0;
+      expect((await api(user, `/api/contracts/${id}/process`, { method: 'POST' })).status).toBe(202);
+      const job = captured[0]!;
+
+      const res = await invoke(job.body, job.signature);
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { status: string }).status).toBe('completed');
+      expect(typeof g.WebSocket).toBe('function'); // the polyfill was installed
+
+      const { data: row } = await user.client.from('contracts').select('status').eq('id', id).single();
+      expect(row?.status).toBe('completed');
+    } finally {
+      g.WebSocket = native;
+    }
+  }, 60_000);
+
   it('rejects a bad signature with 401 and touches nothing', async () => {
     const id = await fresh();
     captured.length = 0;
