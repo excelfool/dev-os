@@ -15,11 +15,14 @@ export function KeyTermsPanel({
   contractType,
   userId,
   contractId,
+  pageCount,
 }: {
   terms: KeyTerm[];
   contractType: ContractType;
   userId: string;
   contractId: string;
+  /** Spec 07 v1.1 §D: the ceiling each row's page editor validates against. */
+  pageCount: number;
 }) {
   const [showAll, setShowAll] = useState(false);
 
@@ -41,6 +44,7 @@ export function KeyTermsPanel({
             isRequired={!term.is_custom && required.has(term.term_name)}
             userId={userId}
             contractId={contractId}
+            pageCount={pageCount}
           />
         ))}
 
@@ -53,6 +57,7 @@ export function KeyTermsPanel({
               isRequired={!term.is_custom && required.has(term.term_name)}
               userId={userId}
               contractId={contractId}
+              pageCount={pageCount}
             />
           ))}
       </ul>

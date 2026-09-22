@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { PageChip } from './PageChip';
+import { WhySection } from './WhySection';
 import { InlineTermEditor } from './InlineTermEditor';
 import { useTargetPage } from '@/hooks/use-target-page';
 import type { KeyTerm } from '@/types/domain';
@@ -15,27 +16,36 @@ export function KeyTermRow({
   tooltip,
   userId,
   contractId,
+  pageCount,
   isRequired = false,
 }: {
   term: KeyTerm;
   tooltip?: string;
   userId: string;
   contractId: string;
+  /** Spec 07 v1.1 §D: the ceiling the page editor validates against. */
+  pageCount: number;
   /** Spec 06 v1.1 §C: a required standard term (from the library). */
   isRequired?: boolean;
 }) {
   const { goToPage } = useTargetPage();
   const [value, setValue] = useState(term.value);
   const [isEdited, setIsEdited] = useState(term.is_edited);
+  // Spec 07 v1.1 §D: the three fields save independently, so each keeps its
+  // own optimistic state and its own edited flag.
+  const [pageNumber, setPageNumber] = useState(term.page_number);
+  const [pageEdited, setPageEdited] = useState(term.page_edited ?? false);
+  const [reasoning, setReasoning] = useState(term.reasoning ?? null);
+  const [reasoningEdited, setReasoningEdited] = useState(term.reasoning_edited ?? false);
   const [showWhy, setShowWhy] = useState(false);
 
   // Low-confidence auto-highlight (PRD §9 UI guardrails): expanding a term
   // under 50% navigates to its source sentence in one click.
   useEffect(() => {
-    if (showWhy && term.confidence_score < 50 && term.page_number !== null) {
-      goToPage(term.page_number, term.source_sentence);
+    if (showWhy && term.confidence_score < 50 && pageNumber !== null) {
+      goToPage(pageNumber, term.source_sentence);
     }
-  }, [showWhy, term.confidence_score, term.page_number, term.source_sentence, goToPage]);
+  }, [showWhy, term.confidence_score, pageNumber, term.source_sentence, goToPage]);
 
   return (
     <li className="flex flex-col gap-2 border-b border-grey-50 py-3">
@@ -54,14 +64,37 @@ export function KeyTermRow({
             </InfoTooltip>
           )}
           {isEdited && (
-            <InfoTooltip label="You edited this value. The original AI value is kept for accuracy tracking.">
+            <InfoTooltip label="You changed this. The original AI value is kept for accuracy tracking.">
               <Badge>Edited</Badge>
             </InfoTooltip>
           )}
         </span>
 
         <span className="flex items-center gap-2">
-          <PageChip pageNumber={term.page_number} sourceSentence={term.source_sentence} />
+          <PageChip
+            pageNumber={pageNumber}
+            sourceSentence={term.source_sentence}
+            edited={pageEdited}
+            editor={
+              <InlineTermEditor
+                termId={term.id}
+                userId={userId}
+                contractId={contractId}
+                field="page"
+                value={pageNumber === null ? null : String(pageNumber)}
+                pageCount={pageCount}
+                onSaved={(next) => {
+                  const page = Number(next);
+                  if (!Number.isInteger(page)) return;
+                  setPageNumber(page);
+                  setPageEdited(true);
+                  // §D: a saved page edit re-targets the viewer and re-scans
+                  // the highlight, so the user lands on what they just claimed.
+                  goToPage(page, term.source_sentence);
+                }}
+              />
+            }
+          />
           <ConfidenceBadge score={term.confidence_score} />
         </span>
       </div>
@@ -70,6 +103,7 @@ export function KeyTermRow({
         termId={term.id}
         userId={userId}
         contractId={contractId}
+        field="value"
         value={value}
         onSaved={(next) => {
           setValue(next);
@@ -77,14 +111,7 @@ export function KeyTermRow({
         }}
       />
 
-      {term.reasoning && (
-        <p className="text-caption text-grey-600">
-          <span className="font-medium text-grey-700">Why: </span>
-          {term.reasoning}
-        </p>
-      )}
-
-      {term.page_number === null && term.confidence_score > 0 && (
+      {pageNumber === null && term.confidence_score > 0 && (
         <p className="text-caption text-grey-400">No page reference — verify manually</p>
       )}
 
@@ -103,27 +130,26 @@ export function KeyTermRow({
         </button>
 
         {showWhy && (
-          <div className="mt-2 flex flex-col gap-1 border-l-2 border-grey-100 pl-3">
-            {term.source_sentence ? (
-              <>
-                <blockquote className="text-body text-grey-600">
-                  &ldquo;{term.source_sentence}&rdquo;
-                </blockquote>
-                {term.page_number !== null && (
-                  <p className="text-caption text-grey-400">Found on page {term.page_number}</p>
-                )}
-                {!term.is_source_verified && (
-                  <p className="text-caption text-danger-700">
-                    We couldn&apos;t match this sentence to the document text — verify it directly.
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="text-caption text-grey-400">
-                No supporting sentence was found for this term.
-              </p>
-            )}
-          </div>
+          <WhySection
+            sourceSentence={term.source_sentence}
+            pageNumber={pageNumber}
+            isSourceVerified={term.is_source_verified}
+            reasoning={reasoning}
+            reasoningEdited={reasoningEdited}
+            reasoningEditor={
+              <InlineTermEditor
+                termId={term.id}
+                userId={userId}
+                contractId={contractId}
+                field="reasoning"
+                value={reasoning}
+                onSaved={(next) => {
+                  setReasoning(next);
+                  setReasoningEdited(true);
+                }}
+              />
+            }
+          />
         )}
       </div>
     </li>

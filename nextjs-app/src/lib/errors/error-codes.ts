@@ -40,7 +40,10 @@ export const ERROR_DEFINITIONS = {
   RATE_LIMITED: { httpStatus: 429, message: "You're going a bit fast — try again in {minutes} minutes.", retryable: true },
   CAPACITY: { httpStatus: 503, message: "We're handling a lot of contracts right now. Try again in a minute.", retryable: true },
   AI_UNAVAILABLE: { httpStatus: 503, message: "We couldn't reach the AI service. Try again in a few minutes.", retryable: true },
-  AI_TIMEOUT: { httpStatus: 504, message: "We couldn't reach the AI service. Try again in a few minutes.", retryable: true },
+  // Stage 5d-2: was the AI_UNAVAILABLE copy verbatim ("couldn't reach"), which
+  // described the wrong failure — a timeout means we reached the service and it
+  // did not answer in time. Recorded in spec 12.
+  AI_TIMEOUT: { httpStatus: 504, message: 'The AI service took too long to respond. Try again in a few minutes.', retryable: true },
   AI_INVALID_OUTPUT: { httpStatus: 502, message: 'The AI returned an unreadable result. Try again in a few minutes.', retryable: true },
   STORAGE_UNAVAILABLE: { httpStatus: 200, message: "The PDF preview isn't available for this contract — we're showing the text instead.", retryable: false },
   INVALID_TERM_NAME: { httpStatus: 400, message: 'Custom term names must be 3–60 characters.', retryable: false },
@@ -51,6 +54,15 @@ export const ERROR_DEFINITIONS = {
   NOT_PROCESSED: { httpStatus: 409, message: 'Process this contract before chatting with it.', retryable: false },
   NO_FILE: { httpStatus: 404, message: "The original PDF isn't available.", retryable: false },
   INVALID_VALUE: { httpStatus: 400, message: 'Enter a value between 1 and 2,000 characters.', retryable: false },
+  // Stage 5d-2 (spec 07 v1.1 §D): the page ceiling is the contract's own page
+  // count, so the limit is interpolated rather than baked into the copy.
+  INVALID_PAGE: {
+    httpStatus: 400,
+    message: 'Enter a page between 1 and {page_count}.',
+    retryable: false,
+    defaults: { page_count: 1 },
+  },
+  INVALID_REASONING: { httpStatus: 400, message: 'Enter reasoning between 1 and 500 characters.', retryable: false },
   ALREADY_SURVEYED: { httpStatus: 409, message: "Thanks — you've already given us feedback recently.", retryable: false },
   PLAN_REQUIRED: { httpStatus: 403, message: 'Export is available on the Growth and Pro plans. Upgrade to export this review.', retryable: false },
   VALIDATION: { httpStatus: 400, message: 'Some of the details you entered need fixing.', retryable: false },

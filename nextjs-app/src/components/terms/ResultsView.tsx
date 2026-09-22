@@ -143,6 +143,7 @@ export function ResultsView({
               contractType={current.contract_type as ContractType}
               userId={userId}
               contractId={current.id}
+              pageCount={current.page_count}
             />
             <KeyDatesCard contractId={current.id} initialKeyDates={initialKeyDates} terms={terms} />
 

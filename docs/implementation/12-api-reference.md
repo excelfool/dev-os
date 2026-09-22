@@ -75,6 +75,10 @@ Removes the Storage object then the row; cascades everything else. **204.**
 `{ "value": "24 months" }`, 1–2,000 chars. Sets `value`, `is_edited=true`, `edited_at=now()`; `original_ai_value` is never modified.
 **200** `{ id, value, is_edited: true, original_ai_value, edited_at }`, returned within the 2-second budget. **Errors** `400 INVALID_VALUE`.
 
+**v1.1 L7 (Stage 5d-2, 2026-09-22) — built.** The body is now any **non-empty subset** of `{ value, page_number, reasoning }` (`keyTermUpdateSchema` v1.1, `.strict()` — an unknown key is rejected). Each field validates on its own and reports its own code, because the three are edited from three separate controls: `value` 1–2,000 → `400 INVALID_VALUE`; `page_number` an integer `1..contracts.page_count` → `400 INVALID_PAGE` ("Enter a page between 1 and {page_count}." — the ceiling is the contract's own, so the handler loads the row before judging the page); `reasoning` 1–500 → `400 INVALID_REASONING`. A body with **no** editable field is `400 VALIDATION`, not a field error: nothing the user typed was wrong, there was nothing to save. The handler sets `is_edited` / `page_edited` / `reasoning_edited` only for the fields present, and `edited_at` always. **200** returns the §D shape: `{ id, value, page_number, reasoning, is_edited, page_edited, reasoning_edited, original_ai_value, original_ai_page, original_ai_reasoning, edited_at }`. The key-date re-derive (spec 21 §7.2) runs on a **value** edit of a reminder-source term only — a page or reasoning edit moves no date.
+
+**No database guard exists for the originals.** There is no trigger on `key_terms` and RLS is row-level (`user_id = auth.uid()`), so it permits every column; nothing in the database stops an `original_ai_*` write. This handler being the only writer is the guarantee, and `tests/unit/key-term-patch-route.test.ts` asserts the update payload carries no `original_ai_*` key on any of the three edits.
+
 ## 10. `GET /api/contracts/{id}/chat`
 Returns (creating if absent) the session and up to 200 messages ascending.
 **200** `{ session_id, messages: [{ id, role, content, cited_pages, citation_verified, created_at }] }`.
@@ -156,3 +160,9 @@ The `NOT_IMPLEMENTED` envelope (spec 21 §1.3): `{ "error": { "code": "NOT_IMPLE
 Route count: **37** (plus the OAuth callback under route 35). The `AppError` taxonomy gains exactly one *new kind* of code for P-4 (`NOT_IMPLEMENTED`); the rest are ordinary validation/conflict codes for the new contracts.
 
 **Superseded v1.0 lines:** §4 `max_tokens` 2000 → **3000** (spec 06 v1.1 §A).
+
+### D. Copy corrections
+
+| Date | Code | Was | Is |
+|---|---|---|---|
+| 2026-09-22 (Stage 5d-2) | `504 AI_TIMEOUT` | "We couldn't reach the AI service. Try again in a few minutes." — the `AI_UNAVAILABLE` copy verbatim | **"The AI service took too long to respond. Try again in a few minutes."** A timeout means the service *was* reached and did not answer in time; the two codes are distinguishable in the logs and should be distinguishable to the user. |
