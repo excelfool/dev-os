@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Stage 5d-1 / L5 (spec 06 v1.1 §3/§G). Two properties of `callLlm`:
@@ -71,7 +71,13 @@ const BASE = {
 };
 
 describe('callLlm retry classification (L5)', () => {
-  beforeEach(() => h.create.mockReset());
+  beforeEach(() => {
+    h.create.mockReset();
+    // L6 logs one `attempt_failed` line per failed attempt; not this suite's
+    // subject, and asserted in tests/unit/openai-rate-limit.test.ts.
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => vi.restoreAllMocks());
 
   it.each([
     ['APIUserAbortError (our own per-attempt abort)', () => new (E().APIUserAbortError)()],
@@ -106,7 +112,13 @@ describe('callLlm retry classification (L5)', () => {
 });
 
 describe('callLlm timeout plumbing (L5)', () => {
-  beforeEach(() => h.create.mockReset());
+  beforeEach(() => {
+    h.create.mockReset();
+    // L6 logs one `attempt_failed` line per failed attempt; not this suite's
+    // subject, and asserted in tests/unit/openai-rate-limit.test.ts.
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => vi.restoreAllMocks());
 
   it('uses OPENAI_TIMEOUT_MS (20 s) when the caller sets no override — chat and the query enhancer', async () => {
     h.create.mockResolvedValueOnce(OK);

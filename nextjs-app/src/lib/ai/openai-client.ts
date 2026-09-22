@@ -71,6 +71,42 @@ export interface LlmResult {
 /** An attempt is only started if at least this much budget remains. */
 const MIN_ATTEMPT_BUDGET_MS = 6_000;
 const BACKOFF_BASE_MS = [1_000, 2_000, 4_000];
+/**
+ * L6: however long the provider says to wait after a 429, we never sit on it
+ * for more than this. A `6m0s` token reset would otherwise burn a whole job
+ * budget doing nothing.
+ */
+const RATE_LIMIT_MAX_WAIT_MS = 30_000;
+
+/**
+ * Parses an OpenAI rate-limit duration header — `"6m0s"`, `"1.2s"`, `"20ms"`,
+ * `"1h2m3s"` — into milliseconds (L6, spec 06 v1.1 §3).
+ *
+ * Returns `null` for an absent, empty or unparseable value, including a bare
+ * number with no unit, so the caller can fall back to its own schedule rather
+ * than act on a misread header. `ms` is matched before `m` so `"20ms"` is
+ * twenty milliseconds, not twenty minutes.
+ */
+export function parseRateLimitDuration(raw: string | null | undefined): number | null {
+  if (typeof raw !== 'string') return null;
+  const text = raw.trim();
+  if (text.length === 0) return null;
+
+  const unitMs: Record<string, number> = { h: 3_600_000, m: 60_000, s: 1_000, ms: 1 };
+  const token = /(\d+(?:\.\d+)?)(ms|h|m|s)/g;
+
+  let total = 0;
+  let consumed = 0;
+  let match: RegExpExecArray | null;
+  while ((match = token.exec(text)) !== null) {
+    // Anything between tokens means this is not a duration string at all.
+    if (match.index !== consumed) return null;
+    total += Number(match[1]) * unitMs[match[2]!]!;
+    consumed = match.index + match[0].length;
+  }
+  if (consumed !== text.length) return null;
+  return Math.round(total);
+}
 
 let client: OpenAI | null = null;
 
@@ -90,9 +126,54 @@ function getClient(): OpenAI {
   return client;
 }
 
+function jitterPct(ms: number, pct: number): number {
+  return Math.round(ms * (1 - pct + Math.random() * pct * 2));
+}
+
 function jitter(ms: number): number {
   // ±25%
-  return Math.round(ms * (0.75 + Math.random() * 0.5));
+  return jitterPct(ms, 0.25);
+}
+
+/** The class name; the SDK sets no `.name`, so every error reads as 'Error'. */
+function errorName(err: unknown): string {
+  if (err instanceof Error) return err.constructor?.name ?? err.name;
+  return typeof err;
+}
+
+/**
+ * The wait a 429 asks for, in ms, or `null` when it names none (L6).
+ * Header precedence: `retry-after-ms`, then `retry-after` (seconds), then the
+ * larger of the two reset clocks — a token reset and a request reset can
+ * disagree, and the longer one is the one that actually gates us.
+ */
+function rateLimitWaitMs(err: unknown): number | null {
+  if (!(err instanceof OpenAI.APIError) || err.status !== 429) return null;
+  const headers = err.headers;
+  const header = (name: string): string | null => headers?.get(name) ?? null;
+
+  const msRaw = header('retry-after-ms');
+  if (msRaw !== null) {
+    const ms = Number(msRaw);
+    if (Number.isFinite(ms) && ms >= 0) return Math.round(ms);
+  }
+
+  const secRaw = header('retry-after');
+  if (secRaw !== null) {
+    const sec = Number(secRaw);
+    if (Number.isFinite(sec) && sec >= 0) return Math.round(sec * 1_000);
+  }
+
+  const tokens = parseRateLimitDuration(header('x-ratelimit-reset-tokens'));
+  const requests = parseRateLimitDuration(header('x-ratelimit-reset-requests'));
+  if (tokens !== null || requests !== null) return Math.max(tokens ?? 0, requests ?? 0);
+
+  return null;
+}
+
+/** A 429 for `insufficient_quota` is billing, not rate — retrying cannot help. */
+function isInsufficientQuota(err: unknown): boolean {
+  return err instanceof OpenAI.APIError && err.status === 429 && err.code === 'insufficient_quota';
 }
 
 function isTimeout(err: unknown): boolean {
@@ -112,8 +193,11 @@ function isRetryable(err: unknown): boolean {
   if (isTimeout(err)) return true;
   if (err instanceof OpenAI.APIConnectionError) return true;
   if (err instanceof OpenAI.APIError) {
+    // L6: a rate limit is retryable, but a quota exhaustion at the same status
+    // is a billing state — retrying it only burns the remaining budget.
+    if (err.status === 429) return !isInsufficientQuota(err);
     // A 400-class error is not retried — retrying cannot fix a bad request.
-    return err.status === 429 || (err.status !== undefined && err.status >= 500);
+    return err.status !== undefined && err.status >= 500;
   }
   // Anything else (a network error the SDK did not wrap) is worth one more go.
   return true;
@@ -182,8 +266,31 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
       const latencyMs = Date.now() - startedAt;
       lastError = err;
       lastWasTimeout = isTimeout(err);
+      const retryAfterMs = rateLimitWaitMs(err);
 
-      // Every attempt writes a row, including failures.
+      // L6 (spec 06 v1.1 §3): one line per failed attempt. `openai_calls`
+      // records that an attempt failed; this records WHICH failure it was —
+      // the gap that left contract 93ba9b49's 379 ms summary repair
+      // unclassified. Identifiers and classifications only: no key material,
+      // no prompt text, no response body.
+      console.warn(
+        JSON.stringify({
+          llm: 'attempt_failed',
+          purpose: opts.purpose,
+          attempt,
+          name: errorName(err),
+          status: err instanceof OpenAI.APIError ? err.status ?? null : null,
+          code: err instanceof OpenAI.APIError ? err.code ?? null : null,
+          retryAfterMs,
+          latencyMs,
+        }),
+      );
+
+      // Every attempt writes a row, including failures. A 429 is recorded as
+      // 'error': the `openai_calls.outcome` CHECK allows only
+      // ('success','timeout','error','invalid_json') and the schema is
+      // deliberately not changed here (L6) — the log line above carries the
+      // rate-limit distinction.
       await recordOpenAiCall(opts.supabase, {
         userId: opts.userId,
         contractId: opts.contractId,
@@ -198,8 +305,17 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
 
       if (!isRetryable(err) || attempt === maxAttempts) break;
 
-      const backoff = jitter(BACKOFF_BASE_MS[attempt - 1] ?? 4_000);
-      if (opts.deadlineAt !== undefined && Date.now() + backoff >= opts.deadlineAt) break;
+      // L6: a 429 is retried on the provider's clock, jittered ±10% so a
+      // batch's parallel calls do not return in lockstep, and capped. Anything
+      // else keeps the 1/2/4 s schedule.
+      const backoff =
+        retryAfterMs !== null
+          ? Math.min(jitterPct(retryAfterMs, 0.1), RATE_LIMIT_MAX_WAIT_MS)
+          : jitter(BACKOFF_BASE_MS[attempt - 1] ?? 4_000);
+
+      // Only wait if a full attempt still fits afterwards; waiting into a
+      // budget too small to use just delays the same failure.
+      if (opts.deadlineAt !== undefined && Date.now() + backoff + MIN_ATTEMPT_BUDGET_MS > opts.deadlineAt) break;
       await new Promise((resolve) => setTimeout(resolve, backoff));
     } finally {
       clearTimeout(timer);
@@ -207,8 +323,10 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
   }
 
   if (lastWasTimeout) throw appError('AI_TIMEOUT');
-  if (lastError instanceof OpenAI.APIError && lastError.status === 429) {
-    throw appError('AI_UNAVAILABLE');
+  if (isInsufficientQuota(lastError)) {
+    // Ops-actionable and not self-healing: no amount of retrying or waiting
+    // clears it, so it is called out separately from an ordinary rate limit.
+    console.error(JSON.stringify({ llm: 'insufficient_quota', purpose: opts.purpose, model }));
   }
   throw appError('AI_UNAVAILABLE');
 }

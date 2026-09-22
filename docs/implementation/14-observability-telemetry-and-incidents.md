@@ -161,3 +161,13 @@ Add `guardrail_events`, `alert_rules`/`alert_events`, `eval_gates` and the `v_kp
 
 - `tests/integration/send-notification.test.ts` — `key_date_reminder` and `alert_fired` render; neither contains term values other than the date.
 - `tests/unit/events.test.ts` — the new event types are accepted; `unresolved_turns` metadata passes the guard.
+
+### G. v1.1 L6 (Stage 5d-1b, 2026-09-22) — LLM attempt diagnostics
+
+**Operating assumption (D51).** OpenAI Usage Tier 2 from 2026-09-22: gpt-4o **450,000 TPM / 5,000 RPM** (was 30,000 / 500). Product traffic is far below it — one 36-term MSA run is ~34k prompt tokens — but the Stage 7 eval runner can send ~380k tokens in a minute, so 429 handling is live code, not a dormant branch.
+
+**`attempt_failed` (Netlify function logs, §5).** `callLlm` writes one JSON line per failed attempt: `{ llm: 'attempt_failed', purpose, attempt, name, status, code, retryAfterMs, latencyMs }`. This is the companion to the `openai_calls` row, which records *that* an attempt failed but not *which* failure it was: `outcome` is constrained to `('success','timeout','error','invalid_json')`, so a 429, a 500 and a dropped socket all land as `'error'`. `name` is the error class and `code` the provider's error code, which together classify it. `{ llm: 'insufficient_quota', purpose, model }` is logged at error level for the billing case, which does not self-heal and needs an operator.
+
+**Why not a schema change.** Adding a `rate_limited` outcome would mean migrating a CHECK constraint on a live table for a value only the log needs; spec 06 §3 v1.1 L6 records the decision to keep `'error'` and read the class from the log line instead. If 429 rate ever becomes a tracked KPI rather than a debugging aid, that is the point to revisit it.
+
+**No sensitive content.** Both lines carry identifiers, statuses and durations only — no API key material, no prompt or contract text, no response body — matching the `recordEvent` metadata rule in §3.
