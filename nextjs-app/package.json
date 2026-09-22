@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "supabase:start": "supabase start -x realtime,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit",
+    "supabase:reset": "supabase db reset && docker exec -i supabase_db_contractiq-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < ../docs/implementation/supabase-schema.sql",
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/types/database.types.ts",
     "scan:secrets": "node scripts/scan-client-bundle.mjs",
     "test": "vitest run",

@@ -334,7 +334,7 @@ Three layers, none new, all documented here because the background run is the ca
 
 | Layer | Trigger | Effect |
 |---|---|---|
-| `reclaim-stale-processing` pg_cron job (`supabase/database.sql`, every 5 minutes) | `status='processing'` and `processing_started_at < now() − 5 min` | `status='error'`, `error_code='AI_TIMEOUT'`, retryable message. This is **the** recovery for a background function that died (Netlify kill, crash, lost invocation): 5 min > the 120 s budget, so a healthy job can never be reclaimed under it. Verified by `tests/integration/reclaim-cron.test.ts`, which parks a 6-minute-old `processing` row and watches the next tick flip it. |
+| `reclaim-stale-processing` pg_cron job (`docs/implementation/supabase-schema.sql`, every 5 minutes) | `status='processing'` and `processing_started_at < now() − 5 min` | `status='error'`, `error_code='AI_TIMEOUT'`, retryable message. This is **the** recovery for a background function that died (Netlify kill, crash, lost invocation): 5 min > the 120 s budget, so a healthy job can never be reclaimed under it. Verified by `tests/integration/reclaim-cron.test.ts`, which parks a 6-minute-old `processing` row and watches the next tick flip it. |
 | Route 4's own stale rule | a `POST /process` on a `processing` row older than 5 min | Re-claims instead of `409` — the user's "Try again" works even between cron ticks. |
 | `acquire_analysis_slot` staleness | a slot held > 2 min | Self-heals the semaphore if the function died holding a slot. |
 

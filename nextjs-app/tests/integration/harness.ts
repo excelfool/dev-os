@@ -1,8 +1,7 @@
 import { createServer, type Server } from 'node:http';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { loadTestEnv } from '../supabase-guard';
 
 /**
  * Integration harness (spec 18): the real Route Handlers against the real
@@ -16,17 +15,9 @@ import { resolve } from 'node:path';
 export const TEST_PORT = 3100;
 export const BASE_URL = `http://127.0.0.1:${TEST_PORT}`;
 
-function loadEnv(): Record<string, string> {
-  const raw = readFileSync(resolve(process.cwd(), '.env.local'), 'utf8');
-  const env: Record<string, string> = {};
-  for (const line of raw.split('\n')) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match?.[1] && match[2] !== undefined) env[match[1]] = match[2].trim();
-  }
-  return env;
-}
-
-const env = loadEnv();
+// .env.local with process.env winning for the Supabase variables; throws
+// unless the Supabase URL is a local stack (tests/supabase-guard.ts).
+const env = loadTestEnv();
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -69,7 +60,7 @@ export function openAiStubUrl(): string {
   return `http://127.0.0.1:${stubPort}/v1`;
 }
 
-/** The .env.local values the app is started with, for in-process callers. */
+/** The env the app is started with (.env.local + Supabase overrides), for in-process callers. */
 export function testEnv(): Readonly<Record<string, string>> {
   return env;
 }

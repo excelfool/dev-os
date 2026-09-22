@@ -53,7 +53,7 @@ nextjs-app/
 | No `src/middleware.ts` | Create it (spec 03). |
 | No `netlify.toml` | Create it (§6 below). |
 | No test tooling | Install Vitest, RTL, Playwright, axe-core (spec 18). |
-| No `supabase/` directory | Create `supabase/database.sql` (copy of `docs/implementation/supabase-schema.sql`), `supabase/functions/purge-expired-pdfs/` (spec 11) and `supabase/functions/send-notification/` (spec 14 §2a). |
+| No `supabase/` directory | Create `supabase/functions/purge-expired-pdfs/` (spec 11) and `supabase/functions/send-notification/` (spec 14 §2a). |
 | No `.env.example` at root | Copy `docs/implementation/.env.example` to the project root. |
 
 Rename the project directory reference in docs as `contractiq/`; the physical folder may stay `nextjs-app/`. No spec depends on the folder's own name.
@@ -161,7 +161,6 @@ src/
 │         use-target-page.ts,use-analytics.ts}
 ├─ types/{database.types.ts,domain.ts,api.ts}
 └─ middleware.ts
-supabase/database.sql
 supabase/functions/purge-expired-pdfs/index.ts
 supabase/functions/send-notification/index.ts
 scripts/{scan-client-bundle.mjs,notify-incident.ts}

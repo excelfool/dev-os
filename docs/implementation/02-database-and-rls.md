@@ -1,7 +1,7 @@
 # 02 — Database, RLS and Storage
 
 **Sources:** engineering-doc §7 (all subsections), §6.2 authorisation; PRD FR-13, FR-14, Assumption 9, Assumption 13.
-**Runnable artefact:** `docs/implementation/supabase-schema.sql` — copy to `supabase/database.sql` and paste into the Supabase SQL Editor of a fresh project. This file explains it and specifies the tests that prove it.
+**Runnable artefact:** `docs/implementation/supabase-schema.sql` — paste into the Supabase SQL Editor of a fresh project, or apply to the local stack with `npm run supabase:reset`. This file explains it and specifies the tests that prove it.
 
 ---
 
@@ -161,13 +161,11 @@ now evidenced, not asserted.
 
 **Recorded deviation — the suite runs against the dev project, not a local
 Supabase.** §8 above specifies "a local Supabase". No local stack is running, so
-`tests/rls/harness.ts` targets the project in `.env.local`. It creates and
-destroys its own two accounts and touches no other data; teardown is the only
-service-role use and lives outside `src/**`, so the client-bundle grep is
-unaffected. Consequence: the gate needs network and real credentials, so it is
-not hermetic and cannot run in an offline CI. Accepted for now — nothing in this
-project runs CI yet. `supabase start` plus a `SUPABASE_DB_URL` pointing at the
-local stack is the fix when CI arrives.
+`tests/rls/harness.ts` targets a local Supabase stack (`npm run supabase:start`,
+then `npm run supabase:reset`); `tests/supabase-guard.ts` refuses any host other
+than `127.0.0.1` or `localhost`. It creates and destroys its own two accounts and
+touches no other data; teardown is the only service-role use and lives outside
+`src/**`, so the client-bundle grep is unaffected.
 
 **Fixture rule for every suite that touches `key_terms`.** `persist_key_terms`
 **replaces** a contract's terms — it deletes the existing rows and inserts the

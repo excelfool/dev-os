@@ -1,6 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { loadTestEnv } from '../supabase-guard';
 
 /**
  * Two real accounts, A and B, each holding an anon-key client (NEVER
@@ -8,24 +7,14 @@ import { resolve } from 'node:path';
  * Assumption 9 ("RLS correctly isolates user data"), which is treated as
  * UNPROVEN until it passes.
  *
- * DEVIATION from spec 02 §8, which says "against a local Supabase": no local
- * stack is running, so the suite targets the project in .env.local. It creates
- * and destroys its own accounts and touches no other data. The service-role key
+ * Runs against a local Supabase stack only (spec 02 §8): tests/supabase-guard.ts
+ * refuses any other host. It creates and destroys its own accounts and touches
+ * no other data. The service-role key
  * is used ONLY for teardown, which is a sanctioned operator-script call site
  * (spec 13 §2 item 6) and lives outside `src/**`, so the CI grep is unaffected.
  */
 
-function loadEnv(): Record<string, string> {
-  const raw = readFileSync(resolve(process.cwd(), '.env.local'), 'utf8');
-  const env: Record<string, string> = {};
-  for (const line of raw.split('\n')) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match?.[1] && match[2] !== undefined) env[match[1]] = match[2].trim();
-  }
-  return env;
-}
-
-const env = loadEnv();
+const env = loadTestEnv();
 export const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY!;

@@ -1,4 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SUPABASE_ENV_KEYS, loadTestEnv } from './tests/supabase-guard';
+
+// Refuses to start unless the Supabase URL is a local stack. The resolved
+// values are handed to the app explicitly, so a process.env value wins over
+// .env.local (Next.js never overrides a variable already set).
+const testEnv = loadTestEnv();
+const supabaseEnv = Object.fromEntries(
+  SUPABASE_ENV_KEYS.filter((key) => testEnv[key]).map((key) => [key, testEnv[key]!]),
+);
 
 const PORT = 3200;
 // The model stub runs as its own server: Playwright starts the app as a
@@ -40,6 +49,7 @@ export default defineConfig({
       timeout: 120_000,
       // Its own build directory — sharing `.next` corrupts the webpack runtime.
       env: {
+        ...supabaseEnv,
         NEXT_DIST_DIR: '.next-e2e',
         NEXT_TELEMETRY_DISABLED: '1',
         // No billed calls from the E2E suite.

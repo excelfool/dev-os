@@ -37,7 +37,7 @@ installed; `jsdom` and `@testing-library/react` are now devDependencies.
 
 ## 2. Local test environment
 
-- `supabase start` provides the local stack; `supabase/database.sql` is applied to it before every run, so the tests always exercise the same schema that ships.
+- `npm run supabase:start` provides the local stack; `npm run supabase:reset` resets it and applies `docs/implementation/supabase-schema.sql` (the schema that matches live), so the tests always exercise the same schema that ships. The integration, RLS and E2E suites refuse to start unless the Supabase URL's host is `127.0.0.1` or `localhost` (`tests/supabase-guard.ts`); values in `process.env` win over `.env.local` for the Supabase variables.
 - The OpenAI client is stubbed at the `callLlm` boundary for unit/integration/E2E — fixtures return canned JSON, timeouts and malformed payloads on demand. **Only the eval layer calls the live model.**
 - Two seeded test accounts (A and B) for the RLS suite, each using the **anon** key.
 - Storage-failure simulation: an env flag makes `contract-service` treat the Storage upload as failed, which is how the `storage_available: false` path and the text-viewer fallback are tested deterministically.

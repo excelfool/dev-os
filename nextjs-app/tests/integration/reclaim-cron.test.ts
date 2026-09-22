@@ -4,7 +4,7 @@ import { SHORT_NDA } from './pdf-fixtures';
 
 /**
  * Spec 06 §3a / v1.1 §G — dead-job recovery. `reclaim-stale-processing` is a
- * pg_cron job (schedule: every 5 minutes, supabase/database.sql) on the real project. The
+ * pg_cron job (schedule: every 5 minutes, docs/implementation/supabase-schema.sql) on the real project. The
  * test suite has no SQL path to run its body directly, so this test does what
  * a stranded contract does: sits in `processing` with a 6-minute-old claim and
  * waits for the next tick to flip it to `error` / AI_TIMEOUT. Worst case one

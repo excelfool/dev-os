@@ -1222,7 +1222,6 @@ contractiq/
 │  ├─ types/ ............................... database.types.ts (generated), domain.ts, api.ts
 │  └─ middleware.ts ........................ Session refresh + route protection
 ├─ supabase/
-│  ├─ database.sql ......................... Single paste-and-run file (FR-14)
 │  └─ functions/purge-expired-pdfs/ ........ Scheduled 90-day retention job
 ├─ eval/
 │  ├─ datasets/ ............................ CUAD subset, 30 NDA + 20 MSA labelled
@@ -1308,7 +1307,7 @@ contractiq/
 | **US-008 / FR-10** Dashboard | §4.2 | `GET /api/contracts` | `contract-service.ts`, `analytics-service.ts` | `contracts` + the three dashboard indexes | `SummaryCard`, `RecentContractsList`, `ContractsTable`, `EmptyState` | `contracts-list.test.ts` (sorting, paging), `dashboard.spec.ts` |
 | **US-010 / FR-12** Feedback & NPS | §4.3 | `POST /api/feedback`, `POST /api/nps` | `feedback-service.ts` | `user_feedback`, `nps_responses` | `FeedbackWidget`, `NpsSurvey` | `feedback.test.ts` |
 | **US-011** Export (v1.1) | Phase 2 | `GET /api/contracts/{id}/export` | `services/export-service.ts` | `key_terms` | `ExportButton` | `export.test.ts` (≤ 5 s, CSV columns) |
-| **FR-13 / FR-14** RLS + single SQL file | all | all | `lib/supabase/*` | `supabase/database.sql` (tables, indexes, triggers, view, RLS, bucket, Storage policies) | — | `tests/rls/*` cross-account suite |
+| **FR-13 / FR-14** RLS + single SQL file | all | all | `lib/supabase/*` | `docs/implementation/supabase-schema.sql` (tables, indexes, triggers, view, RLS, bucket, Storage policies) | — | `tests/rls/*` cross-account suite |
 | **Retention & GDPR erasure** | §4.5 | `DELETE /api/contracts/{id}`, `DELETE /api/account` | `retention-service.ts`, `lib/supabase/admin.ts` | cascades, `last_accessed_at`, `pdf_purged_at`, `pg_cron` + `purge-expired-pdfs` | delete confirmation modal, Settings | `retention.test.ts` (90-day boundary), `deletion.spec.ts` |
 | **Rate limiting, quota, concurrency** | §6.2 | all mutating routes | `security/{rate-limit,quota,concurrency}.ts` | `rate_limits`, `profiles.plan` | quota banner on `/settings` | `rate-limit.test.ts`, k6 100-concurrency run |
 | **Telemetry, cost, metrics** | §1, §6.2 | all | `metrics/{timings,cost,events}.ts` | `processing_runs`, `openai_calls`, `activity_events` | — | `cost.test.ts`, latency assertions in E2E |
@@ -1364,7 +1363,7 @@ Every open or conflicting point found in the PRD, the resolution taken here, and
 | No silent failures | every error surfaced with a next action | `AppError` taxonomy; `status='error'` + Retry; Storage failure surfaced as `storage_available: false` |
 | Signed URLs | 1-hour expiry | `SIGNED_URL_TTL_SECONDS=3600`; verified in an integration test |
 | Encryption | AES-256 at rest, TLS 1.3 in transit | Supabase platform defaults for DB and Storage; HTTPS-only with HSTS on Netlify; documented in the security audit |
-| RLS | every table + Storage | Policies in `database.sql`; cross-account CI suite gates the build |
+| RLS | every table + Storage | Policies in `docs/implementation/supabase-schema.sql`; cross-account CI suite gates the build |
 | Retention | PDFs deleted 90 days after last access; user can delete anything, anytime | `last_accessed_at` + nightly `purge-expired-pdfs`; `DELETE /api/contracts/{id}` |
 | GDPR | erasure on request, DPA, no third-party training, `user` parameter | `DELETE /api/account`; OpenAI training opt-in disabled; Art. 28 DPAs with Supabase and OpenAI are launch gates before EU onboarding |
 | Accessibility | WCAG 2.1 AA, no training needed, jargon explained | Radix primitives; icon+text+colour for confidence; keyboard paths; plain-English tooltips from the term library; axe-core CI gate |

@@ -1,4 +1,8 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { loadTestEnv } from '../supabase-guard';
+
+// Every spec imports this file: refuse to run unless the Supabase URL is local.
+loadTestEnv();
 
 /**
  * Shared E2E setup. The OpenAI stub runs as its own Playwright `webServer` on
