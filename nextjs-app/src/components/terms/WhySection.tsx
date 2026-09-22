@@ -1,32 +1,27 @@
 'use client';
 
-import { InfoTooltip } from '@/components/ui/tooltip';
-
 /**
- * The "Why?" disclosure (spec 07 v1.1 §C, FR-04, R-16): two labelled blocks.
+ * The "Why?" disclosure (spec 07 §C as amended by 5d-2a, FR-04): the verbatim
+ * sentence the model anchored on, with its page and the unverified-source
+ * warning.
  *
- * **Source** is the verbatim sentence the model anchored on, with its page and
- * the unverified-source warning. **Reasoning** is the model's one-line account
- * of why that sentence answers the term's question, and is editable.
+ * The **Reasoning** block used to live here too. 5d-2a moved it into the row
+ * itself: PRD R-16 wants the answer, the citation and the reasoning shown
+ * together, and reasoning behind a disclosure is reasoning most users never
+ * read. The quoted source stays here — it is the long, verbatim artefact a
+ * reader opens deliberately.
  *
- * Each block is a `group` with an accessible name, so the two are
- * distinguishable to a screen reader rather than reading as one run of text.
+ * The block is a `group` with an accessible name so it is distinguishable to a
+ * screen reader rather than reading as one run of text.
  */
 export function WhySection({
   sourceSentence,
   pageNumber,
   isSourceVerified,
-  reasoning,
-  reasoningEdited = false,
-  reasoningEditor,
 }: {
   sourceSentence: string | null;
   pageNumber: number | null;
   isSourceVerified: boolean;
-  reasoning: string | null;
-  reasoningEdited?: boolean;
-  /** Spec 07 v1.1 §D: the "Edit" control for the reasoning block. */
-  reasoningEditor?: React.ReactNode;
 }) {
   return (
     <div className="mt-2 flex flex-col gap-3 border-l-2 border-grey-100 pl-3">
@@ -49,24 +44,6 @@ export function WhySection({
         )}
       </section>
 
-      <section role="group" aria-label="Reasoning" className="flex flex-col gap-1">
-        <span className="flex items-center gap-2">
-          <h4 className="text-caption font-medium text-grey-700">Reasoning</h4>
-          {reasoningEdited && (
-            <InfoTooltip label="You changed this. The original AI reasoning is kept for accuracy tracking.">
-              <span className="rounded-badge bg-grey-50 px-1.5 py-0.5 text-caption text-grey-500">
-                Reasoning edited
-              </span>
-            </InfoTooltip>
-          )}
-          {reasoningEditor}
-        </span>
-        {reasoning ? (
-          <p className="text-body text-grey-600">{reasoning}</p>
-        ) : (
-          <p className="text-caption text-grey-400">No reasoning was returned for this term.</p>
-        )}
-      </section>
     </div>
   );
 }

@@ -111,6 +111,38 @@ export function KeyTermRow({
         }}
       />
 
+      {/*
+        Spec 07 §C as amended by 5d-2a: the reasoning sits here, under the
+        value and above the fold, so the answer, its page citation and the
+        reason are read together (PRD R-16). Long reasoning (up to the 500-char
+        server limit) wraps; it is never truncated.
+      */}
+      <span role="group" aria-label="Reasoning" className="flex flex-wrap items-baseline gap-2">
+        {reasoning ? (
+          <span className="text-caption text-grey-600">{reasoning}</span>
+        ) : (
+          <span className="text-caption text-grey-400">No reasoning was returned for this term.</span>
+        )}
+        {reasoningEdited && (
+          <InfoTooltip label="You changed this. The original AI reasoning is kept for accuracy tracking.">
+            <span className="rounded-badge bg-grey-50 px-1.5 py-0.5 text-caption text-grey-500">
+              Reasoning edited
+            </span>
+          </InfoTooltip>
+        )}
+        <InlineTermEditor
+          termId={term.id}
+          userId={userId}
+          contractId={contractId}
+          field="reasoning"
+          value={reasoning}
+          onSaved={(next) => {
+            setReasoning(next);
+            setReasoningEdited(true);
+          }}
+        />
+      </span>
+
       {pageNumber === null && term.confidence_score > 0 && (
         <p className="text-caption text-grey-400">No page reference — verify manually</p>
       )}
@@ -134,21 +166,6 @@ export function KeyTermRow({
             sourceSentence={term.source_sentence}
             pageNumber={pageNumber}
             isSourceVerified={term.is_source_verified}
-            reasoning={reasoning}
-            reasoningEdited={reasoningEdited}
-            reasoningEditor={
-              <InlineTermEditor
-                termId={term.id}
-                userId={userId}
-                contractId={contractId}
-                field="reasoning"
-                value={reasoning}
-                onSaved={(next) => {
-                  setReasoning(next);
-                  setReasoningEdited(true);
-                }}
-              />
-            }
           />
         )}
       </div>

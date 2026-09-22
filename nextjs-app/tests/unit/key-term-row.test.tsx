@@ -6,9 +6,11 @@ import { TargetPageProvider } from '@/hooks/use-target-page';
 import type { KeyTerm } from '@/types/domain';
 
 /**
- * Spec 07 v1.1 §C/§G: the "Why?" disclosure carries a **Source** block and a
- * **Reasoning** block, and the per-field "Page edited" / "Reasoning edited"
- * tags appear only for the field they describe.
+ * Spec 07 v1.1 §C as amended by 5d-2a: the **Reasoning** sits in the row
+ * itself, visible without opening anything (PRD R-16 — answer, citation and
+ * reasoning are shown together). The "Why?" disclosure keeps only the
+ * **Source** block. The per-field "Page edited" / "Reasoning edited" tags
+ * appear only for the field they describe.
  */
 
 vi.mock('@/lib/supabase/client', () => ({ createBrowserSupabaseClient: () => ({}) }));
@@ -67,22 +69,6 @@ describe('WhySection (spec 07 v1.1 §C)', () => {
     expect(within(source).getByText('Found on page 4')).toBeTruthy();
   });
 
-  it('renders a Reasoning block with the reasoning sentence', async () => {
-    renderRow();
-    openWhy();
-
-    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
-    expect(within(reasoning).getByText(/Clause 9 names Delaware/)).toBeTruthy();
-  });
-
-  it('uses the null copy when the model returned no reasoning', async () => {
-    renderRow({ reasoning: null });
-    openWhy();
-
-    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
-    expect(within(reasoning).getByText('No reasoning was returned for this term.')).toBeTruthy();
-  });
-
   it('keeps the existing no-sentence copy in the Source block', async () => {
     renderRow({ source_sentence: null });
     openWhy();
@@ -97,12 +83,53 @@ describe('WhySection (spec 07 v1.1 §C)', () => {
 
     expect(screen.getByText(/couldn't match this sentence to the document text/i)).toBeTruthy();
   });
+
+  it('does NOT carry the Reasoning block — that moved into the row (5d-2a)', () => {
+    renderRow();
+    openWhy();
+
+    const why = screen.getByRole('group', { name: 'Source' }).parentElement!;
+    expect(within(why).queryByRole('group', { name: 'Reasoning' })).toBeNull();
+  });
+});
+
+describe('reasoning in the row (spec 07 §C, 5d-2a deviation — PRD R-16)', () => {
+  it('shows the reasoning without opening anything', () => {
+    renderRow();
+
+    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
+    expect(within(reasoning).getByText(/Clause 9 names Delaware/)).toBeTruthy();
+    // The Source block is still behind the disclosure.
+    expect(screen.queryByRole('group', { name: 'Source' })).toBeNull();
+  });
+
+  it('shows the §C null copy in the row when the model returned no reasoning', () => {
+    renderRow({ reasoning: null });
+
+    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
+    expect(within(reasoning).getByText('No reasoning was returned for this term.')).toBeTruthy();
+  });
+
+  it('renders long reasoning in full — no truncation at 500 characters', () => {
+    const long = `${'Clause 9 restates the governing law. '.repeat(13)}End.`.slice(0, 500);
+    renderRow({ reasoning: long });
+
+    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
+    expect(within(reasoning).getByText(long).textContent).toBe(long);
+  });
+
+  it('keeps the Edit link and the edited tag beside the reasoning', () => {
+    renderRow({ reasoning_edited: true });
+
+    const reasoning = screen.getByRole('group', { name: 'Reasoning' });
+    expect(within(reasoning).getByText('Reasoning edited')).toBeTruthy();
+    expect(within(reasoning).getByRole('button', { name: 'Edit' })).toBeTruthy();
+  });
 });
 
 describe('per-field edited tags (spec 07 v1.1 §D)', () => {
   it('shows no edit tags on an untouched term', async () => {
     renderRow();
-    openWhy();
 
     expect(screen.queryByText('Page edited')).toBeNull();
     expect(screen.queryByText('Reasoning edited')).toBeNull();
@@ -111,7 +138,6 @@ describe('per-field edited tags (spec 07 v1.1 §D)', () => {
 
   it('shows "Page edited" for a page edit only', async () => {
     renderRow({ page_edited: true });
-    openWhy();
 
     expect(screen.getByText('Page edited')).toBeTruthy();
     expect(screen.queryByText('Reasoning edited')).toBeNull();
@@ -120,7 +146,6 @@ describe('per-field edited tags (spec 07 v1.1 §D)', () => {
 
   it('shows "Reasoning edited" for a reasoning edit only', async () => {
     renderRow({ reasoning_edited: true });
-    openWhy();
 
     expect(screen.getByText('Reasoning edited')).toBeTruthy();
     expect(screen.queryByText('Page edited')).toBeNull();
@@ -129,7 +154,6 @@ describe('per-field edited tags (spec 07 v1.1 §D)', () => {
 
   it('shows the value "Edited" badge independently of the other two', async () => {
     renderRow({ is_edited: true });
-    openWhy();
 
     expect(screen.getByText('Edited')).toBeTruthy();
     expect(screen.queryByText('Page edited')).toBeNull();
@@ -146,9 +170,8 @@ describe('edit affordances (spec 07 v1.1 §D)', () => {
     expect(screen.getByRole('spinbutton', { name: /page number/i })).toBeTruthy();
   });
 
-  it('offers an Edit link on the Reasoning block', () => {
+  it('offers an Edit link on the Reasoning block, without opening Why', () => {
     renderRow();
-    openWhy();
 
     const reasoning = screen.getByRole('group', { name: 'Reasoning' });
     fireEvent.click(within(reasoning).getByRole('button', { name: 'Edit' }));

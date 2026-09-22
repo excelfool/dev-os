@@ -166,6 +166,10 @@ Top to bottom: `ReviewNeededNotice` (spec 06 v1.1 §C, only when `required_missi
 
 Two labelled blocks: **"Source"** — the verbatim `source_sentence` quote with "Found on page {n}" (existing); **"Reasoning"** — the `reasoning` sentence in normal text, or "No reasoning was returned for this term." when null. The existing unverified-source and no-sentence notes are unchanged.
 
+**v1.1 5d-2a (2026-09-22) — deviation: reasoning is shown in the row, not in the disclosure.** The two blocks are **split**. The **Reasoning** line moves into `KeyTermRow` itself, directly under the value and visible without opening anything — one line of normal text, or the same null copy above, with its "Edit" link and "Reasoning edited" tag alongside it. Reasoning up to the 500-character server limit **wraps**; it is never truncated. The **"Why?" disclosure keeps only the Source block** (the verbatim quote, "Found on page {n}", and the unverified-source / no-sentence notes).
+
+*Why the deviation (student decision, 2026-09-22):* PRD **R-16** asks for the answer, its citation and the model's reasoning to be shown **together**. Behind a collapsed disclosure, the reasoning is the part most users never open, which leaves the extracted value looking unexplained at exactly the moment a non-lawyer is deciding whether to trust it. The verbatim source sentence stays in the disclosure because it is the long artefact a reader opens deliberately, and because the page chip beside the value already carries the citation. Editing behaviour, validation and the `PATCH` contract (§D) are **unchanged** — only the placement moves.
+
 ### D. Inline editing of value, page and reasoning (US-009)
 
 `InlineTermEditor` handles three fields; each opens from its own control and saves independently within 2 s:
