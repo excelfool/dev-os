@@ -6,9 +6,8 @@ import { AlertCircle } from 'lucide-react';
 import { ContractTypeSelect } from './ContractTypeSelect';
 import { PdfDropzone } from './PdfDropzone';
 import { ImportSourceOptions } from './ImportSourceOptions';
-import { formatDate } from '@/lib/utils/format';
-import { useState } from 'react';
 import { UploadProgress } from './UploadProgress';
+import { rememberDuplicateNotice } from './duplicate-notice';
 import { precheckFile, shouldShowDeviceAdvisory } from './pdf-precheck';
 import { UploadWizardProvider, useUploadWizard } from './UploadWizardContext';
 import { useUpload } from '@/hooks/use-upload';
@@ -25,7 +24,6 @@ function UploadWizardInner() {
   const router = useRouter();
   const { state, dispatch } = useUploadWizard();
   const { upload, cancel, progress, isPending } = useUpload();
-  const [duplicate, setDuplicate] = useState<{ id: string; createdAt: string } | null>(null);
 
   async function handleFile(file: File) {
     if (!state.contractType) return;
@@ -40,9 +38,13 @@ function UploadWizardInner() {
 
     try {
       const result = await upload({ file, contractType: state.contractType });
-      // D46: non-blocking — the notice is shown and the new upload proceeds.
+      // D46: non-blocking — the new upload proceeds. The wizard unmounts on
+      // navigation, so the notice is persisted for the prepare page to render.
       if (result.duplicate_of && result.duplicate_created_at) {
-        setDuplicate({ id: result.duplicate_of, createdAt: result.duplicate_created_at });
+        rememberDuplicateNotice(result.contract_id, {
+          duplicateOf: result.duplicate_of,
+          createdAt: result.duplicate_created_at,
+        });
       }
       // Straight to /prepare — no intermediate screen.
       router.push(`/contracts/${result.contract_id}/prepare`);
@@ -82,16 +84,6 @@ function UploadWizardInner() {
             )}
           </div>
         </div>
-      )}
-
-      {duplicate && (
-        <p role="status" className="rounded-card bg-brand-50 p-4 text-caption text-brand-700">
-          You already uploaded this file on {formatDate(duplicate.createdAt)} — opening the{' '}
-          <Link href={`/contracts/${duplicate.id}`} className="underline">
-            existing analysis
-          </Link>{' '}
-          is faster.
-        </p>
       )}
 
       {state.deviceAdvisory && !error && (

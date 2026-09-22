@@ -3,10 +3,12 @@ import {
   api,
   createUser,
   destroyUser,
+  setPlan,
   startApp,
   stopApp,
   uploadPdf,
   type TestUser,
+  type UploadBody,
 } from './harness';
 import { CORRUPT_PDF, LONG_PDF, NOT_A_PDF, SCANNED_PDF, SHORT_NDA, makePdf } from './pdf-fixtures';
 
@@ -56,6 +58,29 @@ describe('POST /api/contracts/upload — happy path', () => {
 
     const stages = (data ?? []).map((r) => r.stage).sort();
     expect(stages).toEqual(['text_extract', 'upload']);
+  });
+});
+
+describe('D46 — duplicate upload notice', () => {
+  // Own pro-plan user: the shared free-trial user's five units are budgeted by the quota cases below.
+  let dupUser: TestUser;
+  beforeAll(async () => {
+    dupUser = await createUser('upload-dup');
+    await setPlan(dupUser, 'pro');
+  });
+  afterAll(async () => {
+    await destroyUser(dupUser);
+  });
+
+  it('a second upload of the same bytes is a new 201 carrying duplicate_of and duplicate_created_at', async () => {
+    const first = await uploadPdf(dupUser, SHORT_NDA, 'NDA', 'expel.pdf');
+    expect(first.status).toBe(201);
+    const second = await uploadPdf(dupUser, SHORT_NDA, 'NDA', 'expel.pdf');
+    expect(second.status).toBe(201);
+    const body = second.body as UploadBody & { duplicate_of?: string; duplicate_created_at?: string };
+    expect(body.contract_id).not.toBe(first.body.contract_id);
+    expect(body.duplicate_of).toBe(first.body.contract_id);
+    expect(body.duplicate_created_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
 

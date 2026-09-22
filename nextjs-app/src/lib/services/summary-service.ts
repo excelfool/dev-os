@@ -26,8 +26,14 @@ import type { PersistableTerm } from './extraction-service';
  */
 
 export const SUMMARY_STALE_CLAIM_MS = 2 * 60 * 1000;
-/** Step 11a runs only if at least this much of the handler budget remains. */
-export const SUMMARY_MIN_REMAINING_MS = 11_000;
+/**
+ * Step 11a runs only if at least this much of the handler budget remains:
+ * one 10 s call plus validation and persistence. Below it the row stays
+ * `pending` and the results page completes it via route 34 (§B deferral).
+ * Stage 5a: raised from 11 s — an 11–14 s window let the inline claim start a
+ * call that could not finish before the 24 s deadline.
+ */
+export const SUMMARY_MIN_REMAINING_MS = 15_000;
 /** D45: per-summary allowance at GPT-4o pricing (reported, not enforced pre-call). */
 export const SUMMARY_ALLOWANCE_USD = 0.05;
 
@@ -38,6 +44,11 @@ export interface SummaryContract {
   user_id: string;
   contract_text: string;
   page_count: number;
+}
+
+/** Step 11a decision: claim inline only with the full budget; otherwise defer. */
+export function shouldClaimSummaryInline(remainingMs: number): boolean {
+  return remainingMs >= SUMMARY_MIN_REMAINING_MS;
 }
 
 /** Inline claim: only a `pending` row is claimed. Returns true when this caller won. */
@@ -103,16 +114,23 @@ export async function runSummary(
     let uncited = uncitedFactualSentences(md, ctx);
 
     if (uncited.length > 0 && (opts.deadlineAt === undefined || opts.deadlineAt - Date.now() > 6_000)) {
-      // One repair call, within the remaining budget.
-      const repaired = await callLlm({
-        ...call,
-        messages: [...messages, { role: 'assistant', content: md }, { role: 'user', content: SUMMARY_REPAIR_PROMPT }],
-      });
-      const repairedMd = enforceWordBudget(normaliseMarkdown(repaired.content));
-      const repairedUncited = uncitedFactualSentences(repairedMd, ctx);
-      if (repairedUncited.length < uncited.length || repairedUncited.length === 0) {
-        md = repairedMd;
-        uncited = repairedUncited;
+      // One repair call, within the remaining budget. Best effort: the first
+      // draft is already a valid summary, so a repair timeout or provider
+      // error keeps it (flagged `summary_uncited`) rather than discarding it.
+      try {
+        const repaired = await callLlm({
+          ...call,
+          messages: [...messages, { role: 'assistant', content: md }, { role: 'user', content: SUMMARY_REPAIR_PROMPT }],
+        });
+        const repairedMd = enforceWordBudget(normaliseMarkdown(repaired.content));
+        const repairedUncited = uncitedFactualSentences(repairedMd, ctx);
+        if (repairedUncited.length < uncited.length || repairedUncited.length === 0) {
+          md = repairedMd;
+          uncited = repairedUncited;
+        }
+      } catch (repairErr) {
+        const repairCode = repairErr instanceof AppError ? repairErr.code : 'INTERNAL';
+        console.warn(JSON.stringify({ summary: 'repair_failed', contractId: contract.id, code: repairCode, uncited: uncited.length }));
       }
     }
 

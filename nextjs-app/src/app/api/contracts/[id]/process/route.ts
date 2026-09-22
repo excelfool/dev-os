@@ -18,7 +18,7 @@ import {
   type ProcessedExtraction,
 } from '@/lib/services/extraction-service';
 import {
-  SUMMARY_MIN_REMAINING_MS,
+  shouldClaimSummaryInline,
   claimSummaryInline,
   runSummary,
 } from '@/lib/services/summary-service';
@@ -212,10 +212,10 @@ export async function POST(_request: Request, { params }: { params: { id: string
           await deriveKeyDatesBounded(supabase, contract.id, user.id, contractType);
 
           // 11a. Contract summary (spec 06 v1.1 §B, D45): claim first, only
-          //      when ≥ 11 s of the budget remain; otherwise defer to route 34.
+          //      when ≥ 15 s of the budget remain; otherwise defer to route 34.
           let summaryStatus: string = 'pending';
           let summaryMd: string | null = null;
-          if (deadlineAt - Date.now() >= SUMMARY_MIN_REMAINING_MS) {
+          if (shouldClaimSummaryInline(deadlineAt - Date.now())) {
             const claimed = await claimSummaryInline(supabase, contract.id, user.id);
             if (claimed) {
               const summary = await runSummary(

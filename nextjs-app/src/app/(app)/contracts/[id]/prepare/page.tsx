@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { PrepareView } from '@/components/terms/PrepareView';
+import { DuplicateNoticeBanner } from '@/components/upload/DuplicateNoticeBanner';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { termsFor } from '@/lib/ai/term-library';
 import type { ContractType } from '@/types/domain';
@@ -40,6 +41,7 @@ export default async function PreparePage({ params }: { params: { id: string } }
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-component px-4 py-12">
+      <DuplicateNoticeBanner contractId={contract.id} />
       <div className="flex flex-col gap-2">
         <h1 className="text-h2 text-grey-900">{contract.file_name}</h1>
         <p className="text-body text-grey-500">

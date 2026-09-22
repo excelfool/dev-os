@@ -140,6 +140,34 @@ describe('summary at process time (step 11a)', () => {
     expect((calls ?? []).filter((c) => c.purpose === 'summary')).toHaveLength(2);
   });
 
+  it('a repair-call timeout keeps the first draft: summary_status=completed, summary_uncited=true, no error code', async () => {
+    resetOpenAiStub();
+    // Extraction, then an uncited first draft, then a repair call that exceeds the 10 s summary timeout.
+    scriptOpenAi({ content: NDA_EXTRACTION }, { content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: 12_000 });
+    const id = await fresh(SHORT_NDA, 'NDA');
+    const res = await process(id);
+    expect(res.status).toBe(200);
+    expect(res.body.summary_status).toBe('completed');
+
+    const { data } = await user.client
+      .from('contracts')
+      .select('summary_md, summary_status, summary_uncited, summary_error_code')
+      .eq('id', id)
+      .single();
+    expect(data?.summary_status).toBe('completed');
+    expect(data?.summary_uncited).toBe(true);
+    expect(data?.summary_error_code).toBeNull();
+    expect(data?.summary_md).toBeTruthy();
+
+    const { data: calls } = await user.client
+      .from('openai_calls')
+      .select('purpose, outcome')
+      .eq('contract_id', id)
+      .order('created_at', { ascending: true });
+    const summaryCalls = (calls ?? []).filter((c) => c.purpose === 'summary');
+    expect(summaryCalls.map((c) => c.outcome)).toEqual(['success', 'timeout']);
+  }, 90_000);
+
   it('a summary timeout leaves the terms committed with summary_status=error; POST /summary completes it once, then 409', async () => {
     resetOpenAiStub();
     scriptOpenAi({ content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: 12_000 });
