@@ -6,6 +6,7 @@ import { ReviewFooter } from '@/components/review/ReviewFooter';
 import { ReviewModeToggle } from '@/components/review/ReviewModeToggle';
 import { ReviewModeProvider } from '@/hooks/use-review-mode';
 import { APPLICABLE_CODES, HHH_CODES } from '@/lib/eval/hhh-codes';
+import { toStoredScores, type HhhScoreRow } from '@/lib/eval/hhh-scores-view';
 
 /**
  * Review mode (spec 22 §2/§4, spec 07 v1.1 §E, D53).
@@ -355,5 +356,215 @@ describe('the footer updates after a save (L13)', () => {
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.getByText(/· 4 human rows total/)).toBeTruthy();
+  });
+});
+
+/**
+ * L14 (5d-3b). Live on contract 93ba9b49, a saved term score did not come
+ * back after a refresh: the questionnaire opened with nothing selected and no
+ * pills. Because route 32 writes every applicable column on each save, the
+ * next answer on that blank form would have written NULL over the stored ones
+ * — losing the reviewer's work silently. Hydration is what prevents it.
+ */
+const MESSAGE_ID = '33333333-3333-4333-8333-333333333333';
+
+function storedRow(overrides: Partial<HhhScoreRow> = {}): HhhScoreRow {
+  return {
+    id: 'score-1',
+    subject_type: 'term',
+    term_id: TERM_ID,
+    message_id: null,
+    notes: 'Checked against clause 9.',
+    helpful_verdict: 'pass',
+    honest_verdict: 'fail',
+    harmless_verdict: 'pass',
+    h1: false,
+    o5: true,
+    ...overrides,
+  } as HhhScoreRow;
+}
+
+function renderHydrated(rows: HhhScoreRow[], props: Partial<React.ComponentProps<typeof HhhQuestionnaire>> = {}) {
+  return render(
+    <ReviewModeProvider initialOn initialScores={toStoredScores(rows)}>
+      <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="term" termId={TERM_ID} {...props} />
+      <ReviewFooter termCount={36} />
+    </ReviewModeProvider>,
+  );
+}
+
+/** The radio of `name` inside the group whose legend starts with `code`. */
+function radioFor(code: string, name: 'Yes' | 'No' | 'Skip'): HTMLInputElement {
+  const group = screen
+    .getAllByRole('group')
+    .find((g) => g.textContent?.trimStart().startsWith(code))!;
+  return within(group).getByRole('radio', { name }) as HTMLInputElement;
+}
+
+describe('hydration (L14)', () => {
+  it('opens a scored term with its stored answers selected', () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    expect(radioFor('H1', 'No').checked).toBe(true);
+    expect(radioFor('O5', 'Yes').checked).toBe(true);
+  });
+
+  it('shows Skip for a stored NULL, not an empty group', () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    // H2 was never answered, so it stored NULL — that is Skip, not blank.
+    expect(radioFor('H2', 'Skip').checked).toBe(true);
+  });
+
+  it('shows the stored verdict pills without waiting for a save', () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    expect(screen.getByText('Helpful pass')).toBeTruthy();
+    expect(screen.getByText('Honest fail')).toBeTruthy();
+  });
+
+  it('restores the stored notes', () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    expect((screen.getByRole('textbox', { name: /notes/i }) as HTMLTextAreaElement).value).toBe(
+      'Checked against clause 9.',
+    );
+  });
+
+  it('counts the scored term in the footer straight away', () => {
+    renderHydrated([storedRow()]);
+
+    expect(screen.getByText(/Scored 1 of 36 terms/)).toBeTruthy();
+  });
+
+  it('counts distinct terms, not rows', () => {
+    render(
+      <ReviewModeProvider
+        initialOn
+        initialScores={toStoredScores([
+          storedRow({ term_id: 't1' }),
+          storedRow({ id: 'score-2', term_id: 't2' }),
+          storedRow({ id: 'score-3', subject_type: 'summary', term_id: null }),
+        ])}
+      >
+        <ReviewFooter termCount={36} />
+      </ReviewModeProvider>,
+    );
+
+    expect(screen.getByText(/Scored 2 of 36 terms/)).toBeTruthy();
+  });
+
+  it('opens blank with nothing scored when the contract has no rows', () => {
+    renderHydrated([]);
+
+    expect(screen.getByText(/Scored 0 of 36 terms/)).toBeTruthy();
+    openForm();
+    expect(radioFor('H1', 'Yes').checked).toBe(false);
+    expect(radioFor('H1', 'Skip').checked).toBe(false);
+    expect(screen.queryByText('Helpful pass')).toBeNull();
+  });
+
+  it('hydrates the summary subject the same way', () => {
+    render(
+      <ReviewModeProvider
+        initialOn
+        initialScores={toStoredScores([
+          storedRow({ subject_type: 'summary', term_id: null, h1: true }),
+        ])}
+      >
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="summary" />
+      </ReviewModeProvider>,
+    );
+    openForm();
+
+    expect(radioFor('H1', 'Yes').checked).toBe(true);
+  });
+
+  it('hydrates a chat answer the same way', () => {
+    render(
+      <ReviewModeProvider
+        initialOn
+        initialScores={toStoredScores([
+          storedRow({ subject_type: 'message', term_id: null, message_id: MESSAGE_ID, h1: true }),
+        ])}
+      >
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="message" messageId={MESSAGE_ID} />
+      </ReviewModeProvider>,
+    );
+    openForm();
+
+    expect(radioFor('H1', 'Yes').checked).toBe(true);
+  });
+
+  it('leaves one questionnaire blank when another subject is the scored one', () => {
+    render(
+      <ReviewModeProvider initialOn initialScores={toStoredScores([storedRow({ term_id: 'other' })])}>
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="term" termId={TERM_ID} />
+      </ReviewModeProvider>,
+    );
+    openForm();
+
+    expect(radioFor('H1', 'No').checked).toBe(false);
+  });
+});
+
+describe('a save after hydration keeps the stored answers (L14)', () => {
+  it('sends the whole answer set, not just the code that changed', async () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    // Change ONE answer. Everything stored must still be in the body, or
+    // route 32's write-all-columns would NULL the rest.
+    fireEvent.click(radioFor('H3', 'Yes'));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    const answers = lastBody().answers as Record<string, unknown>;
+    expect(answers.H1).toBe(false);
+    expect(answers.O5).toBe(true);
+    expect(answers.H3).toBe(true);
+    expect(Object.keys(answers)).toHaveLength(APPLICABLE_CODES.term.length);
+  });
+
+  it('keeps the stored notes on the wire when only an answer changed', async () => {
+    renderHydrated([storedRow()]);
+    openForm();
+
+    fireEvent.click(radioFor('H3', 'Yes'));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    expect(lastBody().notes).toBe('Checked against clause 9.');
+  });
+
+  it('sends only the subset for a message, so route 32 accepts it', async () => {
+    render(
+      <ReviewModeProvider
+        initialOn
+        initialScores={toStoredScores([
+          storedRow({ subject_type: 'message', term_id: null, message_id: MESSAGE_ID }),
+        ])}
+      >
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="message" messageId={MESSAGE_ID} />
+      </ReviewModeProvider>,
+    );
+    openForm();
+
+    fireEvent.click(radioFor('H3', 'Yes'));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    const answers = lastBody().answers as Record<string, unknown>;
+    expect(Object.keys(answers).sort()).toEqual([...APPLICABLE_CODES.message].sort());
   });
 });

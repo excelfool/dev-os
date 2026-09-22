@@ -22,6 +22,7 @@ import {
 import { requiredMissingNames } from '@/lib/ai/term-library';
 import { TargetPageProvider } from '@/hooks/use-target-page';
 import { ReviewModeProvider } from '@/hooks/use-review-mode';
+import { toStoredScores, type HhhScoreRow } from '@/lib/eval/hhh-scores-view';
 import { ReviewModeToggle } from '@/components/review/ReviewModeToggle';
 import { ReviewFooter } from '@/components/review/ReviewFooter';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
@@ -38,6 +39,7 @@ export function ResultsView({
   initialKeyDates,
   reviewModeRequested = false,
   humanRowCount = 0,
+  hhhScores = [],
 }: {
   contract: Contract;
   keyTerms: KeyTerm[];
@@ -49,12 +51,17 @@ export function ResultsView({
   reviewModeRequested?: boolean;
   /** L13: this reviewer's own human rows, counted server-side at load. */
   humanRowCount?: number;
+  /** L14: this reviewer's saved scores for this contract. */
+  hhhScores?: HhhScoreRow[];
 }) {
   const [reviewCompleted, setReviewCompleted] = useState(
     Boolean(contract.review_completed_at),
   );
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  // L14: built once from the server-rendered rows; the Map itself is what the
+  // provider hands each questionnaire.
+  const storedScores = useMemo(() => toStoredScores(hhhScores), [hhhScores]);
 
   // While processing, poll every 2s until the contract settles.
   const { data: polled } = useQuery({
@@ -116,7 +123,11 @@ export function ResultsView({
 
   return (
     <TargetPageProvider>
-      <ReviewModeProvider initialOn={reviewModeRequested} initialHumanRowCount={humanRowCount}>
+      <ReviewModeProvider
+        initialOn={reviewModeRequested}
+        initialHumanRowCount={humanRowCount}
+        initialScores={storedScores}
+      >
       <div className="flex flex-col gap-subsection">
         <div className="flex items-center justify-end gap-2">
           <ReviewModeToggle />

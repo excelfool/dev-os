@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { HHH_CODES, applicableCodes, type HhhSubjectType } from '@/lib/eval/hhh-codes';
+import { subjectKey } from '@/lib/eval/hhh-scores-view';
 import { useReviewMode } from '@/hooks/use-review-mode';
 
 /**
@@ -60,10 +61,17 @@ export function HhhQuestionnaire({
   label?: string;
 }) {
   const review = useReviewMode();
+
+  // L14: open from what this reviewer already saved. Route 32 writes every
+  // applicable column on each save, so a blank form over stored answers would
+  // write NULL across them the moment one question was answered — the fix for
+  // the data loss is that the form is never blank when a row exists.
+  const stored = review?.scoreFor(subjectKey({ subject_type: subjectType, term_id: termId, message_id: messageId }));
+
   const [open, setOpen] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const [notes, setNotes] = useState('');
-  const [verdicts, setVerdicts] = useState<Verdicts | null>(null);
+  const [answers, setAnswers] = useState<Record<string, Answer>>(() => ({ ...(stored?.answers ?? {}) }));
+  const [notes, setNotes] = useState(stored?.notes ?? '');
+  const [verdicts, setVerdicts] = useState<Verdicts | null>(stored?.verdicts ?? null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef(false);
@@ -154,7 +162,7 @@ export function HhhQuestionnaire({
                         type="radio"
                         name={groupName}
                         value={choiceKey(choice.value)}
-                        checked={(answers[code] ?? null) === choice.value && code in answers}
+                        checked={code in answers && (answers[code] ?? null) === choice.value}
                         onChange={() => answer(code, choice.value)}
                       />
                       {choice.label}
@@ -168,6 +176,7 @@ export function HhhQuestionnaire({
           <label className="flex flex-col gap-1 text-caption text-grey-700">
             Notes
             <textarea
+              aria-label="Notes"
               rows={2}
               maxLength={1000}
               value={notes}

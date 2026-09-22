@@ -3,6 +3,7 @@ import { ResultsView } from '@/components/terms/ResultsView';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getServerConfig } from '@/lib/utils/server-config';
 import { listKeyDates } from '@/lib/services/key-dates-query';
+import { HHH_SCORE_COLUMNS, type HhhScoreRow } from '@/lib/eval/hhh-scores-view';
 import type { KeyDate } from '@/types/domain';
 import type { Contract, KeyTerm } from '@/types/domain';
 
@@ -55,6 +56,16 @@ export default async function ResultsPage({
     .order('display_rank', { ascending: true })
     .order('term_name', { ascending: true });
 
+  // L14: this reviewer's saved scores for THIS contract, so Review mode opens
+  // pre-filled. Without it, route 32's write-all-columns save would blank the
+  // stored answers the first time a question was answered after a refresh.
+  const { data: hhhScores } = await supabase
+    .from('hhh_scores')
+    .select(HHH_SCORE_COLUMNS)
+    .eq('contract_id', contract.id)
+    .eq('evaluator', 'human')
+    .eq('created_by', user.id);
+
   // L13: the Review footer's "k human rows total" starts from the real count,
   // so it is right before the first save as well as after it. RLS already
   // limits this to the caller's rows; the filters say so explicitly.
@@ -76,6 +87,7 @@ export default async function ResultsPage({
         initialKeyDates={keyDates as KeyDate[]}
         reviewModeRequested={searchParams?.mode === 'review'}
         humanRowCount={humanRowCount ?? 0}
+        hhhScores={(hhhScores ?? []) as unknown as HhhScoreRow[]}
       />
     </main>
   );
