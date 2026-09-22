@@ -118,6 +118,10 @@ export async function runProcessingPipeline(opts: PipelineOptions): Promise<Pipe
         jsonMode: true,
         temperature: cfg.OPENAI_EXTRACTION_TEMPERATURE,
         maxTokens: cfg.OPENAI_EXTRACTION_MAX_TOKENS,
+        // L5: 45 s, not the 20 s general timeout. Under the inline 24 s
+        // deadline callLlm still caps this at `remaining − 1 s`, so the
+        // longer timeout only ever spends the background job's 120 s.
+        timeoutMs: cfg.OPENAI_EXTRACTION_TIMEOUT_MS,
         userId,
         contractId: contract.id,
         deadlineAt,
@@ -142,6 +146,7 @@ export async function runProcessingPipeline(opts: PipelineOptions): Promise<Pipe
             jsonMode: true,
             temperature: cfg.OPENAI_EXTRACTION_TEMPERATURE,
             maxTokens: cfg.OPENAI_EXTRACTION_MAX_TOKENS,
+            timeoutMs: cfg.OPENAI_EXTRACTION_TIMEOUT_MS,
             userId,
             contractId: contract.id,
             deadlineAt,

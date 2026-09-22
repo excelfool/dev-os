@@ -36,7 +36,14 @@ const serverSchema = z.object({
   // stub instead of billing real calls (spec 18: "a stubbed OpenAI client").
   // Unset in every real environment, where the SDK uses its own default.
   OPENAI_BASE_URL: z.string().url().optional().or(z.literal('')),
+  // General per-attempt timeout: chat and the query enhancer.
   OPENAI_TIMEOUT_MS: num(20_000),
+  // L5 (spec 06 v1.1 §3/§G): extraction and its JSON repair. A 36-term MSA
+  // batch runs 14–16 s live, so the 20 s general timeout left no headroom and
+  // killed the 120 s background job on one slow call. The inline path is still
+  // bounded by callLlm's deadline cap — min(timeout, remaining − 1 s), and no
+  // attempt below 6 s — so this never pushes a request past its 24 s deadline.
+  OPENAI_EXTRACTION_TIMEOUT_MS: num(45_000),
   OPENAI_MAX_RETRIES: num(3),
   OPENAI_EXTRACTION_MAX_TOKENS: num(4000), // v1.1 D47 c: per parallel batch (spec 06 v1.1 §G)
   OPENAI_SUMMARY_MAX_TOKENS: num(500),

@@ -79,6 +79,11 @@ function getClient(): OpenAI {
     const cfg = getServerConfig();
     client = new OpenAI({
       apiKey: cfg.OPENAI_API_KEY,
+      // L5: the SDK retries twice by default. That layer is invisible to us —
+      // it writes no `openai_calls` row and multiplies the per-attempt timeout
+      // behind the deadline arithmetic below. `callLlm`'s loop is the only
+      // retry layer, so every attempt is recorded and budgeted.
+      maxRetries: 0,
       ...(cfg.OPENAI_BASE_URL ? { baseURL: cfg.OPENAI_BASE_URL } : {}),
     });
   }
@@ -90,21 +95,28 @@ function jitter(ms: number): number {
   return Math.round(ms * (0.75 + Math.random() * 0.5));
 }
 
-function isRetryable(err: unknown): boolean {
-  if (err instanceof OpenAI.APIError) {
-    // A 400-class error is not retried — retrying cannot fix a bad request.
-    return err.status === 429 || (err.status !== undefined && err.status >= 500);
-  }
-  // Timeouts and network errors.
-  return true;
-}
-
 function isTimeout(err: unknown): boolean {
   if (err instanceof OpenAI.APIConnectionTimeoutError) return true;
   // Our own per-attempt timer aborts the request; the SDK surfaces that as
   // APIUserAbortError, which is a timeout for our purposes, not a provider error.
   if (err instanceof OpenAI.APIUserAbortError) return true;
   return err instanceof Error && err.name === 'AbortError';
+}
+
+function isRetryable(err: unknown): boolean {
+  // L5 (spec 06 v1.1 §3): timeouts and connection failures FIRST. The SDK
+  // models APIUserAbortError, APIConnectionError and APIConnectionTimeoutError
+  // as APIError subclasses whose `status` is `undefined`, so the status check
+  // below classifies all three as non-retryable if it is reached first — which
+  // is why a single slow extraction batch killed a 120 s background job.
+  if (isTimeout(err)) return true;
+  if (err instanceof OpenAI.APIConnectionError) return true;
+  if (err instanceof OpenAI.APIError) {
+    // A 400-class error is not retried — retrying cannot fix a bad request.
+    return err.status === 429 || (err.status !== undefined && err.status >= 500);
+  }
+  // Anything else (a network error the SDK did not wrap) is worth one more go.
+  return true;
 }
 
 export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
