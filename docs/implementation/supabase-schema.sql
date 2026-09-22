@@ -1957,14 +1957,20 @@ create policy hhh_scores_select_own on public.hhh_scores
   for select to authenticated using (user_id = auth.uid());
 -- insert/update only rows the caller authored (created_by): SME rows (created_by = operator)
 -- and judge rows on a user's contracts are readable by the owner but immutable to them.
+-- G40: and only on the caller's own contract — user_id = auth.uid() alone let an account
+-- attach a score to another account's contract_id.
 drop policy if exists hhh_scores_insert_own on public.hhh_scores;
 create policy hhh_scores_insert_own on public.hhh_scores
-  for insert to authenticated with check (user_id = auth.uid() and created_by = auth.uid());
+  for insert to authenticated with check (
+    user_id = auth.uid() and created_by = auth.uid()
+    and exists (select 1 from public.contracts c where c.id = contract_id and c.user_id = auth.uid()));
 drop policy if exists hhh_scores_update_own on public.hhh_scores;
 create policy hhh_scores_update_own on public.hhh_scores
   for update to authenticated
   using (user_id = auth.uid() and created_by = auth.uid())
-  with check (user_id = auth.uid() and created_by = auth.uid());
+  with check (
+    user_id = auth.uid() and created_by = auth.uid()
+    and exists (select 1 from public.contracts c where c.id = contract_id and c.user_id = auth.uid()));
 
 -- guardrail_events: own select/insert; false_positive is an operator write (no update policy)
 drop policy if exists guardrail_events_select_own on public.guardrail_events;

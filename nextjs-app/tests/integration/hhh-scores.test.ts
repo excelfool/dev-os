@@ -39,6 +39,9 @@ async function seed(user: TestUser): Promise<{ contractId: string; termId: strin
       status: 'completed',
       page_count: 1,
       prompt_version: 'v2.0',
+      // NOT NULL on contracts; the route sets both from the uploaded file.
+      file_size_bytes: 1024,
+      token_estimate: 20,
       contract_text: '[PAGE 1]\nGoverning law is Delaware.',
     })
     .select('id')

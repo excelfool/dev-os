@@ -52,6 +52,9 @@ async function seedContract(): Promise<void> {
       contract_type: 'MSA',
       status: 'completed',
       page_count: PAGE_COUNT,
+      // NOT NULL on contracts; the route sets both from the uploaded file.
+      file_size_bytes: 1024,
+      token_estimate: 20,
       contract_text: '[PAGE 1]\nThis Agreement is governed by the laws of the State of Delaware.',
     })
     .select('id')

@@ -213,7 +213,16 @@ export async function startApp(
   appSupabaseUrl = options.proxySupabase ? await startSupabaseProxy() : SUPABASE_URL;
   const supabaseUrl = appSupabaseUrl;
 
+  // A stale app on the port would answer the health check below with another
+  // file's env and stub URL, and every test would silently run against it.
+  if (await appResponds()) {
+    throw new Error(`startApp: something is already serving ${BASE_URL} — a leaked app from an earlier run?`);
+  }
+
+  // Own process group (G41): `npx` does not forward SIGTERM to the Next server
+  // it starts, so stopApp signals the whole group rather than just `npx`.
   appProcess = spawn('npx', ['next', 'dev', '--port', String(TEST_PORT)], {
+    detached: true,
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -237,19 +246,51 @@ export async function startApp(
 
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/health`);
-      if (res.ok) return;
-    } catch {
-      // not up yet
-    }
+    if (await appResponds()) return;
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error('app did not become healthy in time');
 }
 
+async function appResponds(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/health`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function groupAlive(pgid: number): boolean {
+  try {
+    process.kill(-pgid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Signals the app's process group and waits for it to go, escalating to SIGKILL. */
+async function killAppGroup(child: ChildProcess): Promise<void> {
+  const pgid = child.pid;
+  if (!pgid) return;
+  for (const signal of ['SIGTERM', 'SIGKILL'] as const) {
+    try {
+      process.kill(-pgid, signal);
+    } catch {
+      return; // group already gone
+    }
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      if (!groupAlive(pgid)) return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  throw new Error(`stopApp: process group ${pgid} survived SIGKILL`);
+}
+
 export async function stopApp(): Promise<void> {
-  appProcess?.kill('SIGTERM');
+  if (appProcess) await killAppGroup(appProcess);
   appProcess = null;
   failStoragePaths = null;
   appSupabaseUrl = SUPABASE_URL;

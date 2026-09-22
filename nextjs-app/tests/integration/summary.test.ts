@@ -22,6 +22,12 @@ import { SHORT_NDA, makePdf } from './pdf-fixtures';
 
 let user: TestUser;
 
+/**
+ * A stub delay no summary call can wait out: OPENAI_SUMMARY_TIMEOUT_MS is 20 s
+ * and runSummary never lets a call run past it (spec 06 v1.1 §B, L4).
+ */
+const SUMMARY_NEVER_IN_TIME_MS = 25_000;
+
 const NDA_EXTRACTION = JSON.stringify({
   detected_type: 'NDA',
   terms: [
@@ -142,8 +148,12 @@ describe('summary at process time (step 11a)', () => {
 
   it('a repair-call timeout keeps the first draft: summary_status=completed, summary_uncited=true, no error code', async () => {
     resetOpenAiStub();
-    // Extraction, then an uncited first draft, then a repair call that exceeds the 10 s summary timeout.
-    scriptOpenAi({ content: NDA_EXTRACTION }, { content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: 12_000 });
+    // Extraction, then an uncited first draft, then a repair call that never
+    // answers in time. Inline, runSummary caps each call at
+    // min(OPENAI_SUMMARY_TIMEOUT_MS = 20 s, deadline − now − 1 s) (spec 06 v1.1
+    // §B, L4); ~22 s remain at the repair, so the cap is 20 s and a 25 s stub
+    // delay is a real timeout. §B: a failed repair keeps the first draft.
+    scriptOpenAi({ content: NDA_EXTRACTION }, { content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: SUMMARY_NEVER_IN_TIME_MS });
     const id = await fresh(SHORT_NDA, 'NDA');
     const res = await process(id);
     expect(res.status).toBe(200);
@@ -170,12 +180,18 @@ describe('summary at process time (step 11a)', () => {
 
   it('a summary timeout leaves the terms committed with summary_status=error; POST /summary completes it once, then 409', async () => {
     resetOpenAiStub();
-    scriptOpenAi({ content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: 12_000 });
+    // The first summary call is capped at min(20 s, ~22 s remaining) = 20 s,
+    // so a 25 s stub delay times out. §B: the summary fails with AI_TIMEOUT
+    // but never fails /process — the terms are already committed.
+    scriptOpenAi({ content: NDA_EXTRACTION }, { content: GOOD_SUMMARY, delayMs: SUMMARY_NEVER_IN_TIME_MS });
     const id = await fresh(SHORT_NDA, 'NDA');
     const res = await process(id);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('completed');
     expect(res.body.summary_status).toBe('error');
+
+    const { data: calls } = await user.client.from('openai_calls').select('purpose, outcome').eq('contract_id', id);
+    expect((calls ?? []).filter((c) => c.purpose === 'summary').map((c) => c.outcome)).toEqual(['timeout']);
 
     const { count } = await user.client.from('key_terms').select('id', { count: 'exact', head: true }).eq('contract_id', id);
     expect(count).toBe(10);
@@ -277,11 +293,22 @@ describe('key dates (step 11c, spec 21 §7.2)', () => {
     const id = await fresh(MSA_PDF, 'MSA');
     await process(id);
 
-    const { data: dates } = await user.client.from('key_dates').select('kind, date').eq('contract_id', id).order('date');
+    // D52 as corrected in 5d-2c (8d76a01): renewal_date is the first
+    // end + k × 12 months with k ≥ 0 that is not before today. The fixture's
+    // term ends 2027-03-31, still ahead, so k = 0 — the end of the current term
+    // is itself the renewal — and the 30-day notice deadline is 2027-03-01.
+    // (Before 5d-2c the anchor was k ≥ 1, i.e. 2028-03-31.) end_date and
+    // renewal_date share a date, so `kind` breaks the tie.
+    const { data: dates } = await user.client
+      .from('key_dates')
+      .select('kind, date')
+      .eq('contract_id', id)
+      .order('date')
+      .order('kind');
     expect((dates ?? []).map((d) => [d.kind, d.date])).toEqual([
       ['renewal_notice_deadline', '2027-03-01'],
       ['end_date', '2027-03-31'],
-      ['renewal_date', '2028-03-31'],
+      ['renewal_date', '2027-03-31'],
     ]);
     const kd = (await api<{ key_dates: Array<{ kind: string; reminders: unknown[] }> }>(user, `/api/contracts/${id}/key-dates`)).body;
     expect(kd.key_dates).toHaveLength(3);
