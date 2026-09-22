@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+import { buildContentSecurityPolicy } from './src/lib/security/csp.mjs';
 
 // Security headers — spec 13 §3. `worker-src blob:` is required by the PDF.js
 // worker; the OpenAI origin is deliberately absent because the browser never
@@ -8,26 +8,17 @@
 // renders from SSR but no client component ever becomes interactive. It looks
 // like a frozen UI, not a security header. Production is exactly as spec 13 §3
 // specifies — 'unsafe-eval' is added ONLY when not building for production.
+// G42: in development a loopback NEXT_PUBLIC_SUPABASE_URL (the local stack) is
+// also added to connect-src; see src/lib/security/csp.mjs.
 const isProduction = process.env.NODE_ENV === 'production';
-const scriptSrc = isProduction
-  ? "script-src 'self' 'unsafe-inline'"
-  : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
 const securityHeaders = [
   {
     key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      scriptSrc,
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
-      "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co",
-      "worker-src 'self' blob:",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; '),
+    value: buildContentSecurityPolicy({
+      isProduction,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    }),
   },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -36,6 +27,7 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   // Lets the integration harness compile into its own directory. Sharing
   // `.next` between a running dev server and another `next dev`/`next build`

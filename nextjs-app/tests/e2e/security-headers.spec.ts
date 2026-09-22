@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loadTestEnv } from '../supabase-guard';
 
 /**
  * Spec 13 §3 — the response headers, asserted against a real server.
@@ -12,6 +13,26 @@ import { test, expect } from '@playwright/test';
  * a green run here says the headers are right, and says nothing at all about
  * whether the page works.
  */
+
+/** Spec 13 §3, verbatim — the production CSP. */
+const SPEC_13_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+
+/**
+ * Playwright runs the app under `next dev` (playwright.config.ts), so the CSP
+ * it receives is the DEVELOPMENT header: spec 13 §3 plus exactly two declared
+ * deviations — 'unsafe-eval' (spec 13 §3 note, 2026-09-20) and the loopback
+ * Supabase origin in connect-src (G42). The guard guarantees that URL is
+ * loopback.
+ */
+const LOCAL_SUPABASE_ORIGIN = new URL(loadTestEnv().NEXT_PUBLIC_SUPABASE_URL!).origin;
+const DEV_CSP = SPEC_13_CSP.replace(
+  "script-src 'self' 'unsafe-inline';",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
+).replace(
+  "connect-src 'self' https://*.supabase.co;",
+  `connect-src 'self' https://*.supabase.co ${LOCAL_SUPABASE_ORIGIN};`,
+);
 
 test.describe('security headers', () => {
   test('the framework is not advertised', async ({ request }) => {
@@ -39,6 +60,22 @@ test.describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("form-action 'self'");
+  });
+
+  test('the development CSP is exactly spec 13 §3 plus the two declared dev deviations', async ({ request }) => {
+    const csp = (await request.get('/')).headers()['content-security-policy'];
+    expect(csp).toBe(DEV_CSP);
+  });
+
+  test('removing the dev deviations leaves the production CSP byte for byte', async ({ request }) => {
+    // Separate from the test above on purpose: a change to any directive the
+    // production header shares fails here with the production string in the
+    // diff, not only as a dev-header mismatch.
+    const csp = (await request.get('/')).headers()['content-security-policy']!;
+    const production = csp
+      .replace(" 'unsafe-eval'", '')
+      .replace(` ${LOCAL_SUPABASE_ORIGIN}`, '');
+    expect(production).toBe(SPEC_13_CSP);
   });
 
   test('X-XSS-Protection is deliberately absent', async ({ request }) => {

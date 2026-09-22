@@ -63,6 +63,8 @@ Playwright via `page.on('pageerror')`.
 to the table above — asserted before and after the change. Any future edit to
 this CSP must be exercised through a real browser, not an HTTP client.
 
+**G42 (2026-09-22) — development only:** when `NEXT_PUBLIC_SUPABASE_URL`'s host is `127.0.0.1` or `localhost` and the build is not production, its origin (the local stack, e.g. `http://127.0.0.1:54321`) is appended to `connect-src` (`src/lib/security/csp.mjs`); any other host, an unset URL, or a production build leaves the header exactly as the table above — pinned by `tests/unit/csp.test.ts`.
+
 ---
 
 ## 4. Rate limiting (`src/lib/security/rate-limit.ts`)
