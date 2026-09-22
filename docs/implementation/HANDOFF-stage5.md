@@ -46,7 +46,7 @@ needs it; Slice 3 enforces with the same module.
 pre-checks, determinate progress and a `useReducer` wizard context.
 
 ### Slice 4 — term library and extraction
-The 10 NDA / 12 MSA library, `openai-client.ts` with deadline-aware retries,
+The 10 NDA / 12 MSA library (v1.0 — superseded by the 10 NDA / 36 MSA instructor library, `TERM_LIBRARY_VERSION` v1.1, see HANDOFF-stage6.md), `openai-client.ts` with deadline-aware retries,
 the few-shot extraction prompt, the eight-step post-processing pipeline,
 `/process` with its 24s deadline and stale-run reclaim, custom-terms routes,
 `/contracts/[id]/prepare`, `ProcessingSteps`.
