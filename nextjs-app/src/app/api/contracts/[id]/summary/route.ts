@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { appError } from '@/lib/errors/app-error';
 import { withErrorHandling } from '@/lib/errors/to-user-message';
 import { enforceRateLimit } from '@/lib/security/rate-limit';
-import { claimSummaryDeferred, runSummary } from '@/lib/services/summary-service';
+import { SUMMARY_ROUTE_DEADLINE_MS, claimSummaryDeferred, runSummary } from '@/lib/services/summary-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
  * claim held by another path returns 409 SUMMARY_NOT_PENDING.
  */
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
+  const requestStartedAt = Date.now();
   return withErrorHandling({ route: '/api/contracts/[id]/summary', method: 'POST' }, async (ctx) => {
     const supabase = createServerSupabaseClient();
     const {
@@ -47,6 +48,8 @@ export async function POST(_request: Request, { params }: { params: { id: string
       supabase,
       { id: contract.id, user_id: user.id, contract_text: contract.contract_text, page_count: contract.page_count },
       (terms ?? []) as Array<{ term_name: string; value: string | null; page_number: number | null; source_sentence: string | null }>,
+      // L4: capped by the Netlify sync ceiling; runSummary trims each call to the remainder.
+      { deadlineAt: requestStartedAt + SUMMARY_ROUTE_DEADLINE_MS },
     );
 
     return Response.json({ summary_md: result.summary_md, summary_status: result.summary_status, summary_uncited: result.summary_uncited });

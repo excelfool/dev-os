@@ -201,6 +201,10 @@ export async function runProcessingPipeline(opts: PipelineOptions): Promise<Pipe
 
     // 11a. Contract summary (spec 06 v1.1 §B, D45): claim first, only
     //      when ≥ 15 s of the budget remain; otherwise defer to route 34.
+    //      L4: the call is capped at min(OPENAI_SUMMARY_TIMEOUT_MS, remaining
+    //      − 1 s). Inline is the dev/tests path only (PROCESS_JOB_SECRET
+    //      unset); in the background job the 120 s budget fits the full 20 s
+    //      call. A call cut short by the deadline leaves the row for route 34.
     let summaryStatus: string = 'pending';
     let summaryMd: string | null = null;
     if (shouldClaimSummaryInline(deadlineAt - Date.now())) {

@@ -41,7 +41,9 @@ const serverSchema = z.object({
   OPENAI_EXTRACTION_MAX_TOKENS: num(4000), // v1.1 D47 c: per parallel batch (spec 06 v1.1 §G)
   OPENAI_SUMMARY_MAX_TOKENS: num(500),
   OPENAI_SUMMARY_TEMPERATURE: z.coerce.number().default(0.2),
-  OPENAI_SUMMARY_TIMEOUT_MS: num(10_000),
+  // Stage 5d-0 L4: D45 sends the full contract text; 10 s was sized for the
+  // windowed design. runSummary caps this by the caller's deadline.
+  OPENAI_SUMMARY_TIMEOUT_MS: num(20_000),
   OPENAI_CHAT_MAX_TOKENS: num(1000),
   OPENAI_EXTRACTION_TEMPERATURE: z.coerce.number().default(0.1),
   OPENAI_CHAT_TEMPERATURE: z.coerce.number().default(0.4),

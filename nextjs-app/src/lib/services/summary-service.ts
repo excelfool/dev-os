@@ -27,13 +27,32 @@ import type { PersistableTerm } from './extraction-service';
 
 export const SUMMARY_STALE_CLAIM_MS = 2 * 60 * 1000;
 /**
- * Step 11a runs only if at least this much of the handler budget remains:
- * one 10 s call plus validation and persistence. Below it the row stays
- * `pending` and the results page completes it via route 34 (§B deferral).
- * Stage 5a: raised from 11 s — an 11–14 s window let the inline claim start a
- * call that could not finish before the 24 s deadline.
+ * Step 11a runs only if at least this much of the handler budget remains.
+ * Below it the row stays `pending` and the results page completes it via
+ * route 34 (§B deferral). Stage 5a: raised from 11 s — an 11–14 s window let
+ * the inline claim start a call that could not finish before the 24 s deadline.
+ *
+ * Stage 5d-0 (L4): the inline path is the dev/tests path only
+ * (PROCESS_JOB_SECRET unset); production runs the summary in the background
+ * job with the 120 s budget. Inline, the call gets
+ * min(OPENAI_SUMMARY_TIMEOUT_MS, remaining − 1 s), so with 15 s left it is a
+ * 14 s call; a call cut short by the deadline is persisted as `error` and a
+ * claim with < SUMMARY_MIN_CALL_MS left is skipped and left `pending`, so
+ * route 34 finishes it either way.
  */
 export const SUMMARY_MIN_REMAINING_MS = 15_000;
+/**
+ * L4: a call is only issued with at least this much budget. Below it the
+ * claim is released back to `pending` (not `error`) for route 34.
+ */
+export const SUMMARY_MIN_CALL_MS = 3_000;
+/**
+ * L4: route 34's budget, measured from request start. Netlify's synchronous
+ * ceiling is 26 s (D36); 22 s leaves room for the claim, persistence and the
+ * response. Each call is capped at the remainder, so the first call gets the
+ * full 20 s and the 6 s repair guard then skips the repair.
+ */
+export const SUMMARY_ROUTE_DEADLINE_MS = 22_000;
 /** D45: per-summary allowance at GPT-4o pricing (reported, not enforced pre-call). */
 export const SUMMARY_ALLOWANCE_USD = 0.05;
 
@@ -79,7 +98,7 @@ export async function claimSummaryDeferred(supabase: SupabaseClient, contractId:
 
 export interface SummaryResult {
   summary_md: string | null;
-  summary_status: 'completed' | 'error';
+  summary_status: 'completed' | 'error' | 'pending';
   summary_uncited: boolean;
   summary_generated_ms: number;
   error_code?: string;
@@ -89,6 +108,11 @@ export interface SummaryResult {
  * Runs the §B call for a contract the caller has already claimed, validates,
  * repairs once if needed, and persists. Never throws: a failure is persisted as
  * `summary_status='error'` and returned.
+ *
+ * L4: no call is ever issued whose timeout exceeds the remaining budget —
+ * each call gets min(OPENAI_SUMMARY_TIMEOUT_MS, deadlineAt − now − 1 s). With
+ * < SUMMARY_MIN_CALL_MS left the first call is skipped and the row goes back
+ * to `pending` so route 34 can finish it.
  */
 export async function runSummary(
   supabase: SupabaseClient,
@@ -106,10 +130,24 @@ export async function runSummary(
     { role: 'system' as const, content: SUMMARY_SYSTEM_PROMPT },
     { role: 'user' as const, content: buildSummaryUserMessage(contract.contract_text, terms) },
   ];
-  const call = { purpose: 'summary' as const, temperature: cfg.OPENAI_SUMMARY_TEMPERATURE, maxTokens: cfg.OPENAI_SUMMARY_MAX_TOKENS, timeoutMs: cfg.OPENAI_SUMMARY_TIMEOUT_MS, maxAttempts: 1, userId: contract.user_id, contractId: contract.id, deadlineAt: opts.deadlineAt, supabase };
+  const call = { purpose: 'summary' as const, temperature: cfg.OPENAI_SUMMARY_TEMPERATURE, maxTokens: cfg.OPENAI_SUMMARY_MAX_TOKENS, maxAttempts: 1, userId: contract.user_id, contractId: contract.id, deadlineAt: opts.deadlineAt, supabase };
+  const timeoutFor = (): number =>
+    opts.deadlineAt === undefined
+      ? cfg.OPENAI_SUMMARY_TIMEOUT_MS
+      : Math.min(cfg.OPENAI_SUMMARY_TIMEOUT_MS, opts.deadlineAt - Date.now() - 1_000);
+
+  if (opts.deadlineAt !== undefined && opts.deadlineAt - Date.now() < SUMMARY_MIN_CALL_MS) {
+    console.warn(JSON.stringify({ summary: 'skipped_no_budget', contractId: contract.id, remainingMs: opts.deadlineAt - Date.now() }));
+    await supabase
+      .from('contracts')
+      .update({ summary_status: 'pending', summary_claimed_at: null })
+      .eq('id', contract.id)
+      .eq('user_id', contract.user_id);
+    return { summary_md: null, summary_status: 'pending', summary_uncited: false, summary_generated_ms: 0 };
+  }
 
   try {
-    const first = await callLlm({ ...call, messages });
+    const first = await callLlm({ ...call, timeoutMs: timeoutFor(), messages });
     let md = enforceWordBudget(normaliseMarkdown(first.content));
     let uncited = uncitedFactualSentences(md, ctx);
 
@@ -120,6 +158,7 @@ export async function runSummary(
       try {
         const repaired = await callLlm({
           ...call,
+          timeoutMs: timeoutFor(),
           messages: [...messages, { role: 'assistant', content: md }, { role: 'user', content: SUMMARY_REPAIR_PROMPT }],
         });
         const repairedMd = enforceWordBudget(normaliseMarkdown(repaired.content));
