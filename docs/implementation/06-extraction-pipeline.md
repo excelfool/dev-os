@@ -273,9 +273,66 @@ After §4 step 8, any term with `is_required = true` (spec 05 v1.1 §B) and `val
 - `tests/unit/summary-citations.test.ts` — the factual-sentence detector and the repair trigger.
 - `tests/integration/process.test.ts` (added cases) — a processed MSA fixture has its `key_dates` (three rows for the spec 21 §9 fixture) immediately after `/process` returns (step 11c); a thrown `deriveKeyDates` does not change the `200` response or `status='completed'`.
 
-### G. D47 option c — lean anchors, parallel batches, and the `pipeline.async` placeholder (2026-09-21)
+### G. D47 option c and D49 option a — lean anchors, parallel batches, and `pipeline.async` (2026-09-21, built 2026-09-22)
 
-The re-baseline of spec 22 §1 showed the v2 prompt exceeding a 3,000-token output cap on every instructor MSA (36 terms × verbatim source sentence × reasoning ≈ 4,000–6,000 tokens). Decision **D47 c**: (1) `extraction.v2` returns **`source_anchor`** — the shortest verbatim span (≤ 25 words) containing the answer — instead of a full sentence; the service verifies it with `containsNormalised` exactly as before and stores it in `key_terms.source_sentence` (no schema change; anchors over 25 words are accepted and counted). (2) `POST /process` splits the standard terms into **two parallel batches by `display_rank`** (MSA 1–18 and 19–36; NDA one batch), `max_tokens` **4000 each**, under the same 24 s deadline; custom terms ride with batch 2; each batch keeps its own JSON-repair retry and `openai_calls` rows; `processing_runs` `ai_extract` records the wall time of the pair; results merge with batch 1's `detected_type` winning (a disagreement is logged as `activity_events` `extraction_type_disagreement`), dropped counts summed, one `persist_key_terms` call. (3) Capability **`pipeline.async`** is registered as `stub` (phase v2, PRD §5): the design is a Netlify **background function** (`/.netlify/functions/process-background`, 15-minute ceiling) that the route enqueues when a contract's estimated output exceeds what two batches can return inside 24 s — the results page already polls, so the UI needs no change; `contracts.status='processing'` plus `processing_started_at` cover the hand-off and the existing 5-minute stale reclaim becomes a 15-minute one for background runs. No code beyond the registry entry ships with D47.
+**D47 c (extraction shape, unchanged).** The re-baseline of spec 22 §1 showed the v2 prompt exceeding a 3,000-token output cap on every instructor MSA (36 terms × verbatim source sentence × reasoning ≈ 4,000–6,000 tokens). (1) `extraction.v2` returns **`source_anchor`** — the shortest verbatim span (≤ 25 words) containing the answer — instead of a full sentence; the service verifies it with `containsNormalised` exactly as before and stores it in `key_terms.source_sentence` (no schema change; anchors over 25 words are accepted and counted). (2) The standard terms run as **two parallel batches by `display_rank`** (MSA 1–18 and 19–36; NDA one batch), `max_tokens` **4000 each**; custom terms ride with batch 2; each batch keeps its own JSON-repair retry and `openai_calls` rows; `processing_runs` `ai_extract` records the wall time of the pair; results merge with batch 1's `detected_type` winning (a disagreement is logged as `activity_events` `extraction_type_disagreement`), dropped counts summed, one `persist_key_terms` call.
+
+**D49 a — `pipeline.async` is built (Stage 5b).** Two parallel 4,000-token batches plus a summary do not reliably fit a 24 s request on an 8-page instructor MSA (live 2026-09-22: `ai_extract` 18.7 s, summary deferred). The route therefore hands the run to a **Netlify background function**, which is not bound by the 26 s synchronous ceiling. The design, in full:
+
+#### G.1 The shared pipeline
+
+Steps 6–12 of §3 (custom terms → parallel extraction → merge → `persist_key_terms` → key dates (§7.2 of spec 21) → summary (§B) → telemetry) live in **one** module, `src/lib/services/process-pipeline.ts` (`runProcessingPipeline`), with two callers. Both write exactly the same rows: `key_terms` via the RPC, `key_dates`/`reminders`, `openai_calls` (`extraction`, `repair`, `summary`), `processing_runs` (`ai_extract`, `persist`, `summary`, `total`) and `activity_events` (`extraction_type_disagreement`, `summary_deferred`, `summary_generated`). A failure is persisted by the pipeline itself: `status='error'`, `error_code`, `error_message`, `processing_started_at=null`, plus a `processing_runs` `total`/`error` row — no partial terms survive (the RPC is one transaction).
+
+#### G.2 `POST /api/contracts/{id}/process` (route 4)
+
+The route keeps **every** existing guard, in this order, in both modes: session and ownership (`401`, `404`); status (`409 ALREADY_PROCESSED`; `409 ALREADY_PROCESSING` unless the claim is older than 5 minutes, in which case it is re-claimed); the `process` rate-limit bucket (`429`); the global analysis semaphore (`503 CAPACITY` after 5 s of queuing); then the **claim** — `status='processing'`, `processing_started_at=now()` — and the `process_started` event. Then:
+
+| Mode | Condition | What happens | Response |
+|---|---|---|---|
+| **async** | `PROCESS_JOB_SECRET` is set | The route posts `{ contract_id, user_id, issued_at }` to `/.netlify/functions/process-background` (its own site origin from Netlify's `URL`; `PROCESS_JOB_URL` overrides it for tests), signed with `x-process-job-signature: sha256=<HMAC-SHA256(body, PROCESS_JOB_SECRET)>`. Netlify queues a background function and answers `202` at once. The route writes `activity_events` `process_enqueued` and releases its semaphore slot. If the enqueue itself fails (network, non-2xx), the claim is released as a retryable `error` (`INTERNAL`) so "Try again" works immediately instead of waiting for the reclaim. | `202 { contract_id, status: 'processing' }` |
+| **inline** (fallback) | `PROCESS_JOB_SECRET` unset — local dev, the integration and E2E suites | The pipeline runs inside the request under the **24 s** deadline exactly as before D49. | `200 { …terms, summary_status, … }` (unchanged shape) |
+
+The semaphore in async mode covers the claim and hand-off only; the background function takes its own slot for the run, so the 100-analysis cap still counts running jobs, not just requests. The results page needs no change: it already navigates on any 2xx and polls `GET /api/contracts/{id}` every 2 s until `status` leaves `processing`. `ProcessingSteps` now reads "Usually under a minute; long contracts can take up to two."
+
+#### G.3 `netlify/functions/process-background.ts`
+
+A Netlify **background function** (the `-background` suffix is what makes Netlify queue it and return `202`; ceiling 15 minutes). Its body is `runProcessJob` in `src/lib/services/process-job-runner.ts` so the integration suite can drive it in-process:
+
+1. **Verify** the signature over the raw body with `PROCESS_JOB_SECRET` (constant-time compare); refuse a missing/bad signature (`401`), a malformed payload (`401 malformed`), or a job older than 10 minutes (`401 expired`). Nothing is read from the database before this step. `503` if the secret is not configured.
+2. **Load** the contract with the **service-role client** (the job carries no user session — sanctioned call site (7) in spec 13 §2), scoped to `id` **and** `user_id` from the payload (`404` otherwise). The row must still be `processing` (`409` otherwise): a row that is `error`/`completed`/`uploaded` means the claim was lost — reclaimed by the cron, retried inline, or deleted — and the job is stale.
+3. **Run** `runProcessingPipeline` inside `withAnalysisSlot` with a **120 s** internal budget (`PROCESS_JOB_BUDGET_MS`), `startedAt` = job start (so `first_term_ready_ms` and `total` measure the job, not the request). Same rows as G.1. The summary's inline-claim rule (§B, ≥ 15 s remaining) is evaluated against this budget, so in practice the summary always runs in the job and `summary_deferred` is rare.
+4. **Persist** any failure the pipeline did not already persist (e.g. `CAPACITY` from the semaphore) the same way, and return `200 { status:'completed' }` / `500 { status:'error', code }` — Netlify discards the response; it exists for the in-process tests and the function log.
+
+**Bundling.** The function is packaged by Netlify's esbuild from `netlify/functions/`, outside the Next.js build, so `[functions."process-background"]` in `netlify.toml` repeats the server handler's `included_files` (the pdf-parse worker) and marks `server-only` external: that package throws when imported outside a React Server environment by design, so the function pre-seeds the require cache with an empty module before dynamically importing the app code. Verified with `netlify build`: the zip lists `netlify/functions/process-background.cjs`, `node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs` and `node_modules/server-only/*`, and loads under plain Node.
+
+#### G.4 Dead-job recovery
+
+Three layers, none new, all documented here because the background run is the case they exist for:
+
+| Layer | Trigger | Effect |
+|---|---|---|
+| `reclaim-stale-processing` pg_cron job (`supabase/database.sql`, every 5 minutes) | `status='processing'` and `processing_started_at < now() − 5 min` | `status='error'`, `error_code='AI_TIMEOUT'`, retryable message. This is **the** recovery for a background function that died (Netlify kill, crash, lost invocation): 5 min > the 120 s budget, so a healthy job can never be reclaimed under it. Verified by `tests/integration/reclaim-cron.test.ts`, which parks a 6-minute-old `processing` row and watches the next tick flip it. |
+| Route 4's own stale rule | a `POST /process` on a `processing` row older than 5 min | Re-claims instead of `409` — the user's "Try again" works even between cron ticks. |
+| `acquire_analysis_slot` staleness | a slot held > 2 min | Self-heals the semaphore if the function died holding a slot. |
+
+`processing_started_at` — never `updated_at`, which the 2 s poll bumps — is the only clock these rules read. The route's 5-minute rule and the cron are deliberately the same number.
+
+#### G.5 Configuration and registry
+
+| Variable | Where | Meaning |
+|---|---|---|
+| `PROCESS_JOB_SECRET` | Netlify (server only; **the one variable that turns async on**) | HMAC key shared by the route and the function. Unset ⇒ inline fallback. |
+| `PROCESS_JOB_URL` | tests only | Overrides the function URL (the harness points it at a local invoker that answers 202). |
+| `PROCESS_JOB_BUDGET_MS` | optional, default 120000 | The function's internal deadline. |
+
+Capability `pipeline.async` → **built** (spec 21 §1; `CapabilityTable` copy: "Long contracts are processed in the background; the results page updates when they finish."). `activity_events` gains `process_enqueued` (spec 14).
+
+#### G.6 Tests
+
+- `tests/unit/process-job-signature.test.ts` — sign/verify round trip; missing, tampered and wrong-secret signatures; malformed payload; the 10-minute replay window.
+- `tests/integration/process-async.test.ts` — app started with `PROCESS_JOB_SECRET` and `PROCESS_JOB_URL` → a local invoker: `POST /process` returns `202 { status:'processing' }`, claims the row, makes no model call, enqueues one job whose signature verifies, writes `process_started` + `process_enqueued`; a second POST is `409 ALREADY_PROCESSING`; a completed contract is `409 ALREADY_PROCESSED` with nothing enqueued. The background function driven in-process with the captured job: happy path against the OpenAI stub (10 `key_terms`, summary completed, `openai_calls` `extraction`+`summary`, `processing_runs` `ai_extract`/`persist`/`summary`/`total` all `success`, `GET` shows `completed`); bad/absent signature → `401`, row untouched; provider `500` → `status='error'`/`AI_UNAVAILABLE`, no terms; a job whose row is no longer `processing` → `409`.
+- `tests/integration/process.test.ts` (unchanged) is the **inline** contract: with no secret the route returns `200` with the terms.
+- `tests/integration/reclaim-cron.test.ts` — the cron flips a 6-minute-old `processing` row to `error`/`AI_TIMEOUT`.
 
 ### F. Superseded v1.0 lines (read the v1.1 value)
 

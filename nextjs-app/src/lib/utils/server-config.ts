@@ -77,6 +77,14 @@ const serverSchema = z.object({
   CALIBRATION_WARNING_ACTIVE: envBool(false),
   SLACK_ALERT_WEBHOOK_URL: z.string().url().optional().or(z.literal('')),
   COMMIT_SHA: z.string().default('dev'),
+  // D49 a (spec 06 v1.1 §G): set ⇒ POST /process hands the pipeline to the
+  // Netlify background function and returns 202; unset ⇒ inline (dev, tests).
+  PROCESS_JOB_SECRET: z.string().optional().or(z.literal('')),
+  // Test/override only: where the signed job is posted. Unset ⇒ the site's own
+  // /.netlify/functions/process-background.
+  PROCESS_JOB_URL: z.string().url().optional().or(z.literal('')),
+  // The background function's own budget for extraction → persist → summary.
+  PROCESS_JOB_BUDGET_MS: num(120_000),
 });
 
 export type ServerConfig = z.infer<typeof serverSchema>;

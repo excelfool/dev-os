@@ -93,7 +93,7 @@ export function ProcessingSteps({
         </div>
       ) : (
         <p className="text-caption text-grey-400">
-          This usually takes under 30 seconds · {elapsed}s elapsed
+          Usually under a minute; long contracts can take up to two · {elapsed}s elapsed
         </p>
       )}
     </div>

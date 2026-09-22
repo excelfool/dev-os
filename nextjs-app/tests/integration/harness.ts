@@ -63,6 +63,17 @@ export function resetOpenAiStub(): void {
 let stubServer: Server | null = null;
 let stubPort = 0;
 
+/** The in-process OpenAI stub's base URL, for code driven in-process rather than through the app. */
+export function openAiStubUrl(): string {
+  if (!stubPort) throw new Error('openAiStubUrl: the stub is not running — call startApp first');
+  return `http://127.0.0.1:${stubPort}/v1`;
+}
+
+/** The .env.local values the app is started with, for in-process callers. */
+export function testEnv(): Readonly<Record<string, string>> {
+  return env;
+}
+
 async function startOpenAiStub(): Promise<string> {
   stubServer = createServer((req, res) => {
     let body = '';

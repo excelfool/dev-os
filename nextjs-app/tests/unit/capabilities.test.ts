@@ -59,8 +59,8 @@ describe('capability registry', () => {
       expect(CAPABILITIES[key as keyof typeof CAPABILITIES]?.status, key).toBe(status);
     }
     expect(CAPABILITIES['versioning.duplicate_detect'].status).toBe('built');
-    // D47 c: pipeline.async (stub, v2) is the second key beyond Appendix B.
-    expect(CAPABILITIES['pipeline.async']).toMatchObject({ status: 'stub', phase: 'v2', prd_ref: '§5' });
+    // D47 c registered pipeline.async as a stub; D49 a (Stage 5b) built it.
+    expect(CAPABILITIES['pipeline.async']).toMatchObject({ status: 'built', phase: '—', prd_ref: '§5' });
     expect(Object.keys(CAPABILITIES)).toHaveLength(APPENDIX_B.length + 2);
   });
 

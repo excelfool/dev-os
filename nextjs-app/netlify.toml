@@ -31,6 +31,17 @@
   # surface as 500 INTERNAL naming the CMap, never as CORRUPT_PDF.
   included_files = ["node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs"]
 
+# D49 a (spec 06 v1.1 §G): the background processing function. It is bundled
+# from netlify/functions/process-background.ts by the same esbuild, so it
+# inherits the [functions] block; the worker is repeated here so the two
+# bundles can never drift apart. `server-only` is external because the app
+# modules import it and the package throws when loaded outside a React Server
+# environment — the function neutralises it at runtime (see the file header).
+[functions."process-background"]
+  node_bundler = "esbuild"
+  external_node_modules = ["pdf-parse", "server-only"]
+  included_files = ["node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs"]
+
 # Upload and process are the two long-running routes. Netlify's function
 # timeout is 10s on the free tier and 26s on Pro; ContractIQ requires Pro.
 # /api/contracts/[id]/process enforces its own 24s deadline in code so it can

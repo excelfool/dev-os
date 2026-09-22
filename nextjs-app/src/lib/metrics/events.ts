@@ -28,7 +28,9 @@ export type ActivityEventType =
   | 'summary_generated'
   | 'summary_deferred'
   | 'key_date_unparsed'
-  | 'extraction_type_disagreement';
+  | 'extraction_type_disagreement'
+  // v1.1 D49 a (spec 06 v1.1 §G): the route handed the run to the background function.
+  | 'process_enqueued';
 
 /** Keys that could carry contract or chat content. Rejected outright. */
 const FORBIDDEN_KEYS = new Set(['content', 'text', 'value', 'source_sentence']);

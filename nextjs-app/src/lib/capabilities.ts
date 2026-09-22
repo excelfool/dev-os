@@ -120,9 +120,10 @@ const ENTRIES: Capability[] = [
   entry('billing', 'planned', 'GA', '§12, A-06', 'Self-service billing', 'Plan changes are handled by our team today.'),
   // D46 — content-hash duplicate detection on upload.
   entry('versioning.duplicate_detect', 'built', 'v1.1', 'D46', 'Duplicate upload detection', 'Tells you when you upload a file you have already analysed.'),
-  // D47 c: extraction runs as two parallel batches inside the 24 s function today;
-  // a background-function pipeline is the next step for longer contracts.
-  entry('pipeline.async', 'stub', 'v2', '§5', 'Background processing for long contracts', 'Reserved for contracts that need more than one function run.', 'engineering'),
+  // D49 a (Stage 5b): POST /process hands the run to the Netlify background
+  // function when PROCESS_JOB_SECRET is set, so extraction is no longer bound
+  // by the 24 s request deadline.
+  entry('pipeline.async', 'built', '—', '§5', 'Background processing for long contracts', 'Long contracts are processed in the background; the results page updates when they finish.', 'engineering'),
 ];
 
 export const CAPABILITIES: Readonly<Record<CapabilityKey, Capability>> = Object.freeze(
