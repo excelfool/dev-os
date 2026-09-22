@@ -137,3 +137,67 @@ describe('required_missing (spec 06 v1.1 §C)', () => {
     expect(out.terms).toHaveLength(36);
   });
 });
+
+// ---------------------------------------------------------------------------
+// D47 option c — lean anchors and parallel batches (spec 06 v1.1 §G)
+// ---------------------------------------------------------------------------
+import { mergeExtractions, planExtractionBatches, SOURCE_ANCHOR_MAX_WORDS } from '@/lib/services/extraction-service';
+
+describe('source_anchor (D47 c)', () => {
+  it('a v2 source_anchor is verified and stored as source_sentence', () => {
+    const out = process([
+      {
+        term_name: 'Governing Law',
+        value: 'State of Delaware',
+        page_number: 1,
+        confidence_score: 0.9,
+        source_anchor: 'governed by the laws of the State of Delaware',
+        reasoning: 'Clause names Delaware.',
+      },
+    ]);
+    const gl = out.terms.find((t) => t.term_name === 'Governing Law')!;
+    expect(gl.source_sentence).toBe('governed by the laws of the State of Delaware');
+    expect(gl.is_source_verified).toBe(true);
+    expect(gl.confidence_score).toBe(90);
+    expect(out.anchorOverLimitCount).toBe(0);
+  });
+
+  it('an anchor over 25 words is accepted (schema) and counted', () => {
+    const longAnchor = Array.from({ length: SOURCE_ANCHOR_MAX_WORDS + 5 }, (_, i) => `w${i}`).join(' ');
+    const out = process([
+      { term_name: 'Governing Law', value: 'Delaware', page_number: 1, confidence_score: 0.9, source_anchor: longAnchor },
+    ]);
+    expect(out.droppedTermCount).toBe(0);
+    expect(out.anchorOverLimitCount).toBe(1);
+    expect(out.terms.find((t) => t.term_name === 'Governing Law')!.source_sentence).toBe(longAnchor);
+  });
+});
+
+describe('batching (D47 c)', () => {
+  it('MSA splits 1–18 / 19–36 with custom terms on batch 2; NDA is one batch', () => {
+    const msa = planExtractionBatches('MSA', ['Non-compete radius']);
+    expect(msa).toHaveLength(2);
+    expect(msa[0]!.standardTermNames).toHaveLength(18);
+    expect(msa[1]!.standardTermNames).toHaveLength(18);
+    expect(msa[0]!.standardTermNames[0]).toBe('Service Provider Name');
+    expect(msa[1]!.standardTermNames[0]).toBe('Notice of termination for convenience (Days)');
+    expect(msa[0]!.customTermNames).toEqual([]);
+    expect(msa[1]!.customTermNames).toEqual(['Non-compete radius']);
+    const nda = planExtractionBatches('NDA', ['X']);
+    expect(nda).toHaveLength(1);
+    expect(nda[0]!.standardTermNames).toHaveLength(10);
+  });
+
+  it('merge: first batch wins detected_type, disagreement flagged, counts summed, terms deduped and sorted', () => {
+    const a = process([], 'MSA');
+    const b = { ...process([], 'MSA'), detectedType: 'NDA' as const, droppedTermCount: 2 };
+    const merged = mergeExtractions([{ ...a, droppedTermCount: 1 }, b], 'MSA');
+    expect(merged.detectedType).toBe('MSA');
+    expect(merged.typeMismatch).toBe(false);
+    expect(merged.typeDisagreement).toBe(true);
+    expect(merged.droppedTermCount).toBe(3);
+    expect(merged.terms).toHaveLength(36);
+    expect(merged.terms.map((t) => t.display_rank)).toEqual(Array.from({ length: 36 }, (_, i) => i + 1));
+    expect(merged.requiredMissing).toEqual(['Service Provider Name', 'Customer Name', 'Contract start date']);
+  });
+});

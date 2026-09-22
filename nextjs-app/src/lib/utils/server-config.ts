@@ -38,7 +38,10 @@ const serverSchema = z.object({
   OPENAI_BASE_URL: z.string().url().optional().or(z.literal('')),
   OPENAI_TIMEOUT_MS: num(20_000),
   OPENAI_MAX_RETRIES: num(3),
-  OPENAI_EXTRACTION_MAX_TOKENS: num(3000), // v1.1: 36-term MSA + reasoning
+  OPENAI_EXTRACTION_MAX_TOKENS: num(4000), // v1.1 D47 c: per parallel batch (spec 06 v1.1 §G)
+  OPENAI_SUMMARY_MAX_TOKENS: num(500),
+  OPENAI_SUMMARY_TEMPERATURE: z.coerce.number().default(0.2),
+  OPENAI_SUMMARY_TIMEOUT_MS: num(10_000),
   OPENAI_CHAT_MAX_TOKENS: num(1000),
   OPENAI_EXTRACTION_TEMPERATURE: z.coerce.number().default(0.1),
   OPENAI_CHAT_TEMPERATURE: z.coerce.number().default(0.4),

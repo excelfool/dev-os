@@ -9,7 +9,14 @@ import { callLlm } from '@/lib/ai/openai-client';
 import * as promptV1 from '@/lib/ai/prompts/extraction.v1';
 import * as promptV2 from '@/lib/ai/prompts/extraction.v2';
 import { JSON_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
-import { processExtraction, parseJsonResponse, type PersistableTerm } from '@/lib/services/extraction-service';
+import {
+  mergeExtractions,
+  parseJsonResponse,
+  planExtractionBatches,
+  processExtraction,
+  type PersistableTerm,
+  type ProcessedExtraction,
+} from '@/lib/services/extraction-service';
 import { MSA_TERMS, TERM_LIBRARY_VERSION, MSA_LIBRARY_SOURCE_VERSION } from '@/lib/ai/term-library';
 import { computeCostUsd } from '@/lib/metrics/cost';
 import { getServerConfig } from '@/lib/utils/server-config';
@@ -18,6 +25,7 @@ import { scoreF1, type TermOutcome } from './extraction-f1';
 import { pageAccuracy } from './page-accuracy';
 import { calibration } from './calibration';
 import { ingestInstructorSet, type IngestResult } from '../datasets/msa-instructor/ingest';
+import { GOLDEN_SET_PATH, loadGoldenSet } from '../lib/golden-set';
 
 /**
  * Re-baseline against the instructor golden set (spec 22 §1, PRD R-21):
@@ -45,6 +53,9 @@ function noopSupabase(): SupabaseClient {
 interface RawRun {
   contract_id: string;
   terms: PersistableTerm[];
+  /** D47 c: number of parallel batches the extraction ran as (v2 = shipped batching). */
+  batches?: number;
+  anchorOverLimitCount?: number;
   detectedType: string;
   droppedTermCount: number;
   reasoningTruncatedCount: number;
@@ -124,13 +135,19 @@ async function extractAll(prompt: PromptVersion, ingest: IngestResult, opts: Reb
   const runs: RawRun[] = [];
 
   for (const contract of ingest.contracts) {
-    const systemPrompt = builder.buildExtractionSystemPrompt('MSA', []);
     const userMessage = builder.buildExtractionUserMessage(contract.text);
+    const pageCount = [...contract.text.matchAll(/^\[PAGE (\d+)\]$/gm)].length;
+    // D47 c: the SHIPPED path is two parallel batches for MSA (v2). The v1
+    // prompt is scored the same way so the comparison isolates the prompt.
+    const batches = planExtractionBatches('MSA', []);
     const startedAt = Date.now();
     let promptTokens = 0;
     let completionTokens = 0;
     let repairCalls = 0;
-    try {
+    const runBatch = async (batch: (typeof batches)[number]): Promise<ProcessedExtraction> => {
+      const systemPrompt = builder.buildExtractionSystemPrompt('MSA', batch.customTermNames, {
+        standardTermNames: batch.standardTermNames,
+      });
       const result = await callLlm({
         purpose: 'extraction',
         messages: [
@@ -146,7 +163,6 @@ async function extractAll(prompt: PromptVersion, ingest: IngestResult, opts: Reb
       });
       promptTokens += result.promptTokens;
       completionTokens += result.completionTokens;
-
       let parsed: unknown;
       try {
         parsed = parseJsonResponse(result.content);
@@ -171,27 +187,32 @@ async function extractAll(prompt: PromptVersion, ingest: IngestResult, opts: Reb
         completionTokens += repaired.completionTokens;
         parsed = parseJsonResponse(repaired.content);
       }
-
-      const processed = processExtraction({
+      return processExtraction({
         raw: parsed,
         contractType: 'MSA',
         contractText: contract.text,
-        pageCount: [...contract.text.matchAll(/^\[PAGE (\d+)\]$/gm)].length,
-        requestedStandardTerms: requested,
-        requestedCustomTerms: [],
+        pageCount,
+        requestedStandardTerms: batch.standardTermNames,
+        requestedCustomTerms: batch.customTermNames,
       });
+    };
+    try {
+      const parts = await Promise.all(batches.map(runBatch));
+      const processed = mergeExtractions(parts, 'MSA');
       runs.push({
         contract_id: contract.contract_id,
         terms: processed.terms,
         detectedType: processed.detectedType,
         droppedTermCount: processed.droppedTermCount,
         reasoningTruncatedCount: processed.reasoningTruncatedCount,
+        anchorOverLimitCount: processed.anchorOverLimitCount,
+        batches: batches.length,
         latencyMs: Date.now() - startedAt,
         promptTokens,
         completionTokens,
         repairCalls,
       });
-      console.log(`  ${prompt} ${contract.contract_id}: ${processed.terms.filter((t) => t.value !== null).length}/${processed.terms.length} values (${Date.now() - startedAt}ms, ${promptTokens}+${completionTokens} tok)`);
+      console.log(`  ${prompt} ${contract.contract_id}: ${processed.terms.filter((t) => t.value !== null).length}/${processed.terms.length} values (${Date.now() - startedAt}ms wall, ${batches.length} batches, ${promptTokens}+${completionTokens} tok)`);
     } catch (error) {
       runs.push({
         contract_id: contract.contract_id,
@@ -199,6 +220,7 @@ async function extractAll(prompt: PromptVersion, ingest: IngestResult, opts: Reb
         detectedType: 'OTHER',
         droppedTermCount: 0,
         reasoningTruncatedCount: 0,
+        batches: batches.length,
         latencyMs: Date.now() - startedAt,
         promptTokens,
         completionTokens,
@@ -220,6 +242,62 @@ export interface RebaselineOptions {
   maxTokens?: number;
   /** Per-attempt timeout for the eval (a 3,000-token JSON answer takes ~60 s; production's 20 s is not the subject here). */
   timeoutMs: number;
+}
+
+/**
+ * `--explain "<term>,<term>"` (R-23, spec 22 §1): for each named term and each
+ * scored contract prints benchmark | predicted | anchor | page vs benchmark
+ * location | verdict, from the cached run of the given block, and writes the
+ * rows to eval/failures/<date>-<slug>.md — the failure pool.
+ */
+export async function explainTerms(
+  prompt: PromptVersion,
+  opts: { maxTokens?: number },
+  termNames: string[],
+  outFile: string,
+): Promise<number> {
+  const ingest = await ingestInstructorSet();
+  const path = cachePath(blockKey(prompt, opts));
+  if (!existsSync(path)) {
+    console.error(`no cached run at ${path} — run the block first`);
+    return 1;
+  }
+  const runs = (JSON.parse(readFileSync(path, 'utf8')) as RawRun[]).filter((r) => !r.error);
+  const golden = loadGoldenSet();
+  const lines: string[] = [];
+  lines.push(`# Failure pool — ${termNames.length} term(s), block ${blockKey(prompt, opts)}, matcher ${MATCHER_VERSION}`);
+  lines.push('');
+  lines.push(`Generated ${new Date().toISOString().slice(0, 10)} from eval/reports/.cache/${path.split('/').pop()} against golden-set ${golden.version}.`);
+  lines.push('');
+  lines.push('| term | contract | benchmark_answer | predicted value | source_anchor | page (pred vs benchmark_location) | verdict (rule) |');
+  lines.push('|---|---|---|---|---|---|---|');
+  const cell = (v: unknown) => String(v ?? '—').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  for (const termName of termNames) {
+    for (const run of runs) {
+      const contract = golden.contracts.find((c) => c.contract_id === run.contract_id);
+      const label = contract?.terms.find((t) => t.term_name === termName);
+      if (!label) continue;
+      const rawLocation = (JSON.parse(readFileSync(GOLDEN_SET_PATH, 'utf8')) as { contracts: Array<{ tab: string; terms: Array<{ term_name: string; benchmark_location: string | null; benchmark_answer: string | null }> }> })
+        .contracts.find((c) => c.tab === run.contract_id)?.terms.find((t) => t.term_name === termName);
+      const pred = run.terms.find((t) => t.term_name === termName);
+      const actual = pred?.value ?? null;
+      let verdict: string;
+      if (label.expected_value === null && actual === null) verdict = 'tn';
+      else if (label.expected_value === null) verdict = 'fp';
+      else if (actual === null) verdict = 'fn';
+      else {
+        const m = matchValues(label.expected_value, actual, MATCHER_VERSION);
+        verdict = m.matched ? `tp (${m.rule})` : 'wrong';
+      }
+      const row = `| ${cell(termName)} | ${cell(run.contract_id)} | ${cell(rawLocation?.benchmark_answer ?? label.expected_value)} | ${cell(actual)} | ${cell(pred?.source_sentence)} | ${cell(pred?.page_number)} vs ${cell(rawLocation?.benchmark_location)} | ${verdict} |`;
+      lines.push(row);
+      console.log(row);
+    }
+  }
+  mkdirSync(resolve(process.cwd(), 'eval/failures'), { recursive: true });
+  writeFileSync(outFile, lines.join('\n') + '\n');
+  console.log(`\n  failure pool: ${outFile}`);
+  return 0;
 }
 
 export async function runRebaseline(prompt: PromptVersion, opts: RebaselineOptions): Promise<number> {
@@ -284,9 +362,13 @@ export async function runRebaseline(prompt: PromptVersion, opts: RebaselineOptio
       latency_ms: r.latencyMs,
       repair_calls: r.repairCalls,
       reasoning_truncated: r.reasoningTruncatedCount,
+      anchors_over_25_words: r.anchorOverLimitCount ?? 0,
+      batches: r.batches ?? 1,
       dropped_terms: r.droppedTermCount,
     };
   });
+  const walls = runs.map((r) => r.latencyMs).sort((a, b) => a - b);
+  const p95WallMs = walls.length ? walls[Math.min(walls.length - 1, Math.ceil(0.95 * walls.length) - 1)]! : null;
   const promptTokens = runs.reduce((n, r) => n + r.promptTokens, 0);
   const completionTokens = runs.reduce((n, r) => n + r.completionTokens, 0);
   const totalCost = computeCostUsd(promptTokens, completionTokens);
@@ -319,6 +401,9 @@ export async function runRebaseline(prompt: PromptVersion, opts: RebaselineOptio
       total_usd: totalCost,
       per_contract_usd: scored.length ? Number((totalCost / runs.length).toFixed(4)) : null,
     },
+    wall_time_ms: { p95: p95WallMs, max: walls.at(-1) ?? null, min: walls[0] ?? null },
+    anchors_over_25_words: runs.reduce((n, r) => n + (r.anchorOverLimitCount ?? 0), 0),
+    batches_per_contract: runs[0]?.batches ?? 1,
     per_term_f1: byTerm,
     per_contract: perContract,
     generated_at: new Date().toISOString(),

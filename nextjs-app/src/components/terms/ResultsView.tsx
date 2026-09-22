@@ -9,6 +9,8 @@ import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { CompleteReviewButton } from '@/components/feedback/CompleteReviewButton';
 import { NpsSurvey } from '@/components/feedback/NpsSurvey';
 import { KeyTermsPanel } from './KeyTermsPanel';
+import { SummaryCard } from './SummaryCard';
+import { KeyDatesCard } from './KeyDatesCard';
 import { ProcessingSteps } from './ProcessingSteps';
 import {
   AboutTheseResults,
@@ -22,7 +24,7 @@ import { TargetPageProvider } from '@/hooks/use-target-page';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { recordEvent } from '@/lib/metrics/events';
 import { Button } from '@/components/ui/button';
-import type { Contract, ContractType, KeyTerm, Rating, SurveyAccuracy } from '@/types/domain';
+import type { Contract, ContractType, KeyDate, KeyTerm, Rating, SurveyAccuracy } from '@/types/domain';
 
 export function ResultsView({
   contract,
@@ -30,12 +32,14 @@ export function ResultsView({
   userId,
   calibrationWarningActive,
   initialFeedback,
+  initialKeyDates,
 }: {
   contract: Contract;
   keyTerms: KeyTerm[];
   userId: string;
   calibrationWarningActive: boolean;
   initialFeedback: { rating: Rating | null; survey_accuracy: SurveyAccuracy | null } | null;
+  initialKeyDates?: KeyDate[];
 }) {
   const [reviewCompleted, setReviewCompleted] = useState(
     Boolean(contract.review_completed_at),
@@ -132,12 +136,15 @@ export function ResultsView({
 
           <div className="h-[70vh] overflow-y-auto rounded-card border border-grey-100 p-4">
             <ReviewNeededNotice names={requiredMissing} />
+            {/* Spec 07 v1.1 §A order: Summary → (Risk, not built) → Key terms → Key dates */}
+            <SummaryCard key={`${current.id}-${current.summary_status ?? 'none'}`} contract={current} />
             <KeyTermsPanel
               terms={terms}
               contractType={current.contract_type as ContractType}
               userId={userId}
               contractId={current.id}
             />
+            <KeyDatesCard contractId={current.id} initialKeyDates={initialKeyDates} terms={terms} />
 
             <div className="mt-component flex flex-col gap-subsection">
               <div onClick={() => setReviewCompleted(true)}>

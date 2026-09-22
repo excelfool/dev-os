@@ -922,76 +922,692 @@
     ],
     "generated_at": "2026-09-22T03:35:56.229Z"
   },
-  "updated_at": "2026-09-22T03:54:15.192Z",
+  "updated_at": "2026-09-22T04:21:51.038Z",
   "v2": {
-    "status": "FAIL",
+    "status": "MEASURED",
     "prompt_version": "v2.0",
-    "max_tokens": 3000,
+    "max_tokens": 4000,
     "timeout_ms": 120000,
     "note": "Production extraction settings (temperature, max_tokens); eval-only per-attempt timeout.",
     "model": "gpt-4o",
-    "n_contracts": 0,
-    "n_failed": 7,
-    "failures": [
-      {
-        "contract_id": "Expel",
-        "error": "Expected ',' or ']' after array element in JSON at position 11962 (line 219 column 6)"
-      },
-      {
-        "contract_id": "PaaS",
-        "error": "Expected ',' or ']' after array element in JSON at position 11702 (line 203 column 6)"
-      },
-      {
-        "contract_id": "Adverity",
-        "error": "Expected ',' or ']' after array element in JSON at position 11905 (line 203 column 6)"
-      },
-      {
-        "contract_id": "Salesforce",
-        "error": "Expected ',' or ']' after array element in JSON at position 11072 (line 203 column 6)"
-      },
-      {
-        "contract_id": "Lumen",
-        "error": "Expected ',' or ']' after array element in JSON at position 12581 (line 227 column 6)"
-      },
-      {
-        "contract_id": "Armorblox",
-        "error": "Expected ',' or ']' after array element in JSON at position 12035 (line 211 column 6)"
-      },
-      {
-        "contract_id": "Intuit",
-        "error": "Expected ',' or ']' after array element in JSON at position 12083 (line 179 column 6)"
-      }
-    ],
-    "n_term_rows": 0,
+    "n_contracts": 7,
+    "n_failed": 0,
+    "failures": [],
+    "n_term_rows": 252,
     "f1": {
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "tp": 0,
-      "fp": 0,
-      "fn": 0,
-      "tn": 0,
-      "by_rule": {}
+      "precision": 0.6951871657754011,
+      "recall": 0.6435643564356436,
+      "f1": 0.6683804627249358,
+      "tp": 130,
+      "fp": 57,
+      "fn": 72,
+      "tn": 36,
+      "by_rule": {
+        "exact": 83,
+        "substring": 34,
+        "token-subset": 10,
+        "duration": 3
+      }
     },
     "page_accuracy": {
-      "accuracy": null,
-      "scored": 0,
-      "correct": 0,
-      "byTerm": {},
-      "misses": []
+      "accuracy": 0.5310734463276836,
+      "scored": 177,
+      "correct": 94,
+      "byTerm": {
+        "Service Provider Name": {
+          "total": 7,
+          "correct": 7
+        },
+        "Customer Name": {
+          "total": 6,
+          "correct": 5
+        },
+        "Contract start date": {
+          "total": 4,
+          "correct": 3
+        },
+        "Contract end date": {
+          "total": 2,
+          "correct": 2
+        },
+        "Deal Value": {
+          "total": 3,
+          "correct": 1
+        },
+        "Term Period In Months": {
+          "total": 4,
+          "correct": 1
+        },
+        "Auto Renewal": {
+          "total": 7,
+          "correct": 2
+        },
+        "Renewal Period (Months)": {
+          "total": 5,
+          "correct": 1
+        },
+        "Termination for Breach (Yes, No, N/A)": {
+          "total": 7,
+          "correct": 2
+        },
+        "Data Breach Notice In Hours": {
+          "total": 3,
+          "correct": 2
+        },
+        "Termination for cause (Yes, No, N/A)": {
+          "total": 7,
+          "correct": 1
+        },
+        "Termination without cause (Yes, No, N/A)": {
+          "total": 5,
+          "correct": 0
+        },
+        "Termination for convenience (Yes, No, N/A)": {
+          "total": 4,
+          "correct": 0
+        },
+        "Termination Notice In Days": {
+          "total": 7,
+          "correct": 3
+        },
+        "Limitations of liability (Amount)": {
+          "total": 7,
+          "correct": 5
+        },
+        "Assignment (consent, No consent, N/A)": {
+          "total": 7,
+          "correct": 4
+        },
+        "Deletion of Data (Yes, No, N/A)": {
+          "total": 6,
+          "correct": 4
+        },
+        "Customer Indemnity": {
+          "total": 7,
+          "correct": 4
+        },
+        "Service Provider indemnity": {
+          "total": 6,
+          "correct": 4
+        },
+        "Customer notice for indemnitiy claim": {
+          "total": 5,
+          "correct": 1
+        },
+        "Governing Law": {
+          "total": 7,
+          "correct": 3
+        },
+        "Indemnify Attorney fees (Yes, No, N/A)": {
+          "total": 7,
+          "correct": 5
+        },
+        "Service Provider Intellectual Property Rights": {
+          "total": 7,
+          "correct": 5
+        },
+        "Customer Intellectual property rights": {
+          "total": 7,
+          "correct": 5
+        },
+        "Billing frequency (monthly, quarterly, annually, other)": {
+          "total": 5,
+          "correct": 2
+        },
+        "Notice of termination for convenience (Days)": {
+          "total": 3,
+          "correct": 2
+        },
+        "Net payment terms (Net 30, 45, 60, 75, 90, other)": {
+          "total": 6,
+          "correct": 3
+        },
+        "Late Payment Charges (Yes, No, N/A)": {
+          "total": 4,
+          "correct": 3
+        },
+        "Late Payment Penalty": {
+          "total": 4,
+          "correct": 3
+        },
+        "Name and logo use (Yes, No, N/A)": {
+          "total": 4,
+          "correct": 3
+        },
+        "Price increase (Yes, No, N/A)": {
+          "total": 4,
+          "correct": 1
+        },
+        "Notice to not auto renew (Days)": {
+          "total": 3,
+          "correct": 1
+        },
+        "Notice for price increase (days)": {
+          "total": 3,
+          "correct": 2
+        },
+        "Insurance Clause": {
+          "total": 2,
+          "correct": 2
+        },
+        "Maintenance of Insurance": {
+          "total": 2,
+          "correct": 2
+        }
+      },
+      "misses": [
+        {
+          "contract": "Expel",
+          "term": "Term Period In Months",
+          "expected": 10,
+          "actual": 1
+        },
+        {
+          "contract": "Expel",
+          "term": "Auto Renewal",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Renewal Period (Months)",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Termination for Breach (Yes, No, N/A)",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Data Breach Notice In Hours",
+          "expected": 13,
+          "actual": 8
+        },
+        {
+          "contract": "Expel",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Termination without cause (Yes, No, N/A)",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Termination for convenience (Yes, No, N/A)",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Termination Notice In Days",
+          "expected": 10,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Limitations of liability (Amount)",
+          "expected": 7,
+          "actual": 4
+        },
+        {
+          "contract": "Expel",
+          "term": "Assignment (consent, No consent, N/A)",
+          "expected": 13,
+          "actual": 7
+        },
+        {
+          "contract": "Expel",
+          "term": "Deletion of Data (Yes, No, N/A)",
+          "expected": 8,
+          "actual": 4
+        },
+        {
+          "contract": "Expel",
+          "term": "Customer Indemnity",
+          "expected": 9,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Service Provider indemnity",
+          "expected": 9,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Customer notice for indemnitiy claim",
+          "expected": 9,
+          "actual": 5
+        },
+        {
+          "contract": "Expel",
+          "term": "Governing Law",
+          "expected": 13,
+          "actual": 7
+        },
+        {
+          "contract": "Expel",
+          "term": "Indemnify Attorney fees (Yes, No, N/A)",
+          "expected": 13,
+          "actual": 7
+        },
+        {
+          "contract": "PaaS",
+          "term": "Deal Value",
+          "expected": 8,
+          "actual": 9
+        },
+        {
+          "contract": "PaaS",
+          "term": "Governing Law",
+          "expected": 9,
+          "actual": 11
+        },
+        {
+          "contract": "PaaS",
+          "term": "Auto Renewal",
+          "expected": 8,
+          "actual": 9
+        },
+        {
+          "contract": "PaaS",
+          "term": "Billing frequency (monthly, quarterly, annually, other)",
+          "expected": 8,
+          "actual": 9
+        },
+        {
+          "contract": "PaaS",
+          "term": "Renewal Period (Months)",
+          "expected": 8,
+          "actual": 9
+        },
+        {
+          "contract": "PaaS",
+          "term": "Notice of termination for convenience (Days)",
+          "expected": 8,
+          "actual": 4
+        },
+        {
+          "contract": "PaaS",
+          "term": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "expected": 1,
+          "actual": 8
+        },
+        {
+          "contract": "PaaS",
+          "term": "Termination without cause (Yes, No, N/A)",
+          "expected": 4,
+          "actual": 5
+        },
+        {
+          "contract": "PaaS",
+          "term": "Termination for convenience (Yes, No, N/A)",
+          "expected": 4,
+          "actual": 5
+        },
+        {
+          "contract": "PaaS",
+          "term": "Price increase (Yes, No, N/A)",
+          "expected": 8,
+          "actual": null
+        },
+        {
+          "contract": "PaaS",
+          "term": "Service Provider Intellectual Property Rights",
+          "expected": 6,
+          "actual": 7
+        },
+        {
+          "contract": "PaaS",
+          "term": "Customer Intellectual property rights",
+          "expected": 6,
+          "actual": 7
+        },
+        {
+          "contract": "Adverity",
+          "term": "Term Period In Months",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Deal Value",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Adverity",
+          "term": "Governing Law",
+          "expected": 11,
+          "actual": 12
+        },
+        {
+          "contract": "Adverity",
+          "term": "Auto Renewal",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Termination Notice In Days",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Billing frequency (monthly, quarterly, annually, other)",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Adverity",
+          "term": "Renewal Period (Months)",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Notice to not auto renew (Days)",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Adverity",
+          "term": "Termination for Breach (Yes, No, N/A)",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 11,
+          "actual": 10
+        },
+        {
+          "contract": "Adverity",
+          "term": "Termination without cause (Yes, No, N/A)",
+          "expected": 11,
+          "actual": null
+        },
+        {
+          "contract": "Adverity",
+          "term": "Termination for convenience (Yes, No, N/A)",
+          "expected": 11,
+          "actual": null
+        },
+        {
+          "contract": "Adverity",
+          "term": "Late Payment Charges (Yes, No, N/A)",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Adverity",
+          "term": "Late Payment Penalty",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Adverity",
+          "term": "Customer notice for indemnitiy claim",
+          "expected": 10,
+          "actual": 9
+        },
+        {
+          "contract": "Adverity",
+          "term": "Service Provider Intellectual Property Rights",
+          "expected": 5,
+          "actual": 9
+        },
+        {
+          "contract": "Adverity",
+          "term": "Customer Intellectual property rights",
+          "expected": 6,
+          "actual": 9
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Governing Law",
+          "expected": 12,
+          "actual": 10
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Auto Renewal",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Termination Notice In Days",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Renewal Period (Months)",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Notice to not auto renew (Days)",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Termination for Breach (Yes, No, N/A)",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 11,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Termination without cause (Yes, No, N/A)",
+          "expected": 11,
+          "actual": null
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Termination for convenience (Yes, No, N/A)",
+          "expected": 11,
+          "actual": null
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Limitations of liability (Amount)",
+          "expected": 10,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Assignment (consent, No consent, N/A)",
+          "expected": 12,
+          "actual": 9
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Deletion of Data (Yes, No, N/A)",
+          "expected": 2,
+          "actual": 3
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Customer Indemnity",
+          "expected": 9,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Service Provider indemnity",
+          "expected": 9,
+          "actual": 7
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Customer notice for indemnitiy claim",
+          "expected": 9,
+          "actual": 7
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Indemnify Attorney fees (Yes, No, N/A)",
+          "expected": 9,
+          "actual": 7
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Price increase (Yes, No, N/A)",
+          "expected": 5,
+          "actual": 8
+        },
+        {
+          "contract": "Salesforce",
+          "term": "Notice for price increase (days)",
+          "expected": 5,
+          "actual": 8
+        },
+        {
+          "contract": "Lumen",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 4,
+          "actual": 2
+        },
+        {
+          "contract": "Lumen",
+          "term": "Assignment (consent, No consent, N/A)",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Lumen",
+          "term": "Customer Indemnity",
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "contract": "Lumen",
+          "term": "Price increase (Yes, No, N/A)",
+          "expected": 2,
+          "actual": 3
+        },
+        {
+          "contract": "Armorblox",
+          "term": "Termination for Breach (Yes, No, N/A)",
+          "expected": 8,
+          "actual": 7
+        },
+        {
+          "contract": "Armorblox",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 8,
+          "actual": 7
+        },
+        {
+          "contract": "Armorblox",
+          "term": "Termination Notice In Days",
+          "expected": 8,
+          "actual": 7
+        },
+        {
+          "contract": "Armorblox",
+          "term": "Customer notice for indemnitiy claim",
+          "expected": 6,
+          "actual": 7
+        },
+        {
+          "contract": "Intuit",
+          "term": "Customer Name",
+          "expected": 6,
+          "actual": 1
+        },
+        {
+          "contract": "Intuit",
+          "term": "Contract start date",
+          "expected": 1,
+          "actual": 8
+        },
+        {
+          "contract": "Intuit",
+          "term": "Term Period In Months",
+          "expected": 3,
+          "actual": 5
+        },
+        {
+          "contract": "Intuit",
+          "term": "Auto Renewal",
+          "expected": 3,
+          "actual": 5
+        },
+        {
+          "contract": "Intuit",
+          "term": "Billing frequency (monthly, quarterly, annually, other)",
+          "expected": 2,
+          "actual": 3
+        },
+        {
+          "contract": "Intuit",
+          "term": "Net payment terms (Net 30, 45, 60, 75, 90, other)",
+          "expected": 2,
+          "actual": 3
+        },
+        {
+          "contract": "Intuit",
+          "term": "Termination for Breach (Yes, No, N/A)",
+          "expected": 3,
+          "actual": 5
+        },
+        {
+          "contract": "Intuit",
+          "term": "Termination for cause (Yes, No, N/A)",
+          "expected": 3,
+          "actual": 5
+        },
+        {
+          "contract": "Intuit",
+          "term": "Termination without cause (Yes, No, N/A)",
+          "expected": 3,
+          "actual": 5
+        },
+        {
+          "contract": "Intuit",
+          "term": "Name and logo use (Yes, No, N/A)",
+          "expected": 4,
+          "actual": 6
+        }
+      ]
     },
     "calibration": {
-      "error": null,
+      "error": 0.2425133689839572,
       "buckets": [
         {
           "bucket": "0-10",
           "lower": 0,
           "upper": 10,
-          "count": 0,
-          "meanConfidence": null,
-          "observedAccuracy": null,
-          "gap": null,
-          "withinTolerance": null
+          "count": 4,
+          "meanConfidence": 0,
+          "observedAccuracy": 0.5,
+          "gap": 0.5,
+          "withinTolerance": false
         },
         {
           "bucket": "10-20",
@@ -1027,11 +1643,11 @@
           "bucket": "40-50",
           "lower": 40,
           "upper": 50,
-          "count": 0,
-          "meanConfidence": null,
-          "observedAccuracy": null,
-          "gap": null,
-          "withinTolerance": null
+          "count": 17,
+          "meanConfidence": 0.49,
+          "observedAccuracy": 0.7647058823529411,
+          "gap": 0.27470588235294113,
+          "withinTolerance": false
         },
         {
           "bucket": "50-60",
@@ -1067,183 +1683,534 @@
           "bucket": "80-90",
           "lower": 80,
           "upper": 90,
-          "count": 0,
-          "meanConfidence": null,
-          "observedAccuracy": null,
-          "gap": null,
-          "withinTolerance": null
+          "count": 6,
+          "meanConfidence": 0.855,
+          "observedAccuracy": 0.16666666666666666,
+          "gap": 0.6883333333333334,
+          "withinTolerance": false
         },
         {
           "bucket": "90-100",
           "lower": 90,
           "upper": 100,
-          "count": 0,
-          "meanConfidence": null,
-          "observedAccuracy": null,
-          "gap": null,
-          "withinTolerance": null
+          "count": 160,
+          "meanConfidence": 0.9284375,
+          "observedAccuracy": 0.7125,
+          "gap": 0.2159375,
+          "withinTolerance": false
         }
       ],
-      "populatedBuckets": 0,
-      "bucketsOutOfTolerance": []
+      "populatedBuckets": 4,
+      "bucketsOutOfTolerance": [
+        "0-10",
+        "40-50",
+        "80-90",
+        "90-100"
+      ]
     },
     "cost": {
-      "prompt_tokens": 224783,
-      "completion_tokens": 42000,
-      "total_usd": 1.753915,
-      "per_contract_usd": null
+      "prompt_tokens": 192121,
+      "completion_tokens": 25830,
+      "total_usd": 1.348055,
+      "per_contract_usd": 0.1926
     },
-    "per_term_f1": {},
-    "per_contract": [
-      {
-        "contract_id": "Expel",
-        "error": "Expected ',' or ']' after array element in JSON at position 11962 (line 219 column 6)",
-        "terms": 0,
-        "values_found": 0,
+    "wall_time_ms": {
+      "p95": 73394,
+      "max": 73394,
+      "min": 14712
+    },
+    "anchors_over_25_words": 53,
+    "batches_per_contract": 2,
+    "per_term_f1": {
+      "Service Provider Name": {
         "precision": 1,
         "recall": 1,
         "f1": 1,
-        "tp": 0,
+        "tp": 7,
         "fp": 0,
         "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 28279,
-        "completion_tokens": 6000,
-        "cost_usd": 0.231395,
-        "latency_ms": 55555,
-        "repair_calls": 1,
+        "tn": 0
+      },
+      "Customer Name": {
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666,
+        "f1": 0.6666666666666666,
+        "tp": 4,
+        "fp": 2,
+        "fn": 2,
+        "tn": 0
+      },
+      "Contract start date": {
+        "precision": 1,
+        "recall": 0.6666666666666666,
+        "f1": 0.8,
+        "tp": 4,
+        "fp": 0,
+        "fn": 2,
+        "tn": 1
+      },
+      "Contract end date": {
+        "precision": 1,
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "tp": 2,
+        "fp": 0,
+        "fn": 4,
+        "tn": 1
+      },
+      "Term Period In Months": {
+        "precision": 0.25,
+        "recall": 0.16666666666666666,
+        "f1": 0.2,
+        "tp": 1,
+        "fp": 3,
+        "fn": 5,
+        "tn": 1
+      },
+      "Deal Value": {
+        "precision": 1,
+        "recall": 0.6,
+        "f1": 0.7499999999999999,
+        "tp": 3,
+        "fp": 0,
+        "fn": 2,
+        "tn": 2
+      },
+      "Governing Law": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Auto Renewal": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Termination Notice In Days": {
+        "precision": 0.2857142857142857,
+        "recall": 0.2857142857142857,
+        "f1": 0.2857142857142857,
+        "tp": 2,
+        "fp": 5,
+        "fn": 5,
+        "tn": 0
+      },
+      "Data Breach Notice In Hours": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 3,
+        "fn": 5,
+        "tn": 2
+      },
+      "Billing frequency (monthly, quarterly, annually, other)": {
+        "precision": 1,
+        "recall": 0.8333333333333334,
+        "f1": 0.9090909090909091,
+        "tp": 5,
+        "fp": 0,
+        "fn": 1,
+        "tn": 1
+      },
+      "Renewal Period (Months)": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 5,
+        "fn": 6,
+        "tn": 1
+      },
+      "Notice to not auto renew (Days)": {
+        "precision": 0.6666666666666666,
+        "recall": 0.5,
+        "f1": 0.5714285714285715,
+        "tp": 2,
+        "fp": 1,
+        "fn": 2,
+        "tn": 2
+      },
+      "Net payment terms (Net 30, 45, 60, 75, 90, other)": {
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666,
+        "f1": 0.6666666666666666,
+        "tp": 4,
+        "fp": 2,
+        "fn": 2,
+        "tn": 1
+      },
+      "Termination for Breach (Yes, No, N/A)": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Termination for cause (Yes, No, N/A)": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Termination without cause (Yes, No, N/A)": {
+        "precision": 0.5714285714285714,
+        "recall": 0.6666666666666666,
+        "f1": 0.6153846153846153,
+        "tp": 4,
+        "fp": 3,
+        "fn": 2,
+        "tn": 0
+      },
+      "Termination for convenience (Yes, No, N/A)": {
+        "precision": 0.42857142857142855,
+        "recall": 0.75,
+        "f1": 0.5454545454545454,
+        "tp": 3,
+        "fp": 4,
+        "fn": 1,
+        "tn": 0
+      },
+      "Notice of termination for convenience (Days)": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 6,
+        "fn": 3,
+        "tn": 1
+      },
+      "Late Payment Charges (Yes, No, N/A)": {
+        "precision": 0.8,
+        "recall": 0.8,
+        "f1": 0.8000000000000002,
+        "tp": 4,
+        "fp": 1,
+        "fn": 1,
+        "tn": 1
+      },
+      "Late Payment Penalty": {
+        "precision": 0.25,
+        "recall": 0.2,
+        "f1": 0.22222222222222224,
+        "tp": 1,
+        "fp": 3,
+        "fn": 4,
+        "tn": 2
+      },
+      "Limitations of liability (Amount)": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Assignment (consent, No consent, N/A)": {
+        "precision": 0.8571428571428571,
+        "recall": 0.8571428571428571,
+        "f1": 0.8571428571428571,
+        "tp": 6,
+        "fp": 1,
+        "fn": 1,
+        "tn": 0
+      },
+      "Name and logo use (Yes, No, N/A)": {
+        "precision": 0.5,
+        "recall": 0.5,
+        "f1": 0.5,
+        "tp": 2,
+        "fp": 2,
+        "fn": 2,
+        "tn": 2
+      },
+      "Deletion of Data (Yes, No, N/A)": {
+        "precision": 0.8571428571428571,
+        "recall": 0.8571428571428571,
+        "f1": 0.8571428571428571,
+        "tp": 6,
+        "fp": 1,
+        "fn": 1,
+        "tn": 0
+      },
+      "Customer Indemnity": {
+        "precision": 0.8571428571428571,
+        "recall": 0.8571428571428571,
+        "f1": 0.8571428571428571,
+        "tp": 6,
+        "fp": 1,
+        "fn": 1,
+        "tn": 0
+      },
+      "Service Provider indemnity": {
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666,
+        "f1": 0.6666666666666666,
+        "tp": 4,
+        "fp": 2,
+        "fn": 2,
+        "tn": 1
+      },
+      "Customer notice for indemnitiy claim": {
+        "precision": 0.2,
+        "recall": 0.14285714285714285,
+        "f1": 0.16666666666666666,
+        "tp": 1,
+        "fp": 4,
+        "fn": 6,
+        "tn": 0
+      },
+      "Indemnify Attorney fees (Yes, No, N/A)": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "tp": 7,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0
+      },
+      "Price increase (Yes, No, N/A)": {
+        "precision": 0.75,
+        "recall": 0.6,
+        "f1": 0.6666666666666665,
+        "tp": 3,
+        "fp": 1,
+        "fn": 2,
+        "tn": 1
+      },
+      "Notice for price increase (days)": {
+        "precision": 0.3333333333333333,
+        "recall": 0.25,
+        "f1": 0.28571428571428575,
+        "tp": 1,
+        "fp": 2,
+        "fn": 3,
+        "tn": 2
+      },
+      "Insurance Clause": {
+        "precision": 1,
+        "recall": 0.6666666666666666,
+        "f1": 0.8,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "tn": 4
+      },
+      "Maintenance of Insurance": {
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 2,
+        "fn": 2,
+        "tn": 4
+      },
+      "Provide notice for insurance (Days)": {
+        "precision": 1,
+        "recall": 0,
+        "f1": 0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "tn": 6
+      },
+      "Service Provider Intellectual Property Rights": {
+        "precision": 0.8571428571428571,
+        "recall": 0.8571428571428571,
+        "f1": 0.8571428571428571,
+        "tp": 6,
+        "fp": 1,
+        "fn": 1,
+        "tn": 0
+      },
+      "Customer Intellectual property rights": {
+        "precision": 0.7142857142857143,
+        "recall": 0.7142857142857143,
+        "f1": 0.7142857142857143,
+        "tp": 5,
+        "fp": 2,
+        "fn": 2,
+        "tn": 0
+      }
+    },
+    "per_contract": [
+      {
+        "contract_id": "Expel",
+        "error": null,
+        "terms": 36,
+        "values_found": 24,
+        "precision": 0.7083333333333334,
+        "recall": 0.68,
+        "f1": 0.6938775510204083,
+        "tp": 17,
+        "fp": 7,
+        "fn": 8,
+        "tn": 11,
+        "page_accuracy": 0.2916666666666667,
+        "prompt_tokens": 23613,
+        "completion_tokens": 3629,
+        "cost_usd": 0.1725,
+        "latency_ms": 14712,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 8,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "PaaS",
-        "error": "Expected ',' or ']' after array element in JSON at position 11702 (line 203 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 29913,
-        "completion_tokens": 6000,
-        "cost_usd": 0.239565,
-        "latency_ms": 75422,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 30,
+        "precision": 0.7,
+        "recall": 0.6363636363636364,
+        "f1": 0.6666666666666666,
+        "tp": 21,
+        "fp": 9,
+        "fn": 12,
+        "tn": 3,
+        "page_accuracy": 0.6,
+        "prompt_tokens": 25247,
+        "completion_tokens": 3714,
+        "cost_usd": 0.181945,
+        "latency_ms": 22428,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 6,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "Adverity",
-        "error": "Expected ',' or ']' after array element in JSON at position 11905 (line 203 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 29881,
-        "completion_tokens": 6000,
-        "cost_usd": 0.239405,
-        "latency_ms": 71317,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 35,
+        "precision": 0.7142857142857143,
+        "recall": 0.7575757575757576,
+        "f1": 0.7352941176470589,
+        "tp": 25,
+        "fp": 10,
+        "fn": 8,
+        "tn": 1,
+        "page_accuracy": 0.4857142857142857,
+        "prompt_tokens": 25215,
+        "completion_tokens": 3860,
+        "cost_usd": 0.183975,
+        "latency_ms": 59206,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 9,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "Salesforce",
-        "error": "Expected ',' or ']' after array element in JSON at position 11072 (line 203 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 41929,
-        "completion_tokens": 6000,
-        "cost_usd": 0.299645,
-        "latency_ms": 98382,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 27,
+        "precision": 0.5925925925925926,
+        "recall": 0.7272727272727273,
+        "f1": 0.6530612244897959,
+        "tp": 16,
+        "fp": 11,
+        "fn": 6,
+        "tn": 9,
+        "page_accuracy": 0.3076923076923077,
+        "prompt_tokens": 37263,
+        "completion_tokens": 3335,
+        "cost_usd": 0.23634,
+        "latency_ms": 73394,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 6,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "Lumen",
-        "error": "Expected ',' or ']' after array element in JSON at position 12581 (line 227 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 27791,
-        "completion_tokens": 6000,
-        "cost_usd": 0.228955,
-        "latency_ms": 66087,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 24,
+        "precision": 0.7083333333333334,
+        "recall": 0.5862068965517241,
+        "f1": 0.6415094339622641,
+        "tp": 17,
+        "fp": 7,
+        "fn": 12,
+        "tn": 4,
+        "page_accuracy": 0.8095238095238095,
+        "prompt_tokens": 23125,
+        "completion_tokens": 3333,
+        "cost_usd": 0.16562,
+        "latency_ms": 62486,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 2,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "Armorblox",
-        "error": "Expected ',' or ']' after array element in JSON at position 12035 (line 211 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 21951,
-        "completion_tokens": 6000,
-        "cost_usd": 0.199755,
-        "latency_ms": 54437,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 20,
+        "precision": 0.7,
+        "recall": 0.4,
+        "f1": 0.509090909090909,
+        "tp": 14,
+        "fp": 6,
+        "fn": 21,
+        "tn": 1,
+        "page_accuracy": 0.7647058823529411,
+        "prompt_tokens": 17285,
+        "completion_tokens": 3576,
+        "cost_usd": 0.140065,
+        "latency_ms": 46629,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 6,
+        "batches": 2,
         "dropped_terms": 0
       },
       {
         "contract_id": "Intuit",
-        "error": "Expected ',' or ']' after array element in JSON at position 12083 (line 179 column 6)",
-        "terms": 0,
-        "values_found": 0,
-        "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "tp": 0,
-        "fp": 0,
-        "fn": 0,
-        "tn": 0,
-        "page_accuracy": null,
-        "prompt_tokens": 45039,
-        "completion_tokens": 6000,
-        "cost_usd": 0.315195,
-        "latency_ms": 115360,
-        "repair_calls": 1,
+        "error": null,
+        "terms": 36,
+        "values_found": 27,
+        "precision": 0.7407407407407407,
+        "recall": 0.8,
+        "f1": 0.7692307692307692,
+        "tp": 20,
+        "fp": 7,
+        "fn": 5,
+        "tn": 7,
+        "page_accuracy": 0.5833333333333334,
+        "prompt_tokens": 40373,
+        "completion_tokens": 4383,
+        "cost_usd": 0.26761,
+        "latency_ms": 72187,
+        "repair_calls": 0,
         "reasoning_truncated": 0,
+        "anchors_over_25_words": 16,
+        "batches": 2,
         "dropped_terms": 0
       }
     ],
-    "generated_at": "2026-09-22T03:54:15.191Z"
+    "generated_at": "2026-09-22T04:21:51.037Z"
   },
   "v1_max6000": {
     "status": "MEASURED",

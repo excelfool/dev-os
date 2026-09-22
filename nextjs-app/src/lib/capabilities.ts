@@ -48,7 +48,8 @@ export type CapabilityKey =
   | 'observe.alerts'
   | 'rollout.cohorts'
   | 'billing'
-  | 'versioning.duplicate_detect';
+  | 'versioning.duplicate_detect'
+  | 'pipeline.async';
 
 export interface Capability {
   key: CapabilityKey;
@@ -89,7 +90,7 @@ const ENTRIES: Capability[] = [
   entry('import.sharepoint', 'planned', 'v1.1', 'Flow 3 step 1', 'Import from SharePoint', 'Planned for v1.1.'),
   entry('classify.contract_type', 'built', '—', '§3 comp 3', 'Contract-type check', "Warns when the document doesn't look like the type you chose."),
   entry('extract.key_terms', 'built', '—', '§3 comp 4, §8', 'Key-term extraction (NDA 10 terms, MSA 36 terms)', 'Value, page, confidence, source sentence and reasoning per term.'),
-  entry('extract.summary', 'planned', 'v0.3', 'US-015', 'Plain-language summary', 'First build item — arrives with the next release.'),
+  entry('extract.summary', 'built', '—', 'US-015', 'Plain-language summary', 'A short plain-language summary with page citations, written when a contract is processed.'),
   entry('playbook.manage', 'stub', 'Phase 1', 'US-014', 'Playbooks', 'A default MSA playbook is seeded; editing arrives in Phase 1.'),
   entry('risk.flag', 'stub', 'Phase 1', 'US-013', 'Risk & compliance flags', 'Arrives in Phase 1; the panel shows its status today.'),
   entry('risk.escalate', 'stub', 'Phase 1', '§9 rule 4', 'Hand-off to a human reviewer', 'Arrives in Phase 1.'),
@@ -119,6 +120,9 @@ const ENTRIES: Capability[] = [
   entry('billing', 'planned', 'GA', '§12, A-06', 'Self-service billing', 'Plan changes are handled by our team today.'),
   // D46 — content-hash duplicate detection on upload.
   entry('versioning.duplicate_detect', 'built', 'v1.1', 'D46', 'Duplicate upload detection', 'Tells you when you upload a file you have already analysed.'),
+  // D47 c: extraction runs as two parallel batches inside the 24 s function today;
+  // a background-function pipeline is the next step for longer contracts.
+  entry('pipeline.async', 'stub', 'v2', '§5', 'Background processing for long contracts', 'Reserved for contracts that need more than one function run.', 'engineering'),
 ];
 
 export const CAPABILITIES: Readonly<Record<CapabilityKey, Capability>> = Object.freeze(

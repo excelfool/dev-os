@@ -55,6 +55,8 @@ export interface LlmCallOptions {
   timeoutMs?: number;
   /** Epoch ms. No attempt is started that cannot finish before this. */
   deadlineAt?: number;
+  /** Overrides OPENAI_MAX_RETRIES (the summary is a single attempt, spec 06 v1.1 §B). */
+  maxAttempts?: number;
   supabase: SupabaseClient;
 }
 
@@ -99,13 +101,16 @@ function isRetryable(err: unknown): boolean {
 
 function isTimeout(err: unknown): boolean {
   if (err instanceof OpenAI.APIConnectionTimeoutError) return true;
+  // Our own per-attempt timer aborts the request; the SDK surfaces that as
+  // APIUserAbortError, which is a timeout for our purposes, not a provider error.
+  if (err instanceof OpenAI.APIUserAbortError) return true;
   return err instanceof Error && err.name === 'AbortError';
 }
 
 export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
   const cfg = getServerConfig();
   const perAttemptTimeout = opts.timeoutMs ?? cfg.OPENAI_TIMEOUT_MS;
-  const maxAttempts = cfg.OPENAI_MAX_RETRIES;
+  const maxAttempts = opts.maxAttempts ?? cfg.OPENAI_MAX_RETRIES;
   const model = modelFor(opts.purpose);
   if (!model) throw new Error(`No model configured for purpose ${opts.purpose}`);
 

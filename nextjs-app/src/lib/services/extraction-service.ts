@@ -1,7 +1,7 @@
 import 'server-only';
 import { keyTermSchema } from '@/lib/validation/key-term.schema';
 import { containsNormalised } from '@/lib/utils/normalise-text';
-import { displayRankFor, isRequiredTerm, TERM_LIBRARY_VERSION } from '@/lib/ai/term-library';
+import { displayRankFor, isRequiredTerm, termsFor, TERM_LIBRARY_VERSION } from '@/lib/ai/term-library';
 import type { ContractType, DetectedType } from '@/types/domain';
 
 /**
@@ -13,6 +13,14 @@ import type { ContractType, DetectedType } from '@/types/domain';
 
 const UNVERIFIED_CAP = 49;
 export const REASONING_MAX_CHARS = 500;
+/** D47 c: anchors longer than this are accepted and counted, never dropped. */
+export const SOURCE_ANCHOR_MAX_WORDS = 25;
+/** D47 c: MSA standard terms are extracted in two parallel batches by display_rank. */
+export const BATCH_SPLIT_RANK = 18;
+
+export function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
 
 /**
  * Spec 06 v1.1 §A: reasoning longer than 500 characters is truncated at the
@@ -54,6 +62,8 @@ export interface ProcessedExtraction {
   droppedTermCount: number;
   /** v1.1: how many reasoning strings were truncated at 500 chars. */
   reasoningTruncatedCount: number;
+  /** D47 c: anchors over 25 words (accepted, reported). */
+  anchorOverLimitCount: number;
   /** v1.1 (spec 06 v1.1 §C): required standard terms the model did not find. */
   requiredMissing: string[];
   detectedType: DetectedType;
@@ -94,6 +104,7 @@ export function processExtraction(params: {
   const seen = new Set<string>();
   let droppedTermCount = 0;
   let reasoningTruncatedCount = 0;
+  let anchorOverLimitCount = 0;
 
   for (const item of rawTerms) {
     // 1. zod parse — a failing item is dropped and counted, never persisted
@@ -129,11 +140,14 @@ export function processExtraction(params: {
       confidence = Math.min(confidence, UNVERIFIED_CAP);
     }
 
-    // 4. Source verification.
-    const sourceSentence =
-      term.source_sentence && term.source_sentence.trim().length > 0
-        ? term.source_sentence
-        : null;
+    // 4. Source verification. v2 returns `source_anchor` (≤ 25 words); v1
+    //    `source_sentence`. Either is verified the same way and stored in
+    //    key_terms.source_sentence.
+    const rawAnchor = term.source_anchor ?? term.source_sentence ?? null;
+    const sourceSentence = rawAnchor && rawAnchor.trim().length > 0 ? rawAnchor : null;
+    if (sourceSentence !== null && wordCount(sourceSentence) > SOURCE_ANCHOR_MAX_WORDS) {
+      anchorOverLimitCount += 1;
+    }
     const isSourceVerified =
       sourceSentence !== null && containsNormalised(contractText, sourceSentence);
     if (!isSourceVerified) confidence = Math.min(confidence, UNVERIFIED_CAP);
@@ -201,6 +215,7 @@ export function processExtraction(params: {
     terms: processed,
     droppedTermCount,
     reasoningTruncatedCount,
+    anchorOverLimitCount,
     // §C: a required standard term with no value is flagged for review.
     requiredMissing: processed.filter((t) => t.is_required && t.value === null).map((t) => t.term_name),
     detectedType,
@@ -221,4 +236,69 @@ export function parseJsonResponse(content: string): unknown {
     if (braced.length > 1) return JSON.parse(braced);
     throw new SyntaxError('no JSON object in response');
   }
+}
+
+// ---------------------------------------------------------------------------
+// D47 option c — batching (spec 06 v1.1 §G)
+// ---------------------------------------------------------------------------
+
+export interface ExtractionBatch {
+  index: number;
+  standardTermNames: string[];
+  customTermNames: string[];
+}
+
+/**
+ * MSA: ranks 1–18 and 19–36, run in parallel; custom terms ride with the last
+ * batch. NDA stays one batch.
+ */
+export function planExtractionBatches(
+  contractType: ContractType,
+  customTermNames: string[],
+): ExtractionBatch[] {
+  const library = termsFor(contractType);
+  if (contractType === 'NDA') {
+    return [{ index: 1, standardTermNames: library.map((t) => t.term_name), customTermNames }];
+  }
+  const first = library.filter((t) => t.display_rank <= BATCH_SPLIT_RANK).map((t) => t.term_name);
+  const second = library.filter((t) => t.display_rank > BATCH_SPLIT_RANK).map((t) => t.term_name);
+  return [
+    { index: 1, standardTermNames: first, customTermNames: [] },
+    { index: 2, standardTermNames: second, customTermNames },
+  ];
+}
+
+export interface MergedExtraction extends ProcessedExtraction {
+  /** The batches did not agree on detected_type (logged, first batch wins). */
+  typeDisagreement: boolean;
+}
+
+/** Merges per-batch results: first batch's detected_type wins, counts are summed. */
+export function mergeExtractions(
+  parts: ProcessedExtraction[],
+  contractType: ContractType,
+): MergedExtraction {
+  if (parts.length === 0) throw new Error('mergeExtractions: no batches');
+  const seen = new Set<string>();
+  const terms: PersistableTerm[] = [];
+  for (const part of parts) {
+    for (const term of part.terms) {
+      const key = term.term_name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      terms.push(term);
+    }
+  }
+  terms.sort((a, b) => a.display_rank - b.display_rank || a.term_name.localeCompare(b.term_name));
+  const detectedType = parts[0]!.detectedType;
+  return {
+    terms,
+    droppedTermCount: parts.reduce((n, p) => n + p.droppedTermCount, 0),
+    reasoningTruncatedCount: parts.reduce((n, p) => n + p.reasoningTruncatedCount, 0),
+    anchorOverLimitCount: parts.reduce((n, p) => n + p.anchorOverLimitCount, 0),
+    requiredMissing: terms.filter((t) => t.is_required && t.value === null).map((t) => t.term_name),
+    detectedType,
+    typeMismatch: detectedType !== contractType,
+    typeDisagreement: parts.some((p) => p.detectedType !== detectedType),
+  };
 }

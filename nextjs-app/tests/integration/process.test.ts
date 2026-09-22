@@ -142,7 +142,7 @@ describe('POST /api/contracts/{id}/process — happy path', () => {
     expect(data?.original_ai_value).toBe(data?.value);
   });
 
-  it('writes one openai_calls row and the ai_extract/persist/total timings', async () => {
+  it('writes one extraction openai_calls row (NDA = one batch) and the ai_extract/summary/persist/total timings', async () => {
     const id = await freshContract();
     await api(user, `/api/contracts/${id}/process`, { method: 'POST' });
 
@@ -150,15 +150,17 @@ describe('POST /api/contracts/{id}/process — happy path', () => {
       .from('openai_calls')
       .select('purpose, outcome, attempt')
       .eq('contract_id', id);
-    expect(calls ?? []).toHaveLength(1);
-    expect(calls![0]!.outcome).toBe('success');
+    // v1.1: the summary (step 11a) adds its own `summary` rows; extraction is still one call for an NDA.
+    const extraction = (calls ?? []).filter((c) => c.purpose === 'extraction');
+    expect(extraction).toHaveLength(1);
+    expect(extraction[0]!.outcome).toBe('success');
 
     const { data: runs } = await user.client
       .from('processing_runs')
       .select('stage')
       .eq('contract_id', id);
     const stages = (runs ?? []).map((r) => r.stage).sort();
-    expect(stages).toEqual(['ai_extract', 'persist', 'text_extract', 'total', 'upload']);
+    expect(stages).toEqual(['ai_extract', 'persist', 'summary', 'text_extract', 'total', 'upload']);
   });
 });
 
@@ -318,7 +320,8 @@ describe('failure paths leave a retryable error and no partial terms', () => {
       .from('openai_calls')
       .select('purpose')
       .eq('contract_id', id);
-    const purposes = (calls ?? []).map((c) => c.purpose).sort();
+    // v1.1: summary rows are excluded — they belong to step 11a, not the extraction retry budget.
+    const purposes = (calls ?? []).map((c) => c.purpose).filter((p) => p !== 'summary').sort();
     expect(purposes).toEqual(['extraction', 'repair']);
   }, 60_000);
 
@@ -447,7 +450,11 @@ describe('the prompt sent to the model', () => {
 
     const requests = openAiRequests();
     expect(requests.length).toBeGreaterThan(0);
-    const messages = requests.at(-1)!.messages as Array<{ role: string; content: string }>;
+    // v1.1: the last request is the summary call; pick the extraction request.
+    const extractionRequest = requests.find((r) =>
+      (r.messages as Array<{ role: string; content: string }>).some((m) => m.role === 'system' && /Extract these NDA terms/.test(m.content)),
+    )!;
+    const messages = extractionRequest.messages as Array<{ role: string; content: string }>;
 
     const system = messages.find((m) => m.role === 'system')!.content;
     expect(system).toMatch(/Worked examples — NDA/);

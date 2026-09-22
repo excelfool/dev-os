@@ -120,7 +120,7 @@ describe('GET /api/capabilities', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('private, max-age=3600');
     const keys = res.body.capabilities.map((c) => c.key);
-    expect(keys).toHaveLength(37);
+    expect(keys).toHaveLength(38);
     expect(keys).toEqual([...keys].sort());
     expect(res.body.capabilities.find((c) => c.key === 'ingest.docx')?.status).toBe('stub');
     expect(res.body.capabilities.find((c) => c.key === 'versioning.duplicate_detect')?.status).toBe('built');

@@ -2,6 +2,8 @@ import { notFound, redirect } from 'next/navigation';
 import { ResultsView } from '@/components/terms/ResultsView';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getServerConfig } from '@/lib/utils/server-config';
+import { listKeyDates } from '@/lib/services/key-dates-query';
+import type { KeyDate } from '@/types/domain';
 import type { Contract, KeyTerm } from '@/types/domain';
 
 export const metadata = { title: 'Review · ContractIQ' };
@@ -38,6 +40,8 @@ export default async function ResultsPage({ params }: { params: { id: string } }
     .eq('user_id', user.id)
     .maybeSingle();
 
+  const keyDates = contract.status === 'completed' ? await listKeyDates(supabase, contract.id) : [];
+
   const { data: keyTerms } = await supabase
     .from('key_terms')
     .select('*')
@@ -54,6 +58,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
         userId={user.id}
         calibrationWarningActive={getServerConfig().CALIBRATION_WARNING_ACTIVE}
         initialFeedback={feedback ?? null}
+        initialKeyDates={keyDates as KeyDate[]}
       />
     </main>
   );

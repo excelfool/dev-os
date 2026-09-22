@@ -16,7 +16,10 @@ export const keyTermSchema = z.object({
   value: z.string().nullable(),
   page_number: z.number().int().nullable(),
   confidence_score: z.number().min(0).max(1),
-  source_sentence: z.string().nullable(),
+  /** v1 name. v2 returns `source_anchor` instead; the service accepts either. */
+  source_sentence: z.string().nullable().optional(),
+  /** v2 (D47 c): the shortest verbatim span (≤ 25 words) holding the answer. */
+  source_anchor: z.string().nullable().optional(),
   /** v1.1 (spec 06 v1.1 §A). Absent from a v1 response ⇒ null. */
   reasoning: z.string().nullable().optional(),
 });

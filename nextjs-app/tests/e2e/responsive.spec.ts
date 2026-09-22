@@ -27,11 +27,16 @@ test.describe('layout at each breakpoint', () => {
 
     const viewerBox = (await page.locator('[data-page="1"]').first().boundingBox())!;
     const termsBox = (await terms.boundingBox())!;
+    // v1.1 (spec 07 v1.1 §A): the right column opens with the Summary card,
+    // so the column's top — not the Key terms heading — is what shares
+    // vertical space with the document.
+    const summaryBox = (await page.getByRole('region', { name: 'Summary' }).boundingBox())!;
 
     // Side by side, not stacked: the terms panel starts to the right of the
-    // document and they share vertical space.
+    // document and the right column shares vertical space with it.
     expect(termsBox.x).toBeGreaterThan(viewerBox.x);
-    expect(termsBox.y).toBeLessThan(viewerBox.y + viewerBox.height);
+    expect(summaryBox.x).toBeGreaterThan(viewerBox.x);
+    expect(summaryBox.y).toBeLessThan(viewerBox.y + viewerBox.height);
   });
 
   test('mobile stacks the panels and opens chat as a full-width bottom sheet', async ({ page }) => {

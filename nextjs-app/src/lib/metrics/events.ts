@@ -23,7 +23,12 @@ export type ActivityEventType =
    * blocked text is the one thing that must not be persisted from a request we
    * are treating as hostile.
    */
-  | 'prompt_injection_blocked';
+  | 'prompt_injection_blocked'
+  // v1.1 (spec 14 v1.1 §B)
+  | 'summary_generated'
+  | 'summary_deferred'
+  | 'key_date_unparsed'
+  | 'extraction_type_disagreement';
 
 /** Keys that could carry contract or chat content. Rejected outright. */
 const FORBIDDEN_KEYS = new Set(['content', 'text', 'value', 'source_sentence']);

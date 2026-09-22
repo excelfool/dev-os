@@ -37,8 +37,15 @@ async function main() {
   if (flag('--dataset') === 'msa-instructor') {
     const prompt = flag('--prompt') ?? 'v2';
     if (prompt !== 'v1' && prompt !== 'v2') throw new Error(`--prompt must be v1 or v2, got ${prompt}`);
-    const { runRebaseline } = await import('./rebaseline');
+    const { runRebaseline, explainTerms } = await import('./rebaseline');
     const maxTokensFlag = flag('--max-tokens');
+    const explain = flag('--explain');
+    if (explain) {
+      const terms = explain.split(',').map((t) => t.trim()).filter(Boolean);
+      const out = flag('--out') ?? `eval/failures/${new Date().toISOString().slice(0, 10)}-explain.md`;
+      process.exitCode = await explainTerms(prompt, { maxTokens: maxTokensFlag ? Number(maxTokensFlag) : undefined }, terms, out);
+      return;
+    }
     process.exitCode = await runRebaseline(prompt, {
       refresh: args.has('--refresh'),
       maxTokens: maxTokensFlag ? Number(maxTokensFlag) : undefined,

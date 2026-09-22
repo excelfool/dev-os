@@ -1,6 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { appError } from '@/lib/errors/app-error';
 import { withErrorHandling } from '@/lib/errors/to-user-message';
+import { listKeyDates } from '@/lib/services/key-dates-query';
+import { SUMMARY_STALE_CLAIM_MS } from '@/lib/services/summary-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,7 +40,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       .eq('id', contract.id)
       .eq('user_id', user.id);
 
-    const [{ data: keyTerms }, { data: customTerms }] = await Promise.all([
+    const [{ data: keyTerms }, { data: customTerms }, keyDates] = await Promise.all([
       supabase
         .from('key_terms')
         .select('*')
@@ -49,15 +51,26 @@ export async function GET(_request: Request, { params }: { params: { id: string 
         .from('custom_key_terms')
         .select('id, term_name, is_manual, created_at')
         .eq('contract_id', contract.id),
+      listKeyDates(supabase, contract.id),
     ]);
+
+    // v1.1 (spec 12 route 6): a `processing` summary claim older than 2 min is
+    // stale, so the card can re-claim it (spec 07 v1.1 §B).
+    const claimedAt = contract.summary_claimed_at ? new Date(contract.summary_claimed_at).getTime() : null;
+    const summaryClaimStale =
+      contract.summary_status === 'processing' &&
+      claimedAt !== null &&
+      Date.now() - claimedAt > SUMMARY_STALE_CLAIM_MS;
 
     return Response.json({
       contract: {
         ...contract,
         storage_available: contract.file_path !== null,
+        summary_claim_stale: summaryClaimStale,
       },
       key_terms: keyTerms ?? [],
       custom_terms: customTerms ?? [],
+      key_dates: keyDates,
     });
   });
 }

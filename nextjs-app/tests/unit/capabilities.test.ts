@@ -22,7 +22,8 @@ const APPENDIX_B: Array<[string, 'built' | 'stub' | 'planned']> = [
   ['import.sharepoint', 'planned'],
   ['classify.contract_type', 'built'],
   ['extract.key_terms', 'built'],
-  ['extract.summary', 'planned'],
+  // PRD Appendix B says planned; spec 21 §1.2: flips to built when spec 06 v1.1 §B ships (Stage 4b).
+  ['extract.summary', 'built'],
   ['playbook.manage', 'stub'],
   ['risk.flag', 'stub'],
   ['risk.escalate', 'stub'],
@@ -58,7 +59,9 @@ describe('capability registry', () => {
       expect(CAPABILITIES[key as keyof typeof CAPABILITIES]?.status, key).toBe(status);
     }
     expect(CAPABILITIES['versioning.duplicate_detect'].status).toBe('built');
-    expect(Object.keys(CAPABILITIES)).toHaveLength(APPENDIX_B.length + 1);
+    // D47 c: pipeline.async (stub, v2) is the second key beyond Appendix B.
+    expect(CAPABILITIES['pipeline.async']).toMatchObject({ status: 'stub', phase: 'v2', prd_ref: '§5' });
+    expect(Object.keys(CAPABILITIES)).toHaveLength(APPENDIX_B.length + 2);
   });
 
   it('every entry has a valid status, a non-empty phase, prd_ref, label, note and ISO since', () => {
@@ -78,7 +81,7 @@ describe('capability registry', () => {
     const first = list.slice(0, 3).map((c) => `${c.key} (${c.status}, ${c.phase})`);
     // Printed so the run log carries the registry shape (Stage 3 report).
     console.log(`registry keys: ${list.length}; first three: ${first.join(' | ')}`);
-    expect(list.length).toBe(37);
+    expect(list.length).toBe(38);
     expect(list.map((c) => c.key)).toEqual([...list.map((c) => c.key)].sort());
   });
 

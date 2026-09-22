@@ -50,6 +50,29 @@ export interface Contract {
   /** v1.1: OCR confidence 0–100 when the text came from OCR (spec 06 v1.1 §D). */
   ocr_confidence?: number | null;
   content_hash?: string | null;
+  /** v1.1 summary (US-015, spec 06 v1.1 §B). */
+  summary_md?: string | null;
+  summary_status?: SummaryStatus;
+  summary_uncited?: boolean;
+  summary_generated_ms?: number | null;
+  summary_claimed_at?: string | null;
+  /** Derived by GET /api/contracts/{id}: processing and claimed > 2 min ago. */
+  summary_claim_stale?: boolean;
+  term_library_version?: string;
+}
+
+export type SummaryStatus = 'none' | 'pending' | 'processing' | 'completed' | 'error';
+
+export type KeyDateKind = 'end_date' | 'renewal_notice_deadline' | 'renewal_date' | 'auto_renewal_check';
+
+export interface KeyDate {
+  id: string;
+  kind: KeyDateKind;
+  date: string;
+  term_id: string | null;
+  term_name: string | null;
+  is_manual: boolean;
+  reminders: Array<{ id: string; offset_days: number; send_at: string; status: string; channel: string }>;
 }
 
 export interface KeyTerm {

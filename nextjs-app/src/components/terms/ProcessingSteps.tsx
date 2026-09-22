@@ -5,14 +5,15 @@ import { Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 /**
- * The literal three steps from PRD §4 Flow 3 step 4 (spec 06 §5). There is no
- * cancel control — the PRD describes an uninterrupted run.
+ * The PRD's four steps (PRD v1.1 §4 Flow 3 step 4; spec 06 v1.1 §B). There is
+ * no cancel control — the PRD describes an uninterrupted run.
  */
-export type ProcessingStage = 'extracting' | 'analysing' | 'compiling';
+export type ProcessingStage = 'extracting' | 'analysing' | 'summarising' | 'compiling';
 
 const STEPS: Array<{ id: ProcessingStage; label: string }> = [
   { id: 'extracting', label: 'Extracting text' },
   { id: 'analysing', label: 'Analysing with AI' },
+  { id: 'summarising', label: 'Summarising' },
   { id: 'compiling', label: 'Compiling results' },
 ];
 

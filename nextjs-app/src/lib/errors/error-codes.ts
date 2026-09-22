@@ -77,6 +77,8 @@ export const ERROR_DEFINITIONS = {
       "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1.",
     retryable: false,
   },
+  SUMMARY_NOT_PENDING: { httpStatus: 409, message: 'The summary is already being written or is complete.', retryable: false },
+  INVALID_OFFSETS: { httpStatus: 400, message: 'Reminder offsets must be 30, 60 or 90 days.', retryable: false },
   OCR_LOW_CONFIDENCE: {
     httpStatus: 422,
     message:
