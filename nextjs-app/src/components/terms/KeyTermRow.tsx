@@ -164,7 +164,11 @@ export function KeyTermRow({
         {showWhy && (
           <WhySection
             sourceSentence={term.source_sentence}
-            pageNumber={pageNumber}
+            // L11: where the MODEL found the sentence. A user who corrects the
+            // page chip is saying where the term belongs, not rewriting where
+            // this quote came from — "Found on page N" must keep pointing at
+            // the text that was actually quoted.
+            pageNumber={term.original_ai_page ?? pageNumber}
             isSourceVerified={term.is_source_verified}
           />
         )}

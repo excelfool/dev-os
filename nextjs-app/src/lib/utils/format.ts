@@ -35,8 +35,37 @@ export const CONFIDENCE_BAND_STYLES: Record<
 export const LOW_CONFIDENCE_TOOLTIP =
   'Low confidence — we recommend verifying this in the document directly.';
 
-/** "d MMM yyyy" — the dashboard's upload-date format (spec 09 §2). */
+/** A bare calendar date, with no time and no zone: `2022-09-21`. */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * "d MMM yyyy" for a DATE-ONLY value, with no timezone shift (L9, spec 07
+ * v1.1 5d-2b).
+ *
+ * `key_dates.date` is a calendar date: `2022-09-21` means the 21st, in no
+ * zone at all. `new Date('2022-09-21')` parses it as UTC midnight, and
+ * rendering that in local time moves it backwards anywhere west of Greenwich —
+ * the live card showed "20 Sep 2022" to a viewer in UTC−4. Building the Date
+ * from the parts and formatting in UTC keeps the day the user stored.
+ *
+ * This is the single helper for every date-only value on screen.
+ */
+export function formatDateOnly(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  if (!year || !month || !day) return value;
+  // Local midnight, formatted locally: the parts go in and come back out
+  // unchanged, whatever zone the reader is in. No UTC is involved, so there
+  // is no offset to lose the day to.
+  return format(new Date(year, month - 1, day), 'd MMM yyyy');
+}
+
+/**
+ * "d MMM yyyy" (spec 09 §2). A date-only string goes through
+ * `formatDateOnly`; a full timestamp is rendered in the reader's local zone,
+ * which is what an upload time should do.
+ */
 export function formatDate(value: string | Date): string {
+  if (typeof value === 'string' && DATE_ONLY.test(value.trim())) return formatDateOnly(value.trim());
   return format(typeof value === 'string' ? new Date(value) : value, 'd MMM yyyy');
 }
 

@@ -49,7 +49,7 @@ function renderRow(overrides: Partial<KeyTerm> = {}) {
   );
 }
 
-/** Opens the "Why?" disclosure, which is where Source and Reasoning live. */
+/** Opens the "Why?" disclosure, which holds the Source block (5d-2a). */
 function openWhy() {
   fireEvent.click(screen.getByRole('button', { name: /why\?/i }));
 }
@@ -82,6 +82,25 @@ describe('WhySection (spec 07 v1.1 §C)', () => {
     openWhy();
 
     expect(screen.getByText(/couldn't match this sentence to the document text/i)).toBeTruthy();
+  });
+
+  it('shows the page the MODEL found the sentence on, not the user-edited page (L11)', () => {
+    // The user moved the term to page 7; the quote still comes from page 4.
+    renderRow({ page_number: 7, page_edited: true, original_ai_page: 4 });
+    openWhy();
+
+    const source = screen.getByRole('group', { name: 'Source' });
+    expect(within(source).getByText('Found on page 4')).toBeTruthy();
+    // The chip keeps showing where the user says the term lives.
+    expect(screen.getByRole('button', { name: 'Page 7' })).toBeTruthy();
+  });
+
+  it('falls back to the current page when the model recorded none (L11)', () => {
+    renderRow({ page_number: 6, original_ai_page: null });
+    openWhy();
+
+    const source = screen.getByRole('group', { name: 'Source' });
+    expect(within(source).getByText('Found on page 6')).toBeTruthy();
   });
 
   it('does NOT carry the Reasoning block — that moved into the row (5d-2a)', () => {

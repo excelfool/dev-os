@@ -48,6 +48,36 @@ function addMonths(d: Date, months: number): Date {
 function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
+
+/** Days before the next renewal that an auto-renewal check is raised. */
+export const AUTO_RENEWAL_CHECK_LEAD_DAYS = 90;
+
+/**
+ * D52 (spec 21 §7.2, 5d-2b L10): the next renewal still ahead of `today`.
+ *
+ * An auto-renewing contract does not renew once. Deriving `end_date + period`
+ * and storing it meant a contract that has been rolling over for years still
+ * advertised its FIRST renewal: live contract 93ba9b49 ends 2022-09-21 and
+ * renews every 6 months, and in September 2026 the card offered "Renews on 21
+ * Mar 2023" as an upcoming date with reminder toggles.
+ *
+ * Returns the first `end + k × period` (k ≥ 1) that is not before `today`. A
+ * period of zero or less cannot advance, so it is returned as-is rather than
+ * looped on.
+ */
+export function nextRenewalOccurrence(endDate: Date, periodMonths: number, today: Date): Date {
+  if (periodMonths <= 0) return addMonths(endDate, periodMonths);
+
+  const floor = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  let k = 1;
+  let occurrence = addMonths(endDate, periodMonths);
+  // Bounded: 1,200 periods is a century of monthly renewals.
+  while (occurrence.getTime() < floor && k < 1_200) {
+    k += 1;
+    occurrence = addMonths(endDate, periodMonths * k);
+  }
+  return occurrence;
+}
 /** send_at = date − offset at 08:00 UTC. */
 export function sendAtFor(date: Date, offsetDays: number): Date {
   const day = addDays(date, -offsetDays);
@@ -71,6 +101,8 @@ interface SourceTerm {
 export function deriveKeyDatesFromTerms(
   contractType: ContractType,
   terms: SourceTerm[],
+  /** D52: the clock the renewal roll-forward is measured against. */
+  today: Date = new Date(),
 ): { derived: DerivedKeyDate[]; unparsed: KeyDateKind[] } {
   const byName = new Map(terms.map((t) => [t.term_name, t]));
   const derived: DerivedKeyDate[] = [];
@@ -93,24 +125,34 @@ export function deriveKeyDatesFromTerms(
   const noticeTerm = byName.get('Notice to not auto renew (Days)');
   const noticeDays = parseLeadingInteger(noticeTerm?.value);
   if (noticeTerm?.value && noticeDays === null) unparsed.push('renewal_notice_deadline');
-  if (noticeDays !== null) {
-    derived.push({
-      kind: 'renewal_notice_deadline',
-      date: addDays(endDate, -noticeDays),
-      term_name: 'Notice to not auto renew (Days)',
-      derived_from: { 'Contract end date': endTerm!.value!, 'Notice to not auto renew (Days)': noticeTerm!.value! },
-    });
-  }
 
   const autoTerm = byName.get('Auto Renewal');
   const autoRenews = /^yes\b/i.test((autoTerm?.value ?? '').trim());
   const periodTerm = byName.get('Renewal Period (Months)');
   const periodMonths = parseLeadingInteger(periodTerm?.value);
   if (periodTerm?.value && periodMonths === null) unparsed.push('renewal_date');
-  if (autoRenews && periodMonths !== null) {
+
+  // D52: for an auto-renewing contract the live renewal is the next
+  // occurrence, and the notice deadline and auto-renewal check are the lead-in
+  // to THAT date. Without a parseable period there is no series to roll along,
+  // so both fall back to the end date as before.
+  const rollsForward = autoRenews && periodMonths !== null;
+  const renewalDate = rollsForward ? nextRenewalOccurrence(endDate, periodMonths, today) : null;
+  const anchor = renewalDate ?? endDate;
+
+  if (noticeDays !== null) {
+    derived.push({
+      kind: 'renewal_notice_deadline',
+      date: addDays(anchor, -noticeDays),
+      term_name: 'Notice to not auto renew (Days)',
+      derived_from: { 'Contract end date': endTerm!.value!, 'Notice to not auto renew (Days)': noticeTerm!.value! },
+    });
+  }
+
+  if (renewalDate) {
     derived.push({
       kind: 'renewal_date',
-      date: addMonths(endDate, periodMonths),
+      date: renewalDate,
       term_name: 'Renewal Period (Months)',
       derived_from: { 'Contract end date': endTerm!.value!, 'Renewal Period (Months)': periodTerm!.value!, 'Auto Renewal': autoTerm!.value! },
     });
@@ -118,7 +160,7 @@ export function deriveKeyDatesFromTerms(
   if (autoRenews && noticeDays === null) {
     derived.push({
       kind: 'auto_renewal_check',
-      date: addDays(endDate, -90),
+      date: addDays(anchor, -AUTO_RENEWAL_CHECK_LEAD_DAYS),
       term_name: 'Auto Renewal',
       derived_from: { 'Contract end date': endTerm!.value!, 'Auto Renewal': autoTerm!.value! },
     });

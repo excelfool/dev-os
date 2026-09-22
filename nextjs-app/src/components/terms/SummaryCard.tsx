@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageCitationChip } from '@/components/chat/PageCitationChip';
+import { parseCitationPages } from '@/lib/ai/summary-validation';
 import { isBuilt } from '@/lib/capabilities';
 import type { Contract, SummaryStatus } from '@/types/domain';
 
@@ -183,12 +184,15 @@ export function renderMarkdown(md: string): ReactNode[] {
 
 function inline(text: string, key: number): ReactNode[] {
   const out: ReactNode[] = [];
-  const parts = text.split(/(\[Page\s+\d+\]|\*\*[^*]+\*\*)/g);
+  // L8: one bracket may name several pages — "[Page 1, 5, 7]", "[Pages 3–4]".
+  // Each page gets its own chip, sharing the parser the validator uses so the
+  // card and the citation check can never disagree about what was cited.
+  const parts = text.split(/(\[Pages?\s+[^\]]*\d[^\]]*\]|\*\*[^*]+\*\*)/g);
   parts.forEach((part, i) => {
-    const cite = part.match(/^\[Page\s+(\d+)\]$/i);
-    if (cite) {
-      out.push(<PageCitationChip key={`${key}-${i}`} page={Number(cite[1])} />);
-      return;
+    if (/^\[Pages?\s+[^\]]*\d[^\]]*\]$/i.test(part)) {
+      const pages = parseCitationPages(part);
+      pages.forEach((page) => out.push(<PageCitationChip key={`${key}-${i}-${page}`} page={page} />));
+      if (pages.length > 0) return;
     }
     const bold = part.match(/^\*\*([^*]+)\*\*$/);
     if (bold) {

@@ -72,6 +72,8 @@ export interface KeyDate {
   term_id: string | null;
   term_name: string | null;
   is_manual: boolean;
+  /** D52: the source values, so the card can roll a stale renewal forward. */
+  derived_from?: Record<string, unknown> | null;
   reminders: Array<{ id: string; offset_days: number; send_at: string; status: string; channel: string }>;
 }
 

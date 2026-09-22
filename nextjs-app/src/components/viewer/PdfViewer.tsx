@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Minus, Plus, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { scrollPageIntoView } from '@/hooks/use-target-page';
+import { useVisiblePage } from '@/hooks/use-visible-page';
 import type { DocumentViewerProps } from './types';
 
 /**
@@ -32,8 +33,11 @@ export function PdfViewer({
   const renderedRef = useRef<Set<number>>(new Set());
 
   const [scale, setScale] = useState(1.2);
-  const [currentPage, setCurrentPage] = useState(1);
   const [isReady, setIsReady] = useState(false);
+
+  // L7: the indicator is measured, not inferred from the lazy-render observer
+  // below — that one deliberately fires for pages far outside the viewport.
+  const currentPage = useVisiblePage(containerRef, pageRefs, targetPage, nonce);
 
   const loadDocument = useCallback(async () => {
     const res = await fetch(`/api/contracts/${contractId}/signed-url`, { method: 'POST' });
@@ -114,10 +118,9 @@ export function PdfViewer({
       (entries) => {
         for (const entry of entries) {
           const pageNumber = Number((entry.target as HTMLElement).dataset.page);
-          if (entry.isIntersecting) {
-            void renderPage(pageNumber);
-            setCurrentPage(pageNumber);
-          }
+          // Rendering only. The 200% margin means "isIntersecting" here covers
+          // roughly five screens, which is why it must not set the indicator.
+          if (entry.isIntersecting) void renderPage(pageNumber);
         }
       },
       { root: containerRef.current, rootMargin: '200% 0px' },

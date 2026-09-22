@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  citedPages,
   countWords,
   enforceWordBudget,
   hasValidCitation,
@@ -82,5 +83,66 @@ describe('word budget and normalisation', () => {
       'Another thing.',
       '- a bullet. with a dot',
     ]);
+  });
+});
+
+/**
+ * L8 (spec 07 v1.1 5d-2b). The model writes multi-page citations —
+ * "[Page 1, 5, 7]", "[Pages 3–4]" — and the single-page regex matched none of
+ * them. Two consequences, both seen live on contract 93ba9b49: the card
+ * rendered the citation as raw text instead of chips, and the validator
+ * counted the sentence as UNCITED, which triggered a needless repair call and
+ * could flag a correctly cited summary as `summary_uncited`.
+ */
+describe('multi-page citations (L8)', () => {
+  it.each([
+    ['[Page 2]', [2]],
+    ['[Page 1, 5, 7]', [1, 5, 7]],
+    ['[Pages 3-4]', [3, 4]],
+    ['[Pages 3–4]', [3, 4]],
+    ['[Page 3, Page 5]', [3, 5]],
+    ['[Pages 1 and 2]', [1, 2]],
+    ['[Page 4, 4]', [4]],
+  ])('reads the pages out of %s', (citation, expected) => {
+    expect(citedPages(`The fee is 500 dollars. ${citation}`)).toEqual(expected);
+  });
+
+  it('collects pages across several citations in one sentence', () => {
+    expect(citedPages('Fees [Page 2] and term [Page 5, 6].')).toEqual([2, 5, 6]);
+  });
+
+  it('finds no pages where there is no citation', () => {
+    expect(citedPages('The fee is 500 dollars.')).toEqual([]);
+  });
+
+  it('counts a multi-page citation as cited', () => {
+    expect(hasValidCitation('The fee is 500 dollars. [Page 1, 5, 7]', 8)).toBe(true);
+    expect(hasValidCitation('The term runs two years. [Pages 3–4]', 8)).toBe(true);
+  });
+
+  it('still rejects a citation naming only pages past the end of the document', () => {
+    expect(hasValidCitation('The fee is 500 dollars. [Page 30, 31]', 8)).toBe(false);
+  });
+
+  it('accepts a citation where only one of several pages is in range', () => {
+    expect(hasValidCitation('The fee is 500 dollars. [Page 5, 99]', 8)).toBe(true);
+  });
+
+  it('does not ask for a repair on a sentence cited across pages', () => {
+    const md = 'Harborlight must keep the information confidential for 2 years. [Page 1, 5, 7]';
+
+    expect(uncitedFactualSentences(md, { pageCount: 8, facts: ['Harborlight'] })).toEqual([]);
+  });
+
+  it('does not let the digits inside a citation make a sentence look factual', () => {
+    // Stripping must remove the whole multi-page citation, not part of it.
+    expect(isFactualSentence('The parties agree as follows. [Page 1, 5, 7]', { pageCount: 8, facts: [] })).toBe(false);
+  });
+
+  it('keeps a multi-page citation attached to its sentence when splitting', () => {
+    const units = splitSentences('Fees are due in 30 days. [Page 1, 5] The term is two years. [Page 6]');
+
+    expect(units).toHaveLength(2);
+    expect(units[0]).toContain('[Page 1, 5]');
   });
 });

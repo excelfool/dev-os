@@ -232,6 +232,27 @@ Runs **after** `persist_key_terms` succeeds — spec 06 v1.1 §B **step 11c**, b
 
 NDA contracts derive only `end_date` from `Term & Duration` when it contains a parseable date; otherwise nothing. Unparseable values derive nothing and log `activity_events` `key_date_unparsed` (metadata: `kind` only). Each derived key date upserts on `(contract_id, kind)`, cancels its previous `scheduled` reminders, and inserts the **default offsets 30 / 60 / 90 days** for both channels; a `send_at` in the past is inserted as `cancelled`. A `key_dates` row with `is_manual=true` (user-edited date, built later) is never overwritten by derivation.
 
+**v1.1 5d-2b (2026-09-22) — D52: the renewal rolls forward.**
+
+*Evidence.* Live contract `93ba9b49` (Expel, ends 2022-09-21, `Auto Renewal = Yes`, `Renewal Period (Months) = 6`) held `renewal_date = 2023-03-21` and `auto_renewal_check = 2022-06-23`. Read in September 2026, the card offered both as upcoming dates with live reminder toggles. The derivation computed the **first** renewal and stored it; an auto-renewing contract does not renew once.
+
+*Rule.* For an auto-renewing contract with a parseable period, `renewal_date` is the first `end_date + k × period` (k ≥ 1) that is **not before today**. `auto_renewal_check` and `renewal_notice_deadline` are computed from **that** occurrence, not from the end date: they are the lead-in to the renewal that is actually coming. The table above reads:
+
+| `kind` | Rule (5d-2b) |
+|---|---|
+| `end_date` | unchanged — `value` parses as `YYYY-MM-DD` ⇒ that date |
+| `renewal_date` | first `end date + k × period` ≥ today, k ≥ 1; without a parseable period, nothing |
+| `renewal_notice_deadline` | next renewal − N days when the contract auto-renews; otherwise end date − N days, as before |
+| `auto_renewal_check` | next renewal − 90 days when the contract auto-renews; otherwise end date − 90 days |
+
+A period of zero or less cannot advance and is applied once, unrolled. A non-auto-renewing contract and an unparseable period are untouched.
+
+*Applied twice, on purpose.* At **derivation**, so newly written reminders target the next occurrence. And at **read time** — `listKeyDates`, shared by route 29 and `GET /api/contracts/{id}`, and the card, both through the pure `rollForwardKeyDates` — because a row derived in March is read in October, by which time the renewal it named may itself have passed. The read path writes nothing back.
+
+*"Passed".* After roll-forward, any key date still behind today is history — typically the original `end_date` of a contract that has been renewing for years. `KeyDatesCard` renders it with a **Passed** tag and **no reminder toggles**: there is nothing left to be reminded about. Reminders whose `send_at` is past remain `cancelled` under the existing rule.
+
+*Stage 10 — the missing cron.* Rolling forward on read keeps the UI honest, but it does not **schedule** anything: reminders still exist only for the occurrence current at the last derivation, and nothing re-derives a contract that nobody opens. Scheduling reminders beyond the next occurrence needs a periodic job that walks auto-renewing contracts and re-derives them as each renewal passes. That job is a **Stage 10 item** and is deliberately **not** built here — no cron or schema change is made by 5d-2b.
+
 ### 7.3 Scheduler stub — pg_cron + `send-notification`
 
 - `supabase-schema.sql` v1.1 §A7 schedules **`mark-due-reminders`** daily at `08:00 UTC`: `update public.reminders set status='due' where status='scheduled' and send_at <= now()` — pure SQL, always scheduled.

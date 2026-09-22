@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { splitPages } from '@/lib/pdf/page-utils';
 import { normalise } from '@/lib/utils/normalise-text';
 import { scrollPageIntoView } from '@/hooks/use-target-page';
+import { useVisiblePage } from '@/hooks/use-visible-page';
 import type { DocumentViewerProps } from './types';
 
 /**
@@ -13,12 +14,17 @@ import type { DocumentViewerProps } from './types';
 export function TextViewer({
   contractText,
   pdfPurgedAt,
+  pageCount,
   targetPage,
   highlight,
   nonce,
 }: DocumentViewerProps & { contractText: string; pdfPurgedAt?: string | null }) {
   const pages = useMemo(() => splitPages(contractText), [contractText]);
   const pageRefs = useRef<Map<number, HTMLElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // L7: the same measured indicator as the PDF viewer, so the two agree.
+  const currentPage = useVisiblePage(containerRef, pageRefs, targetPage, nonce);
 
   useEffect(() => {
     if (targetPage === null) return;
@@ -27,37 +33,46 @@ export function TextViewer({
   }, [targetPage, nonce]);
 
   return (
-    <div
-      // A scrollable region must be focusable, or a keyboard user cannot
-      // scroll the contract text at all (WCAG 2.1.1).
-      tabIndex={0}
-      aria-label="Contract text"
-      className="flex h-full flex-col overflow-y-auto"
-    >
-      {pdfPurgedAt && (
-        <p className="sticky top-0 z-10 bg-warning-50 px-4 py-2 text-caption text-warning-900">
-          The original PDF was removed after 90 days of inactivity. Your extracted text, key terms
-          and chat history are unchanged.
-        </p>
-      )}
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-grey-50 px-3 py-2">
+        <span className="text-caption text-grey-400">
+          Page {currentPage} of {pageCount}
+        </span>
+      </div>
 
-      {pages.map((page) => (
-        <section
-          key={page.page}
-          aria-label={`Page ${page.page}`}
-          ref={(el) => {
-            if (el) pageRefs.current.set(page.page, el);
-          }}
-          className="border-b border-grey-50"
-        >
-          <h3 className="sticky top-0 bg-grey-25 px-4 py-2 text-caption text-grey-400">
-            Page {page.page}
-          </h3>
-          <div className="whitespace-pre-wrap px-4 py-3 text-body text-grey-900">
-            {renderWithHighlight(page.body, highlight?.page === page.page ? highlight.text : null, nonce)}
-          </div>
-        </section>
-      ))}
+      <div
+        ref={containerRef}
+        // A scrollable region must be focusable, or a keyboard user cannot
+        // scroll the contract text at all (WCAG 2.1.1).
+        tabIndex={0}
+        aria-label="Contract text"
+        className="flex flex-1 flex-col overflow-y-auto"
+      >
+        {pdfPurgedAt && (
+          <p className="sticky top-0 z-10 bg-warning-50 px-4 py-2 text-caption text-warning-900">
+            The original PDF was removed after 90 days of inactivity. Your extracted text, key terms
+            and chat history are unchanged.
+          </p>
+        )}
+
+        {pages.map((page) => (
+          <section
+            key={page.page}
+            aria-label={`Page ${page.page}`}
+            ref={(el) => {
+              if (el) pageRefs.current.set(page.page, el);
+            }}
+            className="border-b border-grey-50"
+          >
+            <h3 className="sticky top-0 bg-grey-25 px-4 py-2 text-caption text-grey-400">
+              Page {page.page}
+            </h3>
+            <div className="whitespace-pre-wrap px-4 py-3 text-body text-grey-900">
+              {renderWithHighlight(page.body, highlight?.page === page.page ? highlight.text : null, nonce)}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
