@@ -117,3 +117,47 @@ Netlify function logs (structured JSON lines), the Supabase dashboard (DB and St
 - `tests/unit/cost.test.ts` — `computeCostUsd(15000, 1500)` ≈ `0.0975`; rounding to 6 decimals; a 20-page analysis stays under $0.25.
 - `tests/unit/events.test.ts` — `recordEvent` rejects metadata containing a `content`/`text`/`value`/`source_sentence` key or any string longer than 200 characters.
 - `tests/integration/telemetry.test.ts` — a successful process writes `processing_runs` rows for `ai_extract`, `persist` and `total`, and one `openai_calls` row per attempt including failed attempts.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — §11 Observability R-30, US-017, §3 KPI tree)
+
+### A. Observability mapping
+
+The PRD §11 Observability table is mapped measure-by-measure in **spec 23 §3**; the KPI tree (North Star → L1 → L1B → L2) is implemented as the SQL views in **spec 23 §4**. §3 above keeps every existing query; the North Star row is **re-labelled**: "North Star" is now *contracts processed with review completed, WoW* (`v_kpi_north_star_weekly`), and the ≤ 15 min "upload → review complete" row becomes **L1 time-to-clarity** (`v_kpi_time_to_clarity`). The task-completion funnel (≥ 85%) is `v_kpi_task_completion`; the HHH percentages are `v_kpi_hhh_weekly`.
+
+### B. `activity_events.event_type` vocabulary additions (§3 is still the single source)
+
+| `event_type` | Written by |
+|---|---|
+| `summary_generated` / `summary_deferred` | `/process` step 11a (spec 06 v1.1 §B); metadata: duration only |
+| `key_date_unparsed` | `reminder-service.deriveKeyDates` (spec 21 §7.2); metadata `{ kind }` |
+| `hhh_scored` | `PUT /api/hhh-scores` (spec 22 §4); metadata `{ subject_type }` |
+| `push_attempted` | route 27 (spec 21 §5); metadata `{ target, status }` |
+| `capabilities_viewed` | `/settings#capabilities` mount (spec 21 §3) |
+
+`chat_message_sent` metadata gains `unresolved_turns`, `enhanced: boolean` and `greeting: boolean` (spec 08 v1.1 §A step 5b); `term_edited` gains `field`.
+
+### C. `send-notification` templates (§2a)
+
+Template union becomes `'account_deleted' | 'incident_p0' | 'key_date_reminder' | 'alert_fired'`. `key_date_reminder` (spec 21 §7.3) carries the contract file name, the key-date kind label, the date, the term name and a link — no other term values. `alert_fired` (spec 23 §2.3) carries the rule description, metric value and threshold to `ALERT_EMAIL_TO`. The `send-due-reminders` Edge Function is a second caller (written, undeployed).
+
+### D. Scheduled jobs (§4) — additions
+
+| Cadence | Job | Action |
+|---|---|---|
+| Daily 02:00 UTC (pg_cron) | `evaluate-alert-rules` | `select public.evaluate_alert_rules()` → `alert_events` (spec 23 §2.3). The 80%-budget and 12%-correction alerts above are now rows in `alert_rules`; the daily rollup delivers undelivered events |
+| Daily 08:00 UTC (pg_cron) | `mark-due-reminders` | `select public.mark_due_reminders()` (spec 21 §7.3) |
+| Daily 08:05 UTC (**undeployed**, cron line commented) | `send-due-reminders` Edge Function | Emails due reminders via `send-notification` |
+| Weekly Monday 06:00 UTC (CI) | `sample-week.ts` | Spec 22 §7 — publishes the week's HHH sample and the human/judge split |
+| Weekly (extends the drift check) | Human-vs-judge drift | Disagreement rate per pillar on the overlap; alert > 30% |
+| Every deploy | `redteam.ts` | `harmless.redteam_pass_rate` (spec 22 §9) |
+
+### E. Health monitoring surfaces (§5)
+
+Add `guardrail_events`, `alert_rules`/`alert_events`, `eval_gates` and the `v_kpi_*` views; `scripts/daily-ops.ts` prints the one-screen daily health check (spec 23 §6).
+
+### F. Tests added
+
+- `tests/integration/send-notification.test.ts` — `key_date_reminder` and `alert_fired` render; neither contains term values other than the date.
+- `tests/unit/events.test.ts` — the new event types are accepted; `unresolved_turns` metadata passes the guard.

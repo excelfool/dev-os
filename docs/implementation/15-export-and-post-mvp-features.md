@@ -63,3 +63,12 @@ Scanned/image PDFs and OCR; non-English contracts and non-US/UK governing law; c
 
 - `tests/integration/export.test.ts` — CSV has exactly the six columns in order; `Not found in document` renders for null values; formula-injection prefixes are applied; generation completes in **under 5 s** for a 30-term contract; `403 PLAN_REQUIRED` for a Starter user past their trial; **200** for `free_trial`, `growth` and `pro`; `409 NOT_PROCESSED` before extraction.
 - `tests/e2e/export.spec.ts` — the download lands in the browser with the right filename.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+- **§1 CSV** gains a `Reasoning` column after `Source Sentence` (spec 12 v1.1 §B); the PDF summary places the contract summary (`summary_md`, when present) above the terms table. Registry key `export.csv_pdf` (`built`, phase `v1.1`).
+- **§2 `/trust`** publishes, from the latest `eval/reports/<release>.summary.json` (spec 22 §12): F1 by type, page accuracy, calibration error, the **HHH percentages** (`hhh.human`, and `hhh.judge` only when `judge_gate_met`), `redteam_pass_rate`, and the **`Matcher_Version`, `Term_Library_Version` and `Prompt_Version`** the numbers were measured under; plus a "How we measure" list of the `owner='engineering'` registry keys and a link to `/settings#capabilities`. Rows from synthetic data are never shown as real-contract numbers.
+- **§3 v1.2 items** are now registry-backed: OCR = `ingest.ocr` (spec 21 §4, < 80% ⇒ `OCR_LOW_CONFIDENCE`); comparison = `compare.contracts` (spec 20 §3 route 25, 501 today); completion email = a `send-notification` template on the existing path; DocuSign = `esign.docusign` (spec 21 §5 route 28). Batch upload and analytics charts are unchanged.
+- **§4 out of scope** is unchanged in substance, but every listed item now has a registry entry with a phase (spec 21 §1.2) rather than being absent.

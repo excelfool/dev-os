@@ -72,3 +72,11 @@ NPS = %promoters (9–10) − %detractors (0–6), target ≥ 40.
 - `tests/integration/complete.test.ts` — sets `review_completed_at`; a repeat call is idempotent and preserves the original timestamp.
 - `tests/unit/feedback-widget.test.tsx` — the comment field appears only after a rating; the three survey options map to the right values; submit is disabled without a rating.
 - `tests/e2e/contract-review.spec.ts` — marking review complete updates the dashboard badge; submitting 👍 persists across reload.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+- **§1 `POST /api/contracts/{id}/complete`** — once `capabilities['risk.flag'].status === 'built'`, the route refuses with `409 HIGH_FLAGS_UNDECIDED` while any `risk_flags` row for the contract has `severity='High' AND decision IS NULL`, and `CompleteReviewButton` is disabled with the same helper text (spec 20 §4.3). While `risk.flag` is `stub`, nothing changes — there are no flags to decide.
+- **§1 North Star wording** — "review complete" now feeds two metrics: the North Star count (contracts with review completed, WoW — `v_kpi_north_star_weekly`) and L1 time-to-clarity (`v_kpi_time_to_clarity`), spec 23 §4. The button and route are unchanged.
+- **§2 Feedback Logger** now also records HHH review answers (`hhh_scores`, spec 22 §4) and risk-flag corrections (`risk_flags.was_wrong`, spec 20 §4.4) — separate routes, same "fully autonomous write" posture.

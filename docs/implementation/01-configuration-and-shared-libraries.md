@@ -260,3 +260,90 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 ```
 
 Three independent authorisation layers, none trusted alone: middleware redirect (UX), the per-handler session + ownership check above, and PostgreSQL RLS as the authoritative gate.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+### A. Error codes (§2) — additions
+
+| Code | HTTP | `userMessage` | `retryable` |
+|---|---|---|---|
+| `NOT_IMPLEMENTED` | 501 | "{label} arrives in {phase}." (built by `notImplemented()`, spec 21 §1.3; the envelope also carries `capability` and `phase`) | false |
+| `UNSUPPORTED_FORMAT` | 422 | "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1." | false |
+| `OCR_LOW_CONFIDENCE` | 422 | "This scan is too low-quality to read reliably ({n}% confidence). Please upload a native digital PDF or a clearer scan." | false |
+| `INVALID_PAGE` | 400 | "Enter a page between 1 and {page_count}." | false |
+| `INVALID_REASONING` | 400 | "Enter reasoning between 1 and 500 characters." | false |
+| `SUMMARY_NOT_PENDING` | 409 | "The summary is already being written or is complete." | false |
+| `HIGH_FLAGS_UNDECIDED` | 409 | "Decide on each High-risk flag before marking the review complete." | false |
+| `NO_ACTIVE_PLAYBOOK` | 404 | "No active playbook for this contract type." | false |
+| `INVALID_DECISION` | 400 | "Choose accept or dismiss." | false |
+| `ESCALATION_OPEN` | 409 | "A reviewer request is already open for this contract." | false |
+| `INVALID_RULE` | 400 | "One or more playbook rules are invalid." (+ field map) | false |
+| `TYPE_MISMATCH` | 400 | "Both contracts must be the same type to compare." | false |
+| `INTEGRATION_FAILED` | 502 | "We couldn't reach {target}. Your review is unaffected — try the push again." | true |
+| `INVALID_SIGNATURE` | 401 | "Invalid webhook signature." | false |
+| `INVALID_HHH_ANSWERS` | 400 | "Answers must be Yes, No or Skip for the listed questions." | false |
+| `INVALID_OFFSETS` | 400 | "Reminder offsets must be 30, 60 or 90 days." | false |
+| `NOT_CONNECTED` | 409 | "Connect {target} in Settings before pushing key terms." | false |
+
+`AppError.toResponse()` copies `details.capability` and `details.phase` into the envelope when `code === 'NOT_IMPLEMENTED'`.
+
+### B. `serverConfig` (§1) — additions
+
+```ts
+OPENAI_MODEL_EXTRACTION: z.string().default('gpt-4o'),
+OPENAI_MODEL_CHAT:       z.string().default('gpt-4o'),
+OPENAI_MODEL_SUMMARY:    z.string().default('gpt-4o'),
+OPENAI_MODEL_ENHANCER:   z.string().default('gpt-4o'),
+OPENAI_MODEL_JUDGE:      z.string().optional(),            // eval only; must differ from all four resolved product ids (extraction, chat, summary, enhancer, after the OPENAI_MODEL fallback) — enforced in openai-client.ts, spec 22 §6.1
+OPENAI_EXTRACTION_MAX_TOKENS: num(3000),                    // was 2000 — 36-term MSA + reasoning
+PROMPT_VERSION: z.string().default('v2.0'),                 // supersedes §1's 'v1.0': extraction.v2 is the only prompt that renders the 36-term library
+OPENAI_SUMMARY_MAX_TOKENS: num(500),
+OPENAI_SUMMARY_TEMPERATURE: z.coerce.number().default(0.2),
+OPENAI_SUMMARY_TIMEOUT_MS: num(10_000),
+OPENAI_ENHANCER_MAX_TOKENS: num(120),
+OPENAI_ENHANCER_TIMEOUT_MS: num(5_000),
+SUMMARY_CONTEXT_TOKENS: num(3000),
+RATE_LIMIT_RISKS_PER_HOUR: num(10),
+RETRIEVAL_STRATEGY: z.enum(['full_context','n8n']).default('full_context'),
+N8N_RAG_WEBHOOK_URL: z.string().url().optional(),
+N8N_RAG_TOKEN: z.string().optional(),
+CRM_HUBSPOT_CLIENT_ID: z.string().optional(),
+CRM_HUBSPOT_CLIENT_SECRET: z.string().optional(),
+CRM_SALESFORCE_CLIENT_ID: z.string().optional(),
+CRM_SALESFORCE_CLIENT_SECRET: z.string().optional(),
+// .refine(c => !(c.CRM_HUBSPOT_CLIENT_ID && c.CRM_SALESFORCE_CLIENT_ID), 'one CRM vendor at a time') — applied to the whole schema
+EVAL_USER_EMAIL: z.string().email().optional(),
+EVAL_USER_PASSWORD: z.string().optional(),
+OPERATOR_USER_ID: z.string().uuid().optional(),
+OCR_PROVIDER: z.enum(['textract','document_ai']).optional(),
+OCR_API_KEY: z.string().optional(),
+OCR_REGION: z.string().optional(),
+OCR_MIN_CONFIDENCE: num(80),
+DOCX_INGEST_ENABLED: z.string().optional(),                 // 'true' enables the library extractor once written
+ESIGN_PROVIDER: z.enum(['docusign']).optional(),
+ESIGN_WEBHOOK_SECRET: z.string().optional(),
+ALERT_EMAIL_TO: z.string().email().optional(),
+HHH_MIN_HUMAN_ROWS: num(50),
+HHH_WEEKLY_SAMPLE_TARGET: num(200),
+HHH_HUMAN_SHARE_PCT: num(20),
+JUDGE_GATE_MIN: z.coerce.number().default(0.70),
+```
+
+`publicConfig` adds `rolloutStage: process.env.NEXT_PUBLIC_ROLLOUT_STAGE ?? 'internal'`. `OPENAI_MODEL` is kept as a fallback for the four product models when a per-purpose id is unset.
+
+### C. Validation schemas (§7) — additions
+
+| File | Rules |
+|---|---|
+| `key-term.schema.ts` | `keyTermUpdateSchema` = `z.object({ value: z.string().min(1).max(2000).optional(), page_number: z.number().int().min(1).optional(), reasoning: z.string().min(1).max(500).optional() }).refine(non-empty)`; `keyTermSchema` adds `reasoning: z.string().nullable()` |
+| `hhh-score.schema.ts` | `subject_type` enum; exactly one id; `answers` record of code → `boolean|null` restricted to `APPLICABLE_CODES[subject_type]`; `notes ≤ 1000` |
+| `key-dates.schema.ts` | `offsets_days: z.array(z.union([z.literal(30), z.literal(60), z.literal(90)])).max(3)` (may be empty = no reminders) |
+| `escalation.schema.ts` | `trigger` enum; optional ids; `note ≤ 1000` |
+| `playbook.schema.ts` | rules array; `rule_type` enum `presence|absence|threshold|pattern`; `severity` enum; `condition` per-type object |
+| `contracts-query.schema.ts` | unchanged |
+
+### D. `events.ts` (§5)
+
+The vocabulary type follows spec 14 v1.1 §B; the metadata guard additionally rejects keys named `reasoning`, `summary`, `answer`, `question`.

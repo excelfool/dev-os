@@ -306,3 +306,74 @@ The 14-week MVP plan, with the spec files each release consumes. Capacity assump
 | **v1.2 Growth** | 19–24 | OCR for scanned PDFs; contract comparison; completion emails; multi-user workspace; non-US few-shot examples | 15 §3 | OCR vendor, workspace RLS migration | Comparison view |
 
 **Dependencies that must land before their release ships:** OpenAI API access and approved usage terms before v0.2; **Supabase Pro** before v1.0 (beta); legal review of the ToS and DPA before the v1.0 public launch; the GDPR DPA with OpenAI confirmed before EU user onboarding.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+### A. §1 — what is being built, extended
+
+Every term now also carries a one-sentence **reasoning**; the extraction prompt asks each term's **question** (NDA 10 terms, MSA **36** instructor terms); a plain-language **summary** is generated per contract; and every instructor capability not yet built exists as an honest placeholder — registry entry, adapter interface + NullAdapter, table with RLS, 501 route, SKIPPED eval row, hidden/empty UI (PRD Appendix A). The settled decision "OpenAI is the sole inference provider" stands; model ids are now configurable per purpose (`model.extraction`, `model.chat`, `model.summary`, `model.enhancer`, `model.judge`) and the judge, when configured, is a stronger OpenAI model never used in a product prompt.
+
+### B. §5 folder tree — additions
+
+```
+src/app/(app)/settings/playbooks/page.tsx                 PlaybookAdmin (read-only stub)
+src/app/api/capabilities/route.ts                         GET
+src/app/api/contracts/[id]/risks/route.ts                 POST 501
+src/app/api/contracts/[id]/escalate/route.ts              POST 501
+src/app/api/contracts/[id]/compare/route.ts               POST 501
+src/app/api/contracts/[id]/push/[target]/route.ts         POST 501
+src/app/api/contracts/[id]/key-dates/route.ts             GET
+src/app/api/contracts/[id]/summary/route.ts               POST
+src/app/api/key-dates/[id]/reminders/route.ts             PATCH
+src/app/api/risk-flags/[id]/route.ts                      PATCH 501
+src/app/api/playbooks/route.ts, playbooks/[id]/route.ts   GET/POST/PATCH 501
+src/app/api/webhooks/esign/route.ts                       POST 501 (public)
+src/app/api/import/[source]/route.ts                      POST 501
+src/app/api/integrations/route.ts                         GET (live, empty list until a vendor is built)
+src/app/api/integrations/[target]/route.ts                DELETE 501
+src/app/api/integrations/[target]/connect/route.ts        POST 501 (OAuth start)
+src/app/api/integrations/[target]/callback/route.ts       GET (OAuth callback; 501 until built)
+src/app/api/hhh-scores/route.ts                           PUT
+src/app/api/eval/sample-week/route.ts                     GET
+src/components/{risk,capabilities,review,reminders,summary}/
+src/lib/capabilities.ts
+src/lib/integrations/{types.ts, crm, ocr, docx, esign, import, email, redline, graph, rag}/{types.ts,null-adapter.ts,index.ts}
+src/lib/ai/retrieval/{types.ts,full-context.ts,vector-rag.ts,graph-rag.ts,n8n.ts}
+src/lib/ai/{query-enhancer.ts,playbook-vocab.ts}
+src/lib/ai/prompts/{extraction.v2.ts,summary.v1.ts,query-enhancer.v1.ts,risk.v1.ts}
+src/lib/ai/term-library/msa-instructor.json               synced copy of docs/reference/key-terms-msa-instructor.json
+src/lib/security/{guardrails.ts,patterns/,profanity-list.ts,competitors.ts}
+src/lib/services/{reminder-service.ts,summary-service.ts,crm-push-service.ts}
+src/lib/validation/{hhh-score.schema.ts,key-dates.schema.ts,playbook.schema.ts,escalation.schema.ts}
+supabase/functions/send-due-reminders/index.ts            written, undeployed
+scripts/{review-guardrails.ts,set-cohort.ts,daily-ops.ts,sync-refs.mjs}
+eval/lib/{golden-set.ts,matcher.ts,hhh-codes.ts,expect.ts}
+eval/scripts/ingest-golden-set.ts                          uploads the 10 golden-set PDFs under the eval account; writes manifest.json
+eval/datasets/msa-instructor/{golden-set.json,README.md,manifest.json,pdfs/}   pdfs/ git-ignored
+eval/runners/{risk-f1,hhh-human,hhh-judge,judge-precision,redteam,wrong-tool-calls,mep-acceptance,sample-week,satisfaction,ocr-accuracy}.ts
+eval/prompts/judge.v1.ts
+eval/redteam/attacks.json
+eval/export/{hhh-sheet.ts,foundry.ts,corrections.ts}
+eval/failures/{curate.ts,to-synthetic.ts,<prompt_version>/…}
+eval/datasets/README.md                                    provenance of the synthetic corpus (generator prompt, date, the two known Notice-Period label errors)
+eval/datasets/{msa-instructor,synthetic,risk-labels,ocr-sample}/ + hhh-questionnaire.csv
+```
+
+`package.json` scripts add `"eval:sync-refs": "node scripts/sync-refs.mjs"` (copies the two reference files) and `"eval:redteam": "tsx eval/runners/redteam.ts"`.
+
+### C. §8 build order — additions
+
+| Order | Spec | Delivers |
+|---|---|---|
+| 20 | `20-risk-and-playbook.md` | Placeholder tables, seed playbook, 501 routes, RiskPanel/EscalateOffer/PlaybookAdmin states, `risk-f1` SKIPPED |
+| 21 | `21-integrations-and-capability-registry.md` | Registry, `/settings` table, 501 contract, adapters + NullAdapters, `integration_events`, key dates + reminders |
+| 22 | `22-evaluation-hhh-judge-and-redteam.md` | `hhh_scores`, Review mode, judge runners, red team, exports, golden set, failure pool |
+| 23 | `23-observability-alerts-and-rollout.md` | `guardrail_events`, alert rules + nightly job, cohorts, KPI views |
+
+The schema section (order 1) now includes the v1.1 additions; the registry (21 §1) is built in v0.1 alongside the schema (PRD roadmap v0.1 "placeholder tables per P-3; capability registry (P-1)").
+
+### D. §9 release schedule — additions per PRD v1.1 roadmap
+
+v0.1 + placeholder tables and registry (21 §1–3, schema v1.1) · v0.2 renamed **MEP** + 36-term question-based extraction, reasoning, `mep-acceptance.ts` (05/06 v1.1, 22 §8) · v0.3 + summary (06 v1.1 §B, 07 v1.1 §B) · v0.4 + query enhancer, page/reasoning editing, **red-team seed set + `redteam.ts` (first run against the new chat endpoint; Alpha checkpoint B)** (08 v1.1 §B, 07 v1.1 §D, 22 §9, 18 v1.1 §B) · v1.0 + red team on every deploy as a hard gate, `guardrail_events` + `alert_rules` stub, rollout cohorts stub (22 §9, 23) · v1.1 + DOCX (stub → built), key-date reminders (21 §4, §7) · v1.2 + OCR (< 80% ⇒ re-upload), `compare.contracts` 501, `esign.docusign` stub · v2 planned keys only.

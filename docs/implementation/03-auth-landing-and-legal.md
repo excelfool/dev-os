@@ -172,3 +172,14 @@ Server Component. Reads the session; if absent, `redirect('/login')` (defence in
 - `tests/integration/profiles-trigger.test.ts` — one `profiles` row per new auth user, with `plan='free_trial'` and a `trial_ends_at` 14 days out.
 - `tests/unit/auth-form.test.tsx` — submit disabled until valid; each error string renders; password rule boundaries (7 vs 8 chars, letters-only, digits-only).
 - `tests/e2e/auth-confirmation.spec.ts` — with `NEXT_PUBLIC_EMAIL_CONFIRMATION_ENABLED=true` and the Supabase toggle on, sign-up shows the inbox message and `/auth/callback?code=…` lands on `/dashboard`.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+- **§11 `/settings`** gains the section `id="capabilities"` — "What ContractIQ can do today" — rendered from the capability registry (spec 21 §3), placed below the plan card and above the feedback opt-in switch; the plan card shows "Rollout group: {cohort}" when `profiles.rollout_cohort ≠ 'none'` (spec 23 §5).
+- **§10 authed shell** gains `ReminderBell` (spec 21 §7.3) in the navbar next to the user menu, and the footer's "Service status" link is joined by "What ContractIQ can do today" → `/settings#capabilities`.
+- **§3 middleware matcher** excludes `/api/webhooks/esign` (public, signature-verified — spec 21 §5 route 28) exactly as it excludes `/api/health`.
+- Route `/settings/playbooks` is protected like `/settings` (session required) and has **no navigation link** (spec 20 §4.5).
+
+**Superseded v1.0 lines (read the v1.1 value):** §4 `FeatureGrid` "10 NDA / 12 MSA terms" → **"10 NDA / 36 MSA terms"** (spec 05 v1.1 §A; the landing page must not advertise the retired library).

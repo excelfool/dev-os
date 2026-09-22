@@ -101,3 +101,11 @@ Mirrors §1–§3 exactly (spec 03 §5): 90-day PDF retention post last access; 
 - `tests/integration/delete-contract.test.ts` — 204; every cascaded table is empty for that contract; a Storage failure still deletes the row; another user's id returns 404.
 - `tests/integration/delete-account.test.ts` — asserts the `profiles` row is gone **because of the `auth.users` cascade** (the test deletes only the auth user and checks the chain), not incidentally; the confirmation email is dispatched with the pre-deletion address and a send failure still returns 204; all Storage objects under the prefix are gone; every table has zero rows for the user; the auth user no longer exists; the session is invalid afterwards.
 - `tests/e2e/deletion.spec.ts` — deleting a contract from the dashboard removes the row and the toast appears; the results page for that id then 404s.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+- **Contract deletion (§1) and account erasure (§3)** cascade through the 14 v1.1 tables as well (`integration_connections` via `profiles`, with its Vault secret removed by `DELETE /api/account` as one more cleanup step before `deleteUser`): `risk_flags`, `escalations`, `integration_events`, `key_dates` → `reminders`, `hhh_scores`, `guardrail_events`, `contract_chunks` via `contracts`; `playbooks` → `playbook_rules` via `profiles`. The seeded default playbook (`user_id IS NULL`) is never deleted by a user erasure. `tests/rls/placeholders.test.ts` item 15 (spec 02 v1.1 §E) is the cascade test.
+- **Data minimisation:** `guardrail_events` and `integration_events` store hashes only; `hhh_scores` stores answers and notes, never contract text. Exports (`eval/export/*`) include contract text only for eval datasets or `feedback_opt_in = true` owners (spec 22 §5, §10).
+- **Summary** (`contracts.summary_md`) is contract-derived content and is deleted with the contract; it is never sent to a third party other than OpenAI at generation time.

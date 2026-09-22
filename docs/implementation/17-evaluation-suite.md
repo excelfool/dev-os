@@ -85,3 +85,40 @@ Live-model evals cost money and vary; these do not, so they gate every PR:
 ## 7. Cost of running evals
 
 A full live-model release run is ~50 extraction calls ≈ **$5** plus ~50 chat calls ≈ **$1**. Eval spend is tagged in `openai_calls` by running under a dedicated operator user id, so it can be excluded from the production cost rollup.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — §10 R-24, R-26, R-29, R-32, R-23, R-21b)
+
+Everything about the HHH layer, the judge, red teaming, the instructor golden set, the synthetic corpus, the failure pool and the exports is specified in **spec 22**; this section records what changes in this file's own sections.
+
+### A. Datasets (§1)
+
+| Directory | Change |
+|---|---|
+| `msa-instructor/` | **Added — the primary MSA set** (dataset 1): `golden-set.json` + `pdfs/<tab>.pdf` (spec 22 §1). The eval-set F1/page/calibration runners take `--dataset msa-instructor` by default for MSA; `msa-labelled/` (SME 20) is added when available and reported separately, never merged |
+| `synthetic/` | Added (dataset 3): 6 NDA + 4 MSA, provenance in `eval/datasets/README.md`, rows tagged `Dataset_Provenance=synthetic` and excluded from any "real-contract" headline number |
+| `risk-labels/` | Added (dataset 5), consumed by `risk-f1.ts` (spec 20 §7) |
+| `hhh-questionnaire.csv` | Byte copy of `docs/reference/hhh-questionnaire-instructor.csv` (spec 22 §2) |
+| `redteam/` (`eval/redteam/attacks.json`) | Spec 22 §9 |
+| Label file schema | gains `question` per term (from the golden set's `question_as_asked` or the library's `question`) and an optional `expected_reasoning_keywords[]` used only for reporting |
+
+The MEP acceptance (`mep-acceptance.ts`, spec 22 §8) replaces "runs against CUAD alone" as the v0.2 exit criterion when the golden set is present; the CUAD-only fallback (A-15) remains for NDA.
+
+### B. Runners (§2) — added rows
+
+`risk-f1.ts` (SKIPPED) · `hhh-human.ts` · `hhh-judge.ts` (SKIPPED < 50 human rows) · `judge-precision.ts` (SKIPPED < 50) · `redteam.ts` · `wrong-tool-calls.ts` (always SKIPPED) · `mep-acceptance.ts` · `sample-week.ts` — all in spec 22 §12; `run-all.ts` executes every runner and emits one row each, with **`SKIPPED` never upgraded to `PASS`** (P-5). `extraction-f1.ts` gains `--dataset`, `Matcher_Version`/`Term_Library_Version` stamping, the cross-library comparison refusal and the re-baseline output (spec 22 §1), and appends every miss to `eval/failures/` (spec 22 §11).
+
+### C. Report schema (§3)
+
+Columns become, in the PRD §10 order followed by the three v1.1 additions: `Contract_ID | Contract_Type | Term_Name | Expected_Value | AI_Extracted_Value | Expected_Page | AI_Page | Confidence_Score | F1_Match | Expert_Rating | Prompt_Version | Notes | Matcher_Version | Term_Library_Version | Dataset_Provenance` (this supersedes §3's `Notes | Prompt_Version` order, which had the last two columns swapped relative to PRD §10). `<release>.summary.json` gains the fields listed in spec 22 §12 and a `rows[]` gate list covering every runner. Reports are also exported to `eval/export/foundry.jsonl` (spec 22 §10) and the HHH sheet (spec 22 §5).
+
+### D. Post-launch monitoring (§5)
+
+Adds: weekly HHH scoring — human rows by the legal SME through the sheet round-trip (spec 22 §5, §7: all 200/week while the judge gate is unmet, 20 % once met; owners may additionally score their own contracts in Review mode), the judge for the rest once gated; human-vs-judge drift on the overlap; `alert_rules`-driven thresholds (spec 23 §2); the red-team run on every deploy. The per-deploy regression suite now runs on the instructor set (MSA) + labelled NDA set.
+
+### E. Cost (§7)
+
+Add ≈ $5 per instructor-set run (10 extractions + summaries), ≈ $1 for the red-team set, and the judge budget (≈ $40/month at 200 samples/week, PRD §12) — all under the dedicated eval user id and `purpose='judge'` for the judge, excluded from cost per contract.
+
+**Superseded v1.0 lines:** §6 "the correct 10/12 target terms for the type" → **10/36**, with each MSA term's verbatim question and answer format (spec 06 v1.1 §E).

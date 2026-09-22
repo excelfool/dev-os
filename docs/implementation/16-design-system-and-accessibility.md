@@ -104,3 +104,29 @@ First-time users see three contextual, dismissible tips, each shown **once** (pe
 - `tests/unit/confidence-badge.test.tsx` — icon and text are present for every band, so the component still conveys the band with colour removed.
 - `tests/unit/tooltips.test.tsx` — every term library entry renders a tooltip that opens on focus.
 - `tests/e2e/responsive.spec.ts` — tablet tabs and the mobile bottom-sheet chat render and function.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+### A. Required in-product copy (§6) — additions
+
+| Where | Copy |
+|---|---|
+| Limitations ("About these results" and `/settings#capabilities`) — assembled from the registry, spec 21 §3 | "ContractIQ extracts standard NDA and MSA terms from English-language, text-layer PDFs. It does not provide legal advice, does not yet handle scanned PDFs or DOCX, does not support non-English contracts, does not yet flag risks, and may miss highly unusual or bespoke clauses." (clauses drop out as capabilities become `built`) |
+| `RiskPanel` empty state | "Risk flags arrive in Phase 1. ContractIQ will check each contract against your playbook and cite the clause behind every flag." |
+| High-severity flag label (built only) | "High risk — recommend human/legal review" |
+| `EscalateOffer` stub note | "A human reviewer hand-off arrives in Phase 1." |
+| Rule-3 off-scope reply | "I can only answer about this contract. Try rephrasing your question to point at a clause, a term or a page." |
+| `.docx` upload | "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1." |
+| Low OCR confidence (once OCR ships) | "This scan is too low-quality to read reliably ({n}% confidence). Please upload a native digital PDF or a clearer scan." |
+| `ReviewNeededNotice` | "We couldn't find {n} required term(s): {names}. Please verify these in the document before relying on this review." |
+| `HIGH_FLAGS_UNDECIDED` | "Decide on each High-risk flag before marking the review complete." |
+| Capability status pills | "Available now" / "In progress" / "Planned" |
+| `/settings` capability section heading | "What ContractIQ can do today" |
+
+### B. Accessibility notes
+
+`StatusPill`, `SeverityBadge` and the disabled import options carry icon + text, never colour alone; every questionnaire code in Review mode is a `fieldset` with the verbatim question as `legend`; `aria-disabled` placeholder options are focusable and read their phase text via `aria-describedby`.
+
+**Superseded v1.0 lines:** §3 Loading row "the literal three steps from the PRD" → the **four** PRD v1.1 steps (spec 06 v1.1 §B), the third labelled "Summarising".

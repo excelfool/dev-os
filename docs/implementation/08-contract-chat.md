@@ -191,3 +191,66 @@ Token budget per turn: ≤ 15,000 document + ≤ ~8,000 history + ~400 system �
 - `tests/integration/chat.test.ts` — `409 NOT_PROCESSED` before extraction; `GET` lazily creates the session; 201st message still returns 200 messages ascending; rate limit at 31 messages/hour; a timeout preserves the user message and returns `504`; the assistant row records `latency_ms` and token counts.
 - `tests/e2e/chat-history.spec.ts` — ask → answer with a clickable citation chip that navigates the viewer → refresh → history persists.
 - Eval: chat groundedness ≤ 5% hallucinated over 50 expert-reviewed Q&A pairs, monthly (spec 17).
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — R-22, R-28, §7 RetrievalStrategy, Flow 4 steps 2 and 7, §9 harmless rules)
+
+### A. Turn pipeline, revised (§3)
+
+| # | Step | Detail |
+|---|---|---|
+| 5a | **Inbound guardrail screen** (spec 13 v1.1 §A) — `screenInbound(message)` | `block` ⇒ the assistant reply is the rule's fixed reply (no model call), persisted as an assistant message with `query_class=null`, `citation_verified=true`, `cited_pages=[]`, `latency_ms` measured; `guardrail_events` records the block. `flag` ⇒ continue |
+| 5b | **Greeting / small-talk pre-check** — `isGreeting(message)` in `query-classifier.ts`: the trimmed message is ≤ 6 words, matches `/^(hi|hello|hey|yo|thanks|thank you|cheers|ok|okay|good (morning|afternoon|evening)|how are you)\b[\s!.?,]*(there|contractiq)?[\s!.?]*$/i`, and contains **no** contract signal (`CONTRACT_WORD`/`CONTRACT_STEM`) | `true` ⇒ **no classifier, no enhancer, no document, no model call**: the fixed reply "Hi — I'm ContractIQ. Ask me anything about this contract, for example: *Is there an auto-renewal clause?*" is persisted as the assistant message (`query_class=null`, `cited_pages=[]`, `citation_verified=true`, `latency_ms` measured) and `activity_events` `chat_message_sent` carries `greeting: true`. This is the executable form of PRD §7 "greetings … never touch the document store" |
+| 6 | Classify (unchanged, no API call) | `contract` / `history` / `both` |
+| 6a | **Query enhancement (§B)** — only for `query_class === 'contract'` | `retrieval.query_enhancer` — greetings and `history` never touch it |
+| 7 | Assemble `messages[]` through the **`RetrievalStrategy`** (§D) | full-context today |
+| 8–9 | Model call, citation validation (unchanged) | |
+| 9a | **Outbound guardrail screen** — `screenOutbound(answer)` | `rewrite` ⇒ the stored content is the rule's replacement; event recorded |
+| 10 | Persist; the user row also stores `enhanced_query`; `processing_runs` row `stage='chat'` (spec 23 §3) | |
+| 10a | **Unresolved-turn counter** (spec 20 §5.1) | response gains `escalation_offer: boolean` |
+
+**Success `200`** adds `"escalation_offer": false` and, on the user message, `"enhanced_query": "…"|null`.
+
+### B. Query enhancer — `src/lib/ai/query-enhancer.ts` + `prompts/query-enhancer.v1.ts`
+
+- Gated by the classifier: runs **only** when `query_class === 'contract'` (a `both` question keeps the user's wording because it also references the conversation; `history` skips it; greetings never reach the classifier at all — step 5b answers them with no model call — "never touch the document store").
+- One small call: `purpose='query_enhancer'`, model `OPENAI_MODEL_ENHANCER` (default `gpt-4o`; the PRD trade table names a cheaper model as the *candidate* — switching is a config change once spec 17's chat-groundedness eval shows no loss), temperature 0.2, `max_tokens` 120, JSON mode, **5 s timeout, single attempt, never retried**. Prompt: "Rewrite the user's question about a contract into one precise, self-contained retrieval query: expand pronouns using the conversation, name the clause type in contract vocabulary (e.g. 'auto-renewal', 'termination for convenience', 'limitation of liability'), keep every constraint the user stated, add nothing the user did not ask. Return `{ "query": "…" }`."
+- Use: the rewrite is inserted into the system context as `Search focus: {enhanced}` after the document block; the user's original message stays the last user turn, so the answer still addresses what they asked and the "Based on the document…" framing is unchanged.
+- Failure or timeout ⇒ `enhanced_query = null`, proceed with the raw question — the enhancer can add latency but can never block a turn; its call is inside the 15 s chat budget (≈ 1 s typical).
+- Cost ≈ $0.001/turn, tagged `purpose='query_enhancer'`; it is part of `chat_usd` in `v_kpi_cost_per_contract`.
+- Registry: `retrieval.query_enhancer` flips `planned → built` with this build; the classifier gate is the reason the enhancer is safe to ship without a retrieval index.
+
+### C. Escalation after ~3 unresolved turns (harmless rule 4, Flow 4 step 7)
+
+The counter and its definition are in spec 20 §5.1; `EscalateOffer` (spec 20 §4.2) is rendered by `ChatPanel` under the last assistant bubble when `escalation_offer` is true — the stub note today, the hand-off button once `risk.escalate` is built. The composer additionally accepts the `/human` command (built only) → `trigger='user_request'`. The model's own text never promises escalation: the system prompt keeps "You cannot take any action on the contract".
+
+### D. `RetrievalStrategy` — `src/lib/ai/retrieval/`
+
+```ts
+export interface RetrievalStrategy {
+  readonly key: 'retrieval.full_context' | 'retrieval.vector' | 'retrieval.graph' | 'retrieval.n8n';
+  /** Returns the context blocks to place before the history, or delegates the whole answer. */
+  buildContext(input: { contract: { id: string; contract_text: string; page_count: number };
+                        question: string; enhancedQuery: string | null; queryClass: QueryClass; history: ChatMessage[] })
+    : Promise<{ mode: 'context'; blocks: string[] } | { mode: 'delegated'; answer: string; cited_pages: number[] }>;
+}
+```
+
+| File | Status | Behaviour |
+|---|---|---|
+| `full-context.ts` | **built** | Returns the full `contract_text` block for `contract`/`both`, nothing for `history` — exactly §5 today |
+| `vector-rag.ts` | **stub** | Class exists; `buildContext` returns `notImplemented('retrieval.vector')`-equivalent — it throws `AppError NOT_IMPLEMENTED` — and is **never selected** while the capability is `stub`. The `contract_chunks` table (`id, contract_id, user_id, page_number, chunk_index, content, embedding vector(1536), created_at`, spec 02 v1.1 §A) is present and unused; no code writes it |
+| `graph-rag.ts` | **planned** | File exports the key and a class whose every method throws `NOT_IMPLEMENTED('retrieval.graph')`; registry only |
+| `n8n.ts` | **stub** | `ExternalRagAdapter` (spec 21 §4): when `N8N_RAG_WEBHOOK_URL` is set, POSTs `{ contract_id, question, enhanced_query, history }` with `Authorization: Bearer N8N_RAG_TOKEN` (10 s timeout) and returns `{ mode: 'delegated', answer, cited_pages }` which then passes the same citation validation as a model answer; when unset, `getExternalRagAdapter()` is the NullAdapter and selecting the strategy returns **`501 NOT_IMPLEMENTED` with key `retrieval.n8n`** |
+
+Selection: `RETRIEVAL_STRATEGY` env (`full_context` default | `n8n`), read once in `chat-service`; `vector`/`graph` are rejected at boot while their registry status is not `built`. Contract text stays the single source of truth for every strategy (PRD §7).
+
+### E. Tests added
+
+- `tests/unit/query-enhancer.test.ts` — runs only for `contract` class; a timeout yields `null` and the turn proceeds; the system context contains `Search focus:` only when a rewrite exists.
+- `tests/unit/greeting.test.ts` + `tests/integration/chat.test.ts` — `"hi"`, `"Hello there!"` and `"thanks"` on an **empty** session ⇒ `isGreeting` true, the fixed reply, **no `openai_calls` row, no `enhanced_query`, no document block and no `Search focus:`**; `"hi, is there an auto-renewal clause?"` ⇒ not a greeting (contract signal) ⇒ classified `contract` and enhanced.
+- `tests/ai/chat-prompt.test.ts` — snapshot with and without the enhancer line; `history` never includes the document or the enhancer.
+- `tests/unit/retrieval-strategy.test.ts` — `full-context` returns the document for `contract`/`both`; `vector-rag`/`graph-rag` throw `NOT_IMPLEMENTED` with their keys; `n8n` with no URL yields `NOT_CONFIGURED`; with a mocked URL the delegated answer passes citation validation.
+- `tests/integration/chat.test.ts` — the user row stores `enhanced_query`; three consecutive fallbacks set `escalation_offer=true` on the third response; a `processing_runs` `stage='chat'` row per turn; a blocked inbound message writes a `guardrail_events` row and no `openai_calls` row.
+- `tests/e2e/placeholders.spec.ts` — after three unresolved turns the stub note "A human reviewer hand-off arrives in Phase 1." is visible and no button exists.

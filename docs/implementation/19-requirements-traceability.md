@@ -197,3 +197,195 @@ These are **not gaps in the specs** — each has a concrete, buildable decision 
 9. **The public status page** is the Uptime Robot public status page rather than an in-app route (14 §2b). Both documents require a status page updated within 30 minutes of a P0 but name no artefact.
 10. **Quota is consumed at upload and not refunded when a contract is deleted** (13 §5, 04 §2 step 7b). The PRD defines tiers in "analyses" and separately guarantees delete-anytime, but never says how the two interact. A failed upload and a failed extraction retry are both free; an uploaded-but-unprocessed contract is not.
 11. **A `processing` contract older than 5 minutes is force-failed** to `error` with a retryable code (06 §3a). Neither document specifies a stuck-processing recovery rule.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21) — traceability for every PARTIAL / MISSING row in `docs/engineering/delta-v1.1.md`
+
+Legend: **stub** / **planned** / **built** as in the registry (spec 21 §1.2). "Where" names the spec text that makes the row buildable; no row is marked without a location.
+
+### Q. Header, personas, metrics (delta HDR-1 … L2)
+
+| Delta row | Where |
+|---|---|
+| HDR-1 source of truth v1.1 | Every v1.1 amendment header; 00 v1.1 §A |
+| §2 Paralegal persona (HIL, playbooks, Review mode, High-flag rule) | 20 §1, §4.1, §4.3 (human decides every High flag); 22 §4 (Review mode); 21 §1.2 `playbook.manage` |
+| NS North Star = contracts processed with review completed, WoW, +15%, ≥ 4/user/month | 23 §4.1 `v_kpi_north_star_weekly`, `v_kpi_contracts_per_user_monthly`; 14 v1.1 §A relabel |
+| L1 time-to-clarity ≤ 15 min | 23 §4.2 `v_kpi_time_to_clarity` |
+| L1 task completion ≥ 85% funnel | 23 §4.3 `v_kpi_task_completion` |
+| L1 % helpful / % honest / % harmless from `hhh_scores` | 22 §3, 23 §4.4 `v_kpi_hhh_weekly`; floors in 18 v1.1 §B |
+| L2 risk-detection F1 ≥ 90%, SKIPPED | 20 §7 `risk-f1.ts`; 22 §12; 18 v1.1 §B GA row |
+
+### R. Nine components, roadmap, dependencies, risks (delta Comp 1 … Internal risks)
+
+| Delta row | Where |
+|---|---|
+| Comp 1 intake: `import.*` planned, disabled options naming phase | 21 §1.2, §5 route 31, §8; 04 v1.1 §A |
+| Comp 2 PDF→text: `ingest.docx` / `ingest.ocr` stubs, `OcrAdapter`, `NullAdapter`, `contracts.ocr_confidence`, < 80% ⇒ re-upload, DOCX 422 | 21 §4, §4.1; 04 v1.1 §B; 06 v1.1 §D; 02 v1.1 §B |
+| Comp 4 36-term MSA library with question / answer_format / display_rank | 05 v1.1 §A–§C; 06 v1.1 §A |
+| Comp 5 playbook check (`playbook.manage`) | 20 §2.1–2.4, §3 routes 22–24, §4.5 |
+| Comp 6 rank risks (`risk.flag`) | 20 §2.5, §3 route 19, §4.1, §6 |
+| Comp 7 decide / escalate (`risk.escalate`; human decides every High flag) | 20 §2.6, §3 route 21, §4.2, §4.3, §5 |
+| Comp 8 summary planned first build item; `qa.cross_contract` planned | 06 v1.1 §B; 07 v1.1 §B; 21 §1.2 |
+| Comp 9 CRM push (`CrmAdapter`, `integration_events`, route 501) | 21 §4, §5 route 27, §6 |
+| Cross-cutting feedback incl. `hhh_scores` | 22 §3–§4 |
+| v0.1 placeholder tables + registry | 02 v1.1 §A; 21 §1; 00 v1.1 §C–§D |
+| v0.2 MEP human-review acceptance (F1 ≥ 82% on instructor set, ≥ 50 human rows in `hhh_scores`) | 22 §8 `mep-acceptance.ts`; 18 v1.1 §B Alpha row |
+| v0.3 summary · v0.4 query enhancer + page/reasoning editing · v1.0 red team, `guardrail_events`, `alert_rules`, cohorts · v1.1 DOCX, reminders · v1.2 OCR < 80%, `compare.contracts`, `esign.docusign` · v2 planned keys | 00 v1.1 §D; 06 v1.1 §B; 08 v1.1 §B; 07 v1.1 §D; 22 §9; 23 §1, §2, §5; 21 §4, §7; 20 §3 route 25; 21 §1.2 |
+| Dependency: instructor golden set in `eval/datasets/msa-instructor/pdfs/` before v0.2 | 22 §1 dataset 1; 18 v1.1 §E |
+| Dependency: majority-agreement risk labels before US-013 | 22 §1 dataset 5; 20 §7 (`agreement ≥ 2`) |
+| External dep OCR vendor (NullAdapter, ~100-contract sample) | 21 §4 (NullAdapter); 21 §1.2 `ingest.ocr` row flip condition + §4.1 (built only after `ocr-accuracy.ts` passes on `eval/datasets/ocr-sample/`, ~100 labelled scanned SMB contracts — 22 §12); 18 v1.1 §E |
+| External dep CRM vendor (`CrmAdapter`, one vendor at a time) | 21 §4 (`CrmAdapter` + NullAdapter; one vendor enforced by the `serverConfig` refine that rejects both OAuth client pairs, 01 v1.1 §B) |
+| Internal risk: re-baselining after the 36-term library; matcher version; never compare across libraries | 22 §1 (`MATCHER_VERSION`, `Term_Library_Version`, re-baseline step); 17 v1.1 §B–§C |
+| Internal risk: risk flags without ground truth ⇒ `risk-f1` SKIPPED | 20 §7 |
+
+### S. User flows and stories (delta Flow 2 step 3 … US-017)
+
+| Delta row | Where |
+|---|---|
+| Flow 2 step 3 `/settings` capability table | 21 §3 |
+| Flow 3 step 1 disabled import/DOCX/scanned options | 21 §8; 04 v1.1 §A |
+| Flow 3 step 4 four-step indicator incl. "summarising" | 06 v1.1 §B (`ProcessingSteps`) |
+| Flow 3 step 5 summary above terms; Risk panel empty state naming phase | 07 v1.1 §A–§B; 20 §4.1 |
+| Flow 3 step 8 "High risk — recommend human/legal review" | 20 §4.1 `HighRiskLabel`; 07 v1.1 §F; 16 v1.1 §A |
+| Flow 3 step 10 Review mode → `hhh_scores` | 22 §4; 07 v1.1 §E |
+| Flow 4 step 2 query enhancement gated by the classifier | 08 v1.1 §B |
+| Flow 4 step 7 escalation offer after ~3 turns; `/escalate` stub | 20 §5.1, §4.2; 08 v1.1 §C |
+| US-005 custom terms carry `reasoning` | 06 v1.1 §A (custom terms share the schema) |
+| US-009 edit value, page, reasoning ≤ 2 s; `original_ai_value/page/reasoning` | 07 v1.1 §D; 02 v1.1 §B; 12 v1.1 §B route 9 |
+| US-013 (every acceptance clause) | severity/citation/why/confidence → 20 §2.5, §6; absence rules DPA/BAA → 20 §2.4; High ⇒ human decision before complete → 20 §4.3; "this flag was wrong" → 20 §4.4; F1 ≥ 90% → 20 §7, 18 v1.1 §B; **until built:** 501 `risk.flag` → 20 §3; `RiskPanel` empty state → 20 §4.1; `risk_f1` SKIPPED → 20 §7 |
+| US-014 (every clause) | upload/edit rules, one active per type per workspace → 20 §2.1, §4.5, §3 routes 22–24; `rule_type` presence/absence/threshold/pattern, severity, rationale → 20 §2.2; seeded default MSA playbook (five rules) → 20 §2.4; versioned, version on every flag → 20 §2.2, §2.5; **until built:** tables with RLS → 02 v1.1 §A/§D; `PlaybookAdmin` hidden → 20 §4.5; routes 501 `playbook.manage` → 20 §3 |
+| US-015 (every clause) | one extra GPT-4o call, ≤ 200 words, obligations per party, `contracts.summary_md`, rendered above terms, `[Page X]` per factual sentence, ≤ 10 s P95, ≤ $0.03, scored in `hhh_scores` → 06 v1.1 §B; 07 v1.1 §B; 22 §2 (summary subject type) |
+| US-016 (every clause) | connect CRM once → 21 §5 routes 35–37, §6a `integration_connections` (per-user, tokens in Vault); pushed automatically after processing → 06 v1.1 step 11b, 21 §5 route 27; display_rank ≤ 12 terms, idempotent per contract, `integration_events`, failed push never blocks → 21 §5 route 27, §6; **until built:** `CrmAdapter` + `NullAdapter` `NOT_CONFIGURED`, 501 with key → 21 §4, §5 |
+| US-017 (every clause) | `key_dates` derived from Contract end date / Notice to not auto renew / Renewal Period / Auto Renewal → 21 §7.2; 30/60/90 offsets → 21 §7.1, route 30; email + in-app → 21 §7.3; links to contract and term → 21 §7.4; edit re-derives → 21 §7.2, 07 v1.1 §D; **until built:** tables, `pg_cron` + `send-notification` stub → 21 §7.3, 02 v1.1 §C |
+| FR-02 DOCX ⇒ 422 `UNSUPPORTED_FORMAT` | 04 v1.1 §B; 01 v1.1 §A |
+| FR-04 "Why?" shows `source_sentence` and `reasoning` | 07 v1.1 §C |
+| FR-13 RLS on placeholder tables | 02 v1.1 §D, §E |
+| FR-14 single paste-and-run file | `supabase-schema.sql` v1.1 section; 02 v1.1 |
+
+### T. Agent table (delta rows)
+
+| Agent | Where |
+|---|---|
+| Ingestion & OCR (DOCX/OCR stub, < 80% ⇒ reject) | 21 §4.1; 04 v1.1 §B |
+| Extraction agent: `reasoning` in output; required field not found ⇒ flag for review | 06 v1.1 §A, §C |
+| Summariser | 06 v1.1 §B |
+| Playbook loader (versioned rules; human confirms before activation) | 20 §2.2, §4.5 |
+| Risk & Compliance (suggests; human decides every High) | 20 §4.1, §4.3 |
+| Contract Chat (+ enhanced query; ~3 turns ⇒ offer; takes no action) | 08 v1.1 §B–§C |
+| Comparison (clause diff; new High ⇒ flagged; stub 501) | 20 §3 route 25 |
+| CRM pusher (failure ⇒ notice, retry, never blocks) | 21 §5 route 27 |
+| Reminder scheduler (30/60/90; re-derive on edit) | 21 §7 |
+| Escalation router (`escalations` row; human closes) | 20 §2.6 (`closed_by` service-role only) |
+| Feedback logger + `hhh_scores` | 22 §3–§4 |
+
+### U. Constraints, technical requirements, grounding, prompts (delta §5–§8 rows)
+
+| Delta row | Where |
+|---|---|
+| Summary ≤ 10 s P95 | 06 v1.1 §B (10 s timeout, deferral rule) |
+| Cost incl. summary ≤ $0.03 | 06 v1.1 §B input bounding; 23 §4.5 `summary_usd` |
+| Sampling ≥ 200/week; cohorts 1–2% → 2–10% → GA; `profiles.rollout_cohort`; 20% human, judge the rest | 22 §7; 23 §5; 18 v1.1 §B; 02 v1.1 §B |
+| Backend: planned routes 501 with capability key (P-4) | 21 §1.3; 12 v1.1 §A; 01 v1.1 §A |
+| Integrations layer: interface + NullAdapter (P-2) | 21 §4 |
+| `LlmProvider` `model.extraction` / `model.chat` / `model.judge` separately configurable (R-31) | 06 v1.1 §A; 01 v1.1 §B; `.env.example` v1.1 |
+| Eval suite: every §10 metric has a runner; unmeasurable ⇒ SKIPPED (P-5) | 22 §12; 18 v1.1 §C |
+| `max_tokens` 3,000 / 1,000 / 500; temperature 0.2 summary | 06 v1.1 §A–§B; 01 v1.1 §B |
+| Judge model separate and stronger, never in a product prompt | 22 §6.1 (`openai-client` refusal rule) |
+| Model-choice trade table | 06 v1.1 §A (per-purpose ids), 08 v1.1 §B (cheaper-model candidate), 22 §6 (judge) — the trade numbers are PRD text; the spec makes each row switchable by config and measured by the eval |
+| `RetrievalStrategy`: full-context built, vector stub with `contract_chunks vector`, graph planned, n8n adapter | 08 v1.1 §D; 02 v1.1 §A; 21 §4 `rag/` |
+| Extraction prompt asks each term's question + answer_format (R-21c) | 06 v1.1 §A |
+| Failure-seeded pool `eval/failures/` (R-23) | 22 §11 |
+| Summary prompt; risk prompt (conditional CoT per rule) | 06 v1.1 §B; 20 §6 |
+
+### V. Harmless policy, red teaming (delta §9 rows)
+
+| Rule | Status (PRD §9) | Where |
+|---|---|---|
+| 1 profanity/hate in or out; `guardrail_events` | stub | 13 v1.1 §A row 1 |
+| 2 competitor disparagement | stub | 13 v1.1 §A row 2 |
+| 3 stay within the contract; "I can only answer about this contract" + rephrase; injection screened and logged | built | 13 v1.1 §A rows 3 (two keys) |
+| 4 escalate after ~3 turns / High flag / user request; route 501; table present | stub | 20 §5, §3 route 21; 13 v1.1 §A row 4 |
+| 5 never solicit PII | stub | 13 v1.1 §A row 5 |
+| Red teaming: `eval/redteam/` every deploy; `harmless.redteam_pass_rate` gate | 22 §9; 18 v1.1 §B, §D |
+
+### W. Evaluation strategy (delta §10 rows)
+
+| Delta row | Where |
+|---|---|
+| Dataset 1 instructor golden set (primary) · 3 synthetic corpus with provenance README · 5 majority-agreement risk labels · 6 corrections + HHH rows (opt-in) | 22 §1; 17 v1.1 §A |
+| HHH questionnaire H1–H11, O1–O9, A1–A9 (29 codes, verbatim, polarity, per-code column) | 22 §2 (the table); `hhh_scores` columns `h1…a9` 02 v1.1 §A / `supabase-schema.sql` §A8 |
+| `hhh_scores` table (contract_id, term_id/message_id, evaluator human/llm-judge, boolean per code, pillar verdicts, judge model, prompt version, created_by) + sheet-compatible export | 22 §3, §5 |
+| LLM-as-judge: `hhh-judge.ts`, `judge-precision.ts`, P/R ≥ 0.70 gate, SKIPPED until 50 human rows, re-measure on change | 22 §6 |
+| Eval plan rows: risk F1 / HHH human / HHH judge / judge P/R / red team | 22 §12; 20 §7 |
+| Monitoring: PASS/FAIL/SKIPPED, never PASS when unmeasurable | 22 §12; 18 v1.1 §C |
+| Weekly drift incl. human-vs-judge overlap | 22 §7; 14 v1.1 §D |
+| Report `Prompt_Version` + matcher version | 22 §1, §12; 17 v1.1 §C |
+| Foundry JSONL `eval/export/foundry.jsonl` | 22 §10 |
+
+### X. Production readiness (delta §11 rows)
+
+| Delta row | Where |
+|---|---|
+| HHH table: weekly scoring on H1–H11 / O1–O9 / A1–A9; 36-term overwhelm mitigated by display_rank ≤ 12 | 22 §7 (weekly), §2; 05 v1.1 §C |
+| Launch stages Alpha / Measurement (1–2%) / Beta (2–10%) / GA with HHH floors, ≥ 200 samples/week, ≥ 50 human rows, judge P/R, red-team 100%, page accuracy ≥ 92%, risk F1 condition | 18 v1.1 §B |
+| Four-reference threshold rationale | 18 v1.1 §B intro |
+| Observability rows: cost, time per task, error rate per component (stage names components 1–9), wrong guardrail triggers, wrong tool calls SKIPPED, task adherence, intent resolution + escalation rate, content safety, HHH alert thresholds (`alert_rules` + nightly job → `alert_events`), budget | 23 §3 (mapping), §1, §2, §4; 02 v1.1 §B (`processing_runs.stage`) |
+| Accountability: HIL paths per agent; escalation route; limitations copy incl. "does not yet flag risks"; registry at `/settings` | §T above; 20 §3 route 21; 21 §3; 16 v1.1 §A |
+| Transparency: benchmarks incl. HHH %, matcher + prompt version on `/trust`; disclosures incl. reasoning and registry | 15 §2 `/trust` now publishes HHH percentages (`v_kpi_hhh_weekly`), `Matcher_Version` and `Prompt_Version` from the latest report (spec 22 §12 summary) and links `/settings#capabilities`; reasoning disclosure 07 v1.1 §C |
+| Reliability & Safety: injected instructions screened and logged; health monitoring via `guardrail_events`, `alert_rules` | 13 v1.1 §A `prompt_injection`; 23 §6; 14 v1.1 §E |
+
+### Y. Appendix A — P-1 … P-7
+
+| P | Where |
+|---|---|
+| P-1 registry `src/lib/capabilities.ts`, `GET /api/capabilities`, `/settings` table | 21 §1–§3 |
+| P-2 interface + `NullAdapter` per integration under `src/lib/integrations/<name>/` returning `NOT_CONFIGURED` | 21 §4 |
+| P-3 placeholder tables in the SQL with RLS and `-- capability:` comment | `supabase-schema.sql` v1.1 section; 02 v1.1 §A, §D |
+| P-4 routes registered, `501 NOT_IMPLEMENTED` with capability key; one new `AppError` code | 21 §1.3; 12 v1.1 §A; 01 v1.1 §A |
+| P-5 runner + `SKIPPED` row per unmeasurable metric | 22 §12; 20 §7; 18 v1.1 §C |
+| P-6 UI hidden, not absent (`<Capability>` wrapper; empty state naming phase; E2E asserts hidden) | 21 §1.4; 20 §4; 07 v1.1 §B, §E; 18 v1.1 §A E2E |
+| P-7 spec per placeholder under `docs/implementation/` | this file set: 20, 21, 22, 23; 00 v1.1 §C |
+
+### Z. Appendix B — capability registry keys (all 36)
+
+| Key(s) | Status | Stub artefacts → where |
+|---|---|---|
+| `ingest.pdf_text`, `classify.contract_type`, `extract.key_terms`, `qa.single_contract`, `retrieval.full_context`, `export.csv_pdf` | built | 21 §1.2 (registry rows); existing specs 04, 06, 05 v1.1 (36-term library), 08, 15 |
+| `ingest.docx` | stub | 21 §4 (`DocxExtractor`), §4.1 (422 `UNSUPPORTED_FORMAT`) |
+| `ingest.ocr` | stub | 21 §4 (`OcrAdapter`, NullAdapter), 02 v1.1 §B (`ocr_confidence`) |
+| `import.drive` / `import.dropbox` / `import.sharepoint` | planned | 21 §1.2, §5 route 31, §8 |
+| `extract.summary` | planned → first build item | 06 v1.1 §B |
+| `playbook.manage` | stub | 20 §2.1–2.4, §4.5, §3 |
+| `risk.flag` | stub | 20 §2.5, §3, §4.1, §7 |
+| `risk.escalate` | stub | 20 §2.6, §3 route 21 |
+| `redline.word`, `qa.cross_contract`, `retrieval.graph`, `billing` | planned | 21 §1.2 (registry only); `redline`/`graph` NullAdapters 21 §4 |
+| `retrieval.query_enhancer` | planned → first build item | 08 v1.1 §B |
+| `retrieval.vector` | stub | 08 v1.1 §D; `contract_chunks` 02 v1.1 §A |
+| `retrieval.n8n` | stub | 08 v1.1 §D; 21 §4 `rag/` (config URL, 501 when unset) |
+| `compare.contracts` | stub | 20 §3 route 25 |
+| `reminders.key_dates` | stub | 21 §7 |
+| `crm.hubspot` / `crm.salesforce` | stub | 21 §4, §5 route 27, §6 |
+| `esign.docusign` | stub | 21 §4, §5 route 28 |
+| `eval.golden_set_instructor` | planned → first build item | 22 §1 |
+| `eval.hhh_human` | planned → first build item | 22 §3–§5 |
+| `eval.hhh_judge`, `eval.judge_precision` | stub (SKIPPED) | 22 §6 |
+| `eval.redteam`, `eval.foundry_export` | planned → first build items | 22 §9, §10 |
+| `observe.guardrail_events`, `observe.alerts`, `rollout.cohorts` | stub | 23 §1, §2, §5 |
+
+### P (continued). Open items needing product confirmation — added in v1.1
+
+12. **`rule_type` vocabulary.** PRD US-014 names `presence`, `absence`, `threshold`, `pattern`; the Stage 2 invocation for this run named `threshold | presence | absence | text`. The PRD governs *what*: the schema and spec 20 §2.2 use **`pattern`**; `text` is treated as a synonym for it and is not a stored value. Confirm.
+13. **Summary input is bounded, not the full text.** PRD US-015 caps the summary at ≤ $0.03 while §6 mandates GPT-4o; a full 15,000-token document at $0.005/1k already costs $0.075. The summariser therefore receives the extracted terms plus a 3,000-token window (06 v1.1 §B), ≈ $0.030. The alternative lever is `OPENAI_MODEL_SUMMARY` = a cheaper model (the PRD trade table's candidate). Confirm which.
+14. **Summary deferral.** A summary that cannot start with ≥ 11 s left in the 24 s handler budget is generated by a follow-up `POST /api/contracts/{id}/summary` from the results page. The PRD says "at process time"; the deferral keeps the ≤ 30 s e2e P95 and the ≤ 10 s summary P95 both true. Confirm.
+15. **Risk-call cost.** A per-rule risk call (≈ $0.09) would breach the ≤ $0.25 per-analysis budget once `risk.flag` is built; it is reported as its own `purpose='risk'` line (20 §6.1) until the budget is revisited.
+16. **`PlaybookAdmin` "hidden".** Interpreted as: no navigation link; the route renders the seeded playbook read-only with the phase note (20 §4.5), satisfying P-6's "hidden, not absent".
+17. **SME scoring without roles.** With no roles at MVP (13 §1), owners score their own contracts in Review mode; the legal SME scores the golden set in Review mode on the dedicated eval account and scores production samples through the sheet export → fill → import round-trip (`hhh-sheet.ts --import`, service role, `scorer_role='sme'`), never by logging into users' accounts (22 §3, §5, §8). Team roles (v1.2) could replace the import with in-app SME access.
+22. **`v_kpi_hhh_weekly` counting population** = human rows + judge rows once the judge gate is met, so the ≥ 200/week rule is satisfiable with a 20 % human share (23 §4.4); humans alone must reach 200 while the gate is unmet (Assumption 17).
+23. **CRM auto-push runs inside `/process`** (3 s bound, step 11b) rather than a queue; a timeout is a retryable `integration_events` failure, never a failed run.
+18. **Judge model provider.** Assumption 17 names "GPT-5 or Claude Opus class"; the settled decision that OpenAI is the sole wired provider means `OPENAI_MODEL_JUDGE` is an OpenAI id (22 §6.1). Wiring an Anthropic judge is an adapter addition to `openai-client.ts`'s `LlmProvider`, not done here.
+19. **Escalation offer while the route is a stub** is a passive note, not a button (20 §4.2), so the UI never offers an action that returns 501.
+20. **Query-enhancer model** defaults to `gpt-4o`; the PRD's cheaper-model candidate is a config switch pending the groundedness eval (08 v1.1 §B).
+21. **Unresolved-turn definition** (20 §5.1) — the PRD says "~3 turns without resolution"; the spec defines "unresolved" as fallback / unverified citation / off-scope reply, consecutive.
+
+**Superseded v1.0 rows in §F/§G:** "max_tokens 2000 / 1000" → 3000 / 1000 / 500 (summary) — 06 v1.1 §A–§B, 01 v1.1 §B; "HHH: top 10–12 terms by default" → display_rank ≤ 12 of 36 (05 v1.1 §C).

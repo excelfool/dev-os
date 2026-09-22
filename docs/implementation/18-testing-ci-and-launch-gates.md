@@ -95,3 +95,47 @@ Evidence: the v1.0 feature acceptance rows (spec 19), plus the RLS cross-account
 | Supabase free-tier limits | Breach at ~200 contracts | Weekly storage check at 70%; Pro provisioning is a launch gate |
 | PDF.js rendering compatibility | Unusual fonts/layouts fail | The 50-contract rendering harness with a mandatory fallback path |
 | Browser file API limits | Large PDFs on low-end devices | The device advisory banner + the mobile-viewport E2E run |
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — §11 Launch Criteria R-25, §9 R-29, §5 R-20, Appendix A P-5/P-6, roadmap v0.2 MEP)
+
+### A. Test layers (§1) — additions
+
+| Layer | Additions |
+|---|---|
+| Unit | capability registry (36 keys), `notImplemented()`, guardrail patterns, unresolved-turn counter, HHH polarity/verdicts, golden-set loader, key-date derivation, `parseNetDays`, query-enhancer gating, retrieval strategies |
+| Integration | every 501 route (`401` → `404` → `501` with key), `integration_events` `not_configured` row, `hhh_scores` trigger + upsert, key-dates routes, summary route and deferral, `PATCH` page/reasoning, `guardrail_events` writes, `evaluate_alert_rules()`, the `v_kpi_*` views, `processing_runs` new stages, `.docx` → `UNSUPPORTED_FORMAT` |
+| RLS | the 14 new tables (`tests/rls/placeholders.test.ts`, spec 02 v1.1 §E) — the suite still gates the build |
+| AI / eval | the deterministic checks of spec 22 §13; **live every deploy:** `redteam.ts`; SKIPPED rows asserted present for `risk_f1`, `hhh_judge`, `judge_precision_recall`, `wrong_tool_calls` |
+| E2E | **`tests/e2e/placeholders.spec.ts` asserts the hidden/empty states (P-6):** Risk panel empty state naming Phase 1; no `PlaybookAdmin` nav link and the read-only seed at `/settings/playbooks`; five disabled upload options with phase text; `/settings` capability table; Review toggle absent when the registry fixture stubs `eval.hhh_human` to `planned` and present when stubbed `built` (the E2E runs both fixtures); escalation stub note after three unresolved turns; Summary card present; key-dates card with three toggles. Plus `review-mode.spec.ts` and the page/reasoning edit timings |
+
+### B. Staged launch gates (§4) — replaced by the PRD v1.1 four stages with HHH floors
+
+HHH thresholds are **floors** adopted from the instructor; ours may be stricter, never looser. Each threshold is set from four references — the model ceiling (what the eval suite shows the model can do), the customer floor (what a user will tolerate), the competitor score, and company policy — and the summary of each release records which reference bound the number. Every HHH figure comes from `v_kpi_hhh_weekly`, whose counting population is human rows plus `llm-judge` rows only while `eval_gates.judge_gate.gate_met` (the judge scores every sample including the human 20 %, and a double-scored subject counts once with the human row winning, so ~40 human + ~200 judge rows per week satisfy the rule once the judge is gated; humans alone must reach 200 before that — Assumption 17), and **is not a launch signal in any week with `reportable=false` (< 200 counting samples)**.
+
+| Stage | Cohort (`NEXT_PUBLIC_ROLLOUT_STAGE`, `profiles.rollout_cohort`) | Helpful | Honest | Harmful | L2 gates (ours, kept) | Other go criteria | Evidence |
+|---|---|---|---|---|---|---|---|
+| **Internal Alpha — checkpoint A** (end of v0.2, extraction only; no chat exists yet) | `internal` — team | Basic extraction working | Source sentences **and reasoning** shown | Disclaimer present | Core flow end-to-end without crashes (10 consecutive runs, 48 h dogfood); `term-coverage.ts` ≥ 80% on the smoke set; **`mep-acceptance.ts` = PASS** (F1 ≥ 82% on the instructor set, ≥ 50 human `hhh_scores` term rows) | `harmless.redteam_pass_rate` is `SKIPPED` with reason "chat not built" and **does not block this checkpoint** (the only SKIPPED row exempted, because its subject does not exist yet) | `contract-review.spec.ts`; `WhySection` assertion checks a non-empty `reasoning` or the null copy; `disclaimer.spec.ts`; `eval/reports/` |
+| **Internal Alpha — checkpoint B** (end of v0.4, chat live) | `internal` — team | Chat answers grounded | Citations verified | **Red-team seed set passes** (PRD §11 Alpha row) | Checkpoint A still green; `chat-groundedness` ≤ 5% on the fixture set | `eval.redteam` flipped to `built` (spec 21 §1.2, v0.4); `redteam.ts` row 100% on every deploy from here on | `redteam.ts`; `chat-history.spec.ts` |
+| **Measurement launch** (1–2% of users) | `measurement`, sized for ≥ 200 samples/week | **≥ 60%** | **≥ 75%** | **< 5%** | F1 ≥ 82%; correction rate ≤ 20%; ≥ 75% satisfaction; 0 misleading-output incidents (the nightly low-confidence invariant job, unchanged) | No P0 bugs; latency ≤ 45 s P95; **≥ 50 human `hhh_scores` rows collected**; PDF rendering harness passes. The judge gate is not yet required here, so `sample-week.ts` assigns the **full 200 weekly samples to the SME** (spec 22 §7 gate-unmet branch) and `v_kpi_hhh_weekly.n = n_human` | `v_kpi_hhh_weekly`; spec 18 §4 queries; `select count(*) from hhh_scores where evaluator='human'` |
+| **Beta launch** (2–10% of users) | `beta` | **≥ 70%** | **≥ 85%** | **< 3%** | F1 ≥ 85% NDA / 82% MSA; correction ≤ 15%; calibration ≤ 0.15 | **Judge P/R ≥ 0.70** so judge verdicts count (`judge-gate.json gate_met=true`); **red-team pass rate 100%** on every deploy | `judge-precision.ts`; `redteam.ts` |
+| **Launch (GA)** (end of v1.0) | `ga` — all users | **≥ 80%** | **≥ 90%** | **< 2%** | F1 ≥ 88% NDA / 85% MSA; correction ≤ 12%; calibration ≤ 0.10; **page accuracy ≥ 92%** | Security audit passed (spec 13 §9 incl. items 9–12); RLS verified on all 28 tables; legal disclaimer approved; latency ≤ 30 s P95; Supabase Pro; DPAs with OpenAI **and** Supabase; **risk F1 ≥ 90% if `risk.flag` is enabled, otherwise `risk.flag` stays `stub` and `RiskPanel` stays in its empty state** | as v1.0 above plus `risk-f1.ts` |
+
+The v1.0 "Measurement Beta (≤ 50 users)" wording above is superseded by the percentage cohorts; the sample-size rule (≥ 200 scored samples/week) is what sizes each cohort (spec 23 §5).
+
+### C. `SKIPPED` semantics in CI (P-5)
+
+A `SKIPPED` row **never fails and never passes** a gate: the gate table above lists which rows must be `PASS` at each stage; any row that is `SKIPPED` where a `PASS` is required blocks the stage (e.g. `hhh_human` SKIPPED for lack of samples blocks Measurement launch). The single stated exemption is `harmless.redteam_pass_rate` at Alpha checkpoint A, whose subject (chat) does not exist until v0.4 (§B). `run-all.ts` exits non-zero on any `FAIL`, zero on `PASS`/`SKIPPED`, and prints the SKIPPED reasons — CI shows honest gaps rather than green.
+
+### D. CI pipeline (§3) — additions
+
+Every PR: `tests/rls/placeholders.test.ts`, `capabilities.test.ts`, `placeholders.spec.ts`. On merge to `main`: `redteam.ts` (blocking at Beta and later), the full `run-all.ts` with SKIPPED rows archived. Scheduled: the jobs in spec 14 v1.1 §D. `npm run eval:sync-refs` is run in CI and the byte-identity tests fail the build if the reference copies drift.
+
+### E. External dependencies (§5) — additions
+
+| Dependency | Risk | Test |
+|---|---|---|
+| Instructor golden-set PDFs | Absent ⇒ no MSA gate | `mep-acceptance.ts` and `extraction-f1.ts --dataset msa-instructor` emit SKIPPED with reason, never PASS |
+| Judge model availability / cost | Judge below gate or unset | `hhh-judge.ts`/`judge-precision.ts` SKIPPED; humans alone at the 200/week rate (Assumption 17) |
+| OCR / CRM / e-sign vendors | Unconfigured | `null-adapters.test.ts`; 501 routes |

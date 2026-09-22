@@ -106,3 +106,53 @@ Checks DB reachability. **200** `{ status: "ok", commit, db: "ok" }`; **503** wh
 ## 18. `GET /api/system-status`
 Auth **required** (the `system_status` SELECT policy is `authenticated`-only). Excluded from the middleware matcher purely to skip a cookie refresh on the 60-second poll; the handler still re-checks the session and returns `401` to an anonymous caller. Anonymous visitors use the public status page instead (spec 14 §2b).
 **200** `{ level: "none"|"p1"|"p0", message }`.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+### A. New routes (P-4 — `501 NOT_IMPLEMENTED` unless marked live)
+
+The `NOT_IMPLEMENTED` envelope (spec 21 §1.3): `{ "error": { "code": "NOT_IMPLEMENTED", "message": "…", "retryable": false, "capability": "<key>", "phase": "<phase>" } }`. Every 501 route still returns `401`/`404` first (session and ownership), so the contract is testable.
+
+| # | Method + path | Auth | Rate limit | Today | Spec |
+|---|---|---|---|---|---|
+| 19 | `POST /api/contracts/{id}/risks` | yes | `risks` 10/hr | 501 `risk.flag` | 20 §3 |
+| 20 | `PATCH /api/risk-flags/{id}` | yes | — | 501 `risk.flag` | 20 §3 |
+| 21 | `POST /api/contracts/{id}/escalate` | yes | — | 501 `risk.escalate` | 20 §3 |
+| 22 | `GET /api/playbooks` | yes | — | 501 `playbook.manage` | 20 §3 |
+| 23 | `POST /api/playbooks` | yes | — | 501 `playbook.manage` | 20 §3 |
+| 24 | `PATCH /api/playbooks/{id}` | yes | — | 501 `playbook.manage` | 20 §3 |
+| 25 | `POST /api/contracts/{id}/compare` | yes | — | 501 `compare.contracts` | 20 §3 |
+| 26 | `GET /api/capabilities` | yes | — | **live** | 21 §2 |
+| 27 | `POST /api/contracts/{id}/push/{target}` | yes | — | 501 `crm.hubspot` / `crm.salesforce` (+ writes an `integration_events` `not_configured` row) | 21 §5 |
+| 28 | `POST /api/webhooks/esign` | **public**, signature | — | 501 `esign.docusign` | 21 §5 |
+| 29 | `GET /api/contracts/{id}/key-dates` | yes | — | **live** | 21 §5 |
+| 30 | `PATCH /api/key-dates/{id}/reminders` | yes | — | **live** | 21 §5 |
+| 31 | `POST /api/import/{source}` | yes | — | 501 `import.*` | 21 §5 |
+| 32 | `PUT /api/hhh-scores` | yes | — | **live** (UI hidden while `eval.hhh_human` is `planned`) | 22 §4 |
+| 33 | `GET /api/eval/sample-week` | yes | — | **live** (empty until the runner writes `eval_gates.sample_week`) | 22 §7 |
+| 35 | `POST /api/integrations/{target}/connect` | yes | — | 501 `crm.hubspot` / `crm.salesforce` (OAuth start; callback `GET /api/integrations/{target}/callback`) | 21 §5 |
+| 36 | `DELETE /api/integrations/{target}` | yes | — | 501 `crm.*` | 21 §5 |
+| 37 | `GET /api/integrations` | yes | — | **live** (empty list until a vendor is built) | 21 §5 |
+| 34 | `POST /api/contracts/{id}/summary` | yes | `process` bucket | **live** with `extract.summary` — requires `status='completed'` (`409 NOT_PROCESSED`), then claims `summary_status ∈ {pending, error, none}` (or a `processing` claim older than 2 min) → `200 { summary_md, summary_status }`; else `409 SUMMARY_NOT_PENDING` | 06 v1.1 §B |
+
+### B. Changes to existing routes
+
+| Route | Change |
+|---|---|
+| 1 `POST /api/contracts/upload` | New errors `422 UNSUPPORTED_FORMAT` (.docx) and `422 OCR_LOW_CONFIDENCE` (once OCR is configured); response may carry `ocr_confidence`. Spec 04 v1.1 §A |
+| 4 `POST /api/contracts/{id}/process` | `max_tokens` **3000**; each term gains `reasoning`, `original_ai_page`, `original_ai_reasoning`, `is_required`, `page_edited`, `reasoning_edited`; response gains `required_missing: string[]`, `summary_status`, `summary_md` (when completed inline), `ocr_confidence`. Spec 06 v1.1 |
+| 6 `GET /api/contracts/{id}` | `contract` gains `summary_md`, `summary_status`, `summary_generated_ms`, `summary_claimed_at`, `summary_claim_stale` (derived: `processing` and claimed > 2 min ago), `ocr_confidence`, `term_library_version`; response gains `key_dates[]`; `key_terms[]` carry the new fields |
+| 9 `PATCH /api/key-terms/{id}` | Body is any non-empty subset of `{ value, page_number, reasoning }`; new errors `400 INVALID_PAGE`, `400 INVALID_REASONING`; response carries all three originals. Spec 07 v1.1 §D |
+| 11 `POST /api/contracts/{id}/chat` | Response adds `escalation_offer` and the user message's `enhanced_query`; inbound guardrail block returns 200 with the rule's fixed reply (no model call). Spec 08 v1.1 |
+| 12 `POST /api/contracts/{id}/complete` | Once `risk.flag` is built: `409 HIGH_FLAGS_UNDECIDED` while any High flag is undecided. Spec 20 §4.3 |
+| 16 `GET /api/contracts/{id}/export` | CSV gains a `Reasoning` column after `Source Sentence`; the PDF summary includes the contract summary above the table when present. Registry key `export.csv_pdf` |
+
+### C. Error codes added (spec 01 v1.1 §A)
+
+`NOT_IMPLEMENTED` 501 · `UNSUPPORTED_FORMAT` 422 · `OCR_LOW_CONFIDENCE` 422 · `INVALID_PAGE` 400 · `INVALID_REASONING` 400 · `SUMMARY_NOT_PENDING` 409 · `HIGH_FLAGS_UNDECIDED` 409 · `NO_ACTIVE_PLAYBOOK` 404 · `INVALID_DECISION` 400 · `ESCALATION_OPEN` 409 · `INVALID_RULE` 400 · `TYPE_MISMATCH` 400 · `INTEGRATION_FAILED` 502 · `INVALID_SIGNATURE` 401 · `INVALID_HHH_ANSWERS` 400 · `INVALID_OFFSETS` 400 · `NOT_CONNECTED` 409.
+
+Route count: **37** (plus the OAuth callback under route 35). The `AppError` taxonomy gains exactly one *new kind* of code for P-4 (`NOT_IMPLEMENTED`); the rest are ordinary validation/conflict codes for the new contracts.
+
+**Superseded v1.0 lines:** §4 `max_tokens` 2000 → **3000** (spec 06 v1.1 §A).

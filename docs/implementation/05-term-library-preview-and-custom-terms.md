@@ -124,3 +124,91 @@ If a custom term is not found in the document, it is persisted with `value = NUL
 - `tests/integration/custom-terms.test.ts` — the 6th term is rejected by the API with `CUSTOM_TERM_LIMIT`; a **direct DB insert** of a 6th term is rejected by the trigger; adding after `status='completed'` returns `409 ALREADY_PROCESSED`; delete returns 204 and removes the row.
 - `tests/e2e/contract-review.spec.ts` — the preview lists the right term set for the chosen type; a custom term is added, shows the "Custom" badge, and appears in the results with value/page/confidence.
 - Eval: custom-term F1 ≥ 80% over 10 predefined terms × 15 contracts (spec 17).
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — R-21, US-016 field mapping, §8 term table)
+
+### A. `StandardTerm` gains the instructor fields; the MSA library becomes the 36 instructor terms
+
+```ts
+export interface StandardTerm {
+  term_id: number;         // instructor id (MSA) or 1–10 (NDA); stable across renames
+  term_name: string;       // exact string sent to the model and stored in key_terms.term_name — instructor spelling kept verbatim
+  question: string;        // the question the extraction prompt asks (R-21c)
+  answer_format: string;   // the constraint appended to the question
+  display_rank: number;    // ≤ 12 => expanded by default
+  tooltip: string;         // plain-English explanation (WCAG)
+  is_required: boolean;    // "required field not found => flag for review" (spec 06 v1.1 §C)
+}
+export const TERM_LIBRARY_VERSION = { NDA: 'v1.0', MSA: 'instructor-2026-09' } as const;
+export const NDA_TERMS: StandardTerm[];   // 10, unchanged names (PRD §4 Flow 3 step 2)
+export const MSA_TERMS: StandardTerm[];   // 36, loaded verbatim from docs/reference/key-terms-msa-instructor.json
+```
+
+`MSA_TERMS` is generated at build time from `docs/reference/key-terms-msa-instructor.json` (copied to `src/lib/ai/term-library/msa-instructor.json` by `npm run eval:sync-refs`; a unit test asserts the two files are byte-identical), so `term_name`, `question`, `answer_format` and `display_rank` can never drift from the instructor file. The `guidance` field is retired for MSA — the `question` + `answer_format` replace it in the prompt (spec 06 v1.1 §A). The v1.0 12-term MSA list in §1 is **retired as the library**; its coverage is carried by ranks 1–2, 6, 7, 9, 14, 20–22, 26–27 and 35–36 (PRD §8). `Service Scope`, `Invoice Schedule` and `Dispute Resolution` are not in the instructor set and can be added as custom terms.
+
+### B. The 36 MSA terms — tooltips and the required set (names/questions/formats are the instructor file's, reproduced in PRD §8 and not repeated here)
+
+| rank | `term_name` | tooltip | required |
+|---|---|---|---|
+| 1 | Service Provider Name | The company providing the services. | **yes** |
+| 2 | Customer Name | The company buying the services. | **yes** |
+| 3 | Contract start date | When the agreement begins. | **yes** |
+| 4 | Contract end date | When the agreement ends unless renewed. | no |
+| 5 | Term Period In Months | How long the agreement runs, in months. | no |
+| 6 | Deal Value | The total amount the customer pays. | no |
+| 7 | Governing Law | Which country's or state's law applies. | no |
+| 8 | Auto Renewal | Whether the agreement renews by itself. | no |
+| 9 | Termination Notice In Days | How much warning is needed to end the agreement. | no |
+| 10 | Data Breach Notice In Hours | How quickly a data breach must be reported. | no |
+| 11 | Billing frequency (monthly, quarterly, annually, other) | How often you are invoiced. | no |
+| 12 | Renewal Period (Months) | How long each renewal lasts. | no |
+| 13 | Notice to not auto renew (Days) | How many days before renewal you must object. | no |
+| 14 | Net payment terms (Net 30, 45, 60, 75, 90, other) | How many days you have to pay an invoice. | no |
+| 15 | Termination for Breach (Yes, No, N/A) | Whether a serious breach lets a party end the agreement. | no |
+| 16 | Termination for cause (Yes, No, N/A) | Whether a stated reason lets a party end the agreement. | no |
+| 17 | Termination without cause (Yes, No, N/A) | Whether a party can end the agreement with no reason. | no |
+| 18 | Termination for convenience (Yes, No, N/A) | Whether a party can simply choose to end the agreement. | no |
+| 19 | Notice of termination for convenience (Days) | Warning needed to end the agreement for convenience. | no |
+| 20 | Late Payment Charges (Yes, No, N/A) | Whether late invoices attract charges. | no |
+| 21 | Late Payment Penalty | How late-payment charges are calculated. | no |
+| 22 | Limitations of liability (Amount) | The most either side can be made to pay. | no |
+| 23 | Assignment (consent, No consent, N/A) | Whether the provider needs your consent to hand the contract to someone else. | no |
+| 24 | Name and logo use (Yes, No, N/A) | Whether the provider may use your name and logo. | no |
+| 25 | Deletion of Data (Yes, No, N/A) | Whether your data must be deleted on request or at the end. | no |
+| 26 | Customer Indemnity | What losses you must cover for the provider. | no |
+| 27 | Service Provider indemnity | What losses the provider must cover for you. | no |
+| 28 | Customer notice for indemnitiy claim | Whether you must give notice to claim indemnity. | no |
+| 29 | Indemnify Attorney fees (Yes, No, N/A) | Whether legal fees are covered by the indemnity. | no |
+| 30 | Price increase (Yes, No, N/A) | Whether the provider can raise prices. | no |
+| 31 | Notice for price increase (days) | How much warning you get before a price rise. | no |
+| 32 | Insurance Clause | What insurance the agreement requires. | no |
+| 33 | Maintenance of Insurance | Whether insurance must be kept for the whole term. | no |
+| 34 | Provide notice for insurance (Days) | Warning required for insurance changes. | no |
+| 35 | Service Provider Intellectual Property Rights | What the provider owns. | no |
+| 36 | Customer Intellectual property rights | What you own. | no |
+
+NDA required terms: `Parties`, `Effective Date`. NDA `question`/`answer_format` (added so one prompt path serves both types; names unchanged): the question is `What is the {term_name}?` prefixed with the existing `guidance`, and `answer_format` is `verbatim clause text or short summary, or N/A` for every NDA term except `Effective Date` (`date (YYYY-MM-DD), or N/A`) and `Governing Law` (`name of jurisdiction only`).
+
+### C. Preview and custom-term changes
+
+- `TermPreviewList` heading for MSA: "ContractIQ will look for these 36 terms in your MSA." Ranks 1–12 render expanded; ranks 13–36 sit under **"Show all 36 terms"** (collapsed, not hidden — `aria-expanded`, keyboard-operable). NDA is unchanged (10 terms, all expanded).
+- Each row shows the term name, the info tooltip, and the **question** in muted text ("We'll ask: *What is the Governing Law? Provide just the name of the governing law*") so the user sees what the human would ask (PRD Flow 3 step 2).
+- Custom-term duplicate check (§2, §3 step 4) now runs against the 36 MSA names.
+- CRM field mapping (US-016, Assumption 16) is **exactly the `display_rank ≤ 12` MSA terms**, read from this library by spec 21 §5 route 27 — no second list.
+- `displayRankFor()` returns the instructor `display_rank`; custom terms remain 99.
+- Custom terms (§5) carry the **same structure as standard terms including `reasoning`** (US-005 v1.1): the zero-shot target list gives them the default answer format and the prompt's `reasoning` rule applies to every returned object (spec 06 v1.1 §A).
+
+### D. Tests (replace the counts in §6)
+
+- `term-library.test.ts` — NDA has exactly the 10 names; MSA exactly the 36 names in `display_rank` order 1–36, byte-equal to the reference JSON's `term_name`/`question`/`answer_format`/`display_rank`; every term has a non-empty tooltip and question; the required set is `{1,2,3}` for MSA and `{Parties, Effective Date}` for NDA; `TERM_LIBRARY_VERSION.MSA === 'instructor-2026-09'`.
+- `custom-term-validation.test.ts` — "Governing Law" is rejected as a duplicate for MSA; "Service Scope" is accepted.
+- `contract-review.spec.ts` — the MSA preview shows 12 expanded rows and a "Show all 36 terms" disclosure that reveals 24 more.
+
+### E. Superseded v1.0 lines (read the v1.1 value)
+
+| v1.0 text | v1.1 value |
+|---|---|
+| §1 `MSA_TERMS` "12 terms" | 36 terms (§A above) |
+| §2 "render the 3-step progress indicator" and `ProcessButton` "swaps the view for the 3-step indicator" | the **four-step** indicator of spec 06 v1.1 §B (Extracting text · Analysing with AI · Summarising · Compiling results) |

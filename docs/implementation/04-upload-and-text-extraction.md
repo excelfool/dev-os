@@ -126,3 +126,21 @@ Nothing at upload time detects contract type — detection happens during extrac
 - `tests/integration/upload.test.ts` — happy path returns 201 with the right `page_count`/`token_estimate`; **every** rejection code exercised with its fixture (non-PDF bytes with a `.pdf` name, 11 MB file, 21-page file, 16,000-token file, 50-word scanned-style file, truncated/corrupt PDF); quota 402; rate-limit 429; and the Storage-failure path (Storage stubbed to throw) returning **201 with `storage_available: false` and `file_path` NULL**.
 - `tests/integration/upload-no-partial.test.ts` — after `CORRUPT_PDF`, zero `contracts` rows exist for the user and `profiles.analyses_used` is unchanged (the failure precedes step 7b); a forced DB-insert failure after step 7b refunds the unit.
 - `tests/e2e/contract-review.spec.ts` — covers the upload leg of the full journey.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — R-3, R-19, FR-02 note, Flow 3 step 1, Ingestion & OCR agent)
+
+### A. Screen `/contracts/new`
+
+`ImportSourceOptions` (spec 21 §8) renders above `PdfDropzone`: Google Drive, Dropbox, SharePoint ("Planned for v1.1"), Word (.docx) ("Coming in v1.1"), Scanned / photo ("Coming in v1.2") — all `aria-disabled`, phase text read from the capability registry. Dropzone helper text: "Text-layer PDF only for now." The client MIME pre-check message for a `.docx` is "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1."
+
+### B. `POST /api/contracts/upload` — steps 6 and 7 extended (spec 21 §4.1)
+
+- Step 6: magic bytes `PK\x03\x04` **and** a `.docx` filename → `getDocxExtractor().extract()`; `NOT_CONFIGURED` ⇒ **`422 UNSUPPORTED_FORMAT`** (nothing stored). Any other non-`%PDF-` file ⇒ `400 NOT_A_PDF` as before.
+- Step 7 scanned branch: `wordCount < 100` → `getOcrAdapter().extract()`; `NOT_CONFIGURED` ⇒ `422 SCANNED_PDF` (unchanged today). Once configured: OCR text (with `[PAGE N]`) replaces the parse result, `contracts.ocr_confidence` is stored, and `confidence < 80` ⇒ **`422 OCR_LOW_CONFIDENCE`**, nothing stored ("reject and prompt re-upload").
+- Error list gains `422 UNSUPPORTED_FORMAT`, `422 OCR_LOW_CONFIDENCE`. Success `201` may carry `ocr_confidence`.
+
+### C. Tests
+
+`tests/integration/upload-formats.test.ts` (spec 21 §9); `contract-review.spec.ts` asserts the five disabled options and that dropping a `.docx` shows the exact message.

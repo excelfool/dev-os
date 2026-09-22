@@ -207,3 +207,53 @@ Structured JSON per request: `{ requestId, userId, route, method, status, durati
 - `tests/rls/*` — the full matrix in spec 02 §8.
 - `tests/unit/headers.test.ts` — every header above is present with the exact value.
 - k6: 100 concurrent analyses sustained without error-rate or latency degradation; a headroom run at 1,000 concurrent users.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21 — §9 harmless policy R-28, §11 Reliability & Safety, Flow 4 step 7)
+
+### A. Harmless policy — `src/lib/security/guardrails.ts`
+
+The rule table is code: `GUARDRAIL_RULES: Rule[]` with `{ key, prd_rule: 1..5, status: 'built'|'stub', stages: ('inbound'|'document'|'outbound')[], detect(text, ctx) => Match|null, action: 'allow'|'flag'|'block'|'rewrite', reply?: string }`. Three entry points, all called by the chat route (spec 08 v1.1 §A) and the process route (document stage): `screenInbound(message)`, `screenDocument(contract_text)`, `screenOutbound(answer)`. **Every match writes one `guardrail_events` row** (spec 23 §1: `rule`, `stage`, `action`, `input_hash = sha256(text)`, `matched = pattern id`; never the text) on the caller's JWT before the action is applied. A rule's *allowed* behaviour is named next to its block, per the PRD.
+
+| PRD # | `rule` key | Status | Detect (pattern ids in `src/lib/security/patterns/`) | Action + allowed behaviour |
+|---|---|---|---|---|
+| 1 | `profanity_hate` | **stub** — the screen and event plumbing exist; the list is a seed | Inbound and outbound: word-boundary match against `profanity-list.ts` (seed: a ~40-entry English list of slurs and profanity, maintained by the operator; `hate.*` and `profanity.*` ids) | Inbound `flag`: the message is **not echoed** back and the model is asked to answer the contract question if one is present; if the message is abuse only, the fixed reply "I can help with questions about this contract." is returned with no model call (`block`). Outbound `rewrite`: an assistant answer containing a listed word is replaced by "I can't repeat that wording. Ask me about the contract and I'll answer from the document." (HHH A1, A9) |
+| 2 | `competitor_disparagement` | **stub** — list is a seed | Outbound: a competitor name (`competitors.ts` seed: DocuSign, Ironclad, Kira, ChatGPT, Copilot, Claude, Cowork — the names the PRD itself mentions) within 12 tokens of a comparative/disparaging word (`better|worse|inferior|superior|avoid|scam|beats`) | `rewrite` to "I don't compare tools or products — I can only tell you what this contract says." The assistant may still state facts from the contract about the counterparty's products (HHH A4, A8) |
+| 3 | `stay_within_contract` | **built** | Inbound: off-scope = `query_class` would be `contract` but the message contains no contract signal **and** matches a generic-request pattern (`off_scope.draft`, `off_scope.general_law`, `off_scope.trivia`: "draft me", "write a", "what is the law in", "capital of", "who is the president") | `block` with the fixed reply **"I can only answer about this contract. Try rephrasing your question to point at a clause, a term or a page."** — the "offer to rephrase" (HHH O9, A6). Grounded document-only answering remains the allowed behaviour |
+| 3 | `prompt_injection` | **built** | Inbound **and** document: `inj.ignore_instructions` ("ignore (all|your|previous) instructions"), `inj.system_prompt` ("system prompt", "developer message"), `inj.role_override` ("you are now", "act as"), `inj.exfil` ("print|reveal your (instructions|prompt|key)"), `inj.doc_directive` (a line beginning "AI:", "Assistant:", "Instruction to the model") | Inbound `block` with the rule-3 reply above. Document `flag`: processing continues (the text is the user's own document); the event is the log the PRD requires ("injected instructions in the document → screened and logged to `guardrail_events`"); extraction output is still schema-validated and source-verified (§7 above), so a directive cannot become a high-confidence term |
+| 4 | `escalate` | **stub** — offer logic built, route 501 | Turn count (spec 20 §5.1), a High flag, or `/human` | `flag` event with `matched='turns.3'|'flag.high'|'user.request'`; the offer is a UI affordance (`EscalateOffer`), never model text |
+| 5 | `no_pii_solicitation` | **stub** — rule entry + outbound screen seed | Outbound: `pii.ask_contact` ("what is your (email|phone|address)"), `pii.ask_credentials` ("your password", "log in details"), `pii.ask_payment` ("card number", "bank details") | `rewrite` to "I don't need any personal details — everything I answer comes from the contract itself." PII already **in** the contract is displayed as extracted; the model is only barred from **requesting** it (HHH A2) |
+
+Order: inbound rules run 3 (injection) → 3 (off-scope) → 1; outbound run 1 → 2 → 5. The first `block` wins; `flag`/`rewrite` are cumulative. The chat system prompt (`chat.v1.ts`) adds one sentence: "Never ask the user for personal information, never compare other products or tools, and never repeat abusive language."
+
+Status is recorded in the registry as `observe.guardrail_events: stub` (the table) — the rules themselves are not registry keys; their `status` field above is what spec 19 traces to PRD §9's Status column.
+
+### B. Rate limiting additions (§4)
+
+| Bucket | Limit | Routes |
+|---|---|---|
+| `risks` | 10 / hour / user | `POST /api/contracts/{id}/risks` (once built; the 501 path is not counted) |
+
+`POST /api/contracts/{id}/summary` shares the `process` bucket.
+
+### C. Service-role call sites (§2) — additions to the single authoritative list
+
+(4) gains no new RPCs (`persist_risk_flags` and `persist_key_terms` are security invoker, granted to `authenticated`), but gains two admin-client uses on the CRM connection path: the OAuth callback route inserts/updates `integration_connections` and stores the token in Vault after verifying the OAuth `state` belongs to the session user (spec 21 §6a), and `DELETE /api/integrations/{target}` (route 36) revokes that Vault secret after the owner-JWT row delete succeeds; a CRM push that gets an auth failure from the vendor sets `status='error'` with the admin client (spec 21 §5 route 27). (6) operator/eval scripts now explicitly include: `eval/runners/hhh-judge.ts` (inserts `llm-judge` rows), `eval/runners/judge-precision.ts` and `sample-week.ts` (write `eval_gates`), `eval/runners/hhh-human.ts`, `mep-acceptance.ts` and `satisfaction.ts` (population-wide reads of `v_kpi_hhh_weekly`, `hhh_scores`, `user_feedback`), `eval/export/hhh-sheet.ts --import` (writes SME human rows for other owners, spec 22 §5), `eval/export/hhh-sheet.ts`, `eval/export/foundry.ts`, `eval/export/corrections.ts`, `scripts/review-guardrails.ts` (sets `false_positive`), `scripts/set-cohort.ts`, `scripts/daily-ops.ts` (alert delivery), and the `send-due-reminders` Edge Function (site 2/3 class). Closing an `escalations` row is an operator action via the dashboard. The CI grep scope is unchanged (`src/**`, `supabase/functions/**`).
+
+### D. New secrets (`.env.example` v1.1)
+
+`OPENAI_MODEL_JUDGE`, `N8N_RAG_TOKEN`, `CRM_HUBSPOT_CLIENT_SECRET`, `CRM_SALESFORCE_CLIENT_SECRET`, `OCR_API_KEY`, `ESIGN_WEBHOOK_SECRET`, `ALERT_EMAIL_TO`, `EVAL_USER_PASSWORD` — all SERVER ONLY; `scan:secrets` adds the literal names `CRM_HUBSPOT_CLIENT_SECRET`, `CRM_SALESFORCE_CLIENT_SECRET`, `OCR_API_KEY`, `ESIGN_WEBHOOK_SECRET`, `N8N_RAG_TOKEN`, `EVAL_USER_PASSWORD` to its grep list.
+
+### E. Security audit checklist (§9) additions
+
+9. Every 501 route rejects anonymous callers with 401 and non-owners with 404 before returning 501.
+10. `guardrail_events` rows contain hashes only — a test greps every row for any 12-character substring of the screened message and expects no hit.
+11. `alert_rules`/`alert_events` unreachable from any client; `eval_gates` read-only.
+12. The red-team seed set (spec 22 §9) passes 100% against the deployed chat endpoint.
+
+### F. Tests added
+
+- `tests/unit/guardrails.test.ts` — each pattern id matches its example and not a benign contract question ("Can I terminate for convenience?" matches nothing); rule order and first-block-wins; each entry point returns the action and the pattern id, never the text.
+- `tests/integration/guardrail-events.test.ts` — spec 23 §7.
+- `tests/ai/redteam.spec.ts` — spec 22 §9 on every deploy.

@@ -176,3 +176,94 @@ on a term's state must therefore **own that state**: seed or edit the term
 inside the test (or its own `beforeAll`), never rely on a shared fixture set up
 earlier in the file. This caused a false failure in the `term_corrections` check
 during Stage 5 — the product was correct and the test was wrong.
+
+---
+
+## v1.1 amendments (PRD v1.1, 2026-09-21)
+
+Everything above stands. This section adds what `supabase-schema.sql`'s delimited section `-- ===== v1.1 additions (PRD v1.1, 2026-09-21) =====` creates. Every new table is headed by a `-- capability: <key> | status: stub|planned | phase: <phase>` comment (P-3), has RLS enabled, and has policies. Every column added to an existing table uses `alter table … add column if not exists`. The file remains a single paste-and-run, idempotent script.
+
+### A. New tables (14) — the verification count becomes **28 tables** in `public`
+
+| Table | Capability header | Row means | Spec |
+|---|---|---|---|
+| `playbooks` | `playbook.manage` · stub · Phase 1 | One playbook version per contract type per workspace (`user_id IS NULL` = the seeded system default) | 20 §2.1 |
+| `playbook_rules` | `playbook.manage` · stub · Phase 1 | One versioned rule; never updated in place (`superseded_at`) | 20 §2.2 |
+| `risk_flags` | `risk.flag` · stub · Phase 1 | One rule verdict per contract; `requires_human_review` forced true for High by CHECK | 20 §2.5 |
+| `escalations` | `risk.escalate` · stub · Phase 1 | One hand-off request; closed only by service role | 20 §2.6 |
+| `integration_connections` | `crm.hubspot` / `crm.salesforce` · stub · Phase 1 | One per `(user, target)`: the "connect once" record; tokens live in Vault via `credential_ref` | 21 §6a |
+| `integration_events` | `crm.hubspot` / `crm.salesforce` / `esign.docusign` · stub · Phase 1 | One push/pull/webhook attempt, including `not_configured` attempts | 21 §6 |
+| `key_dates` | `reminders.key_dates` · stub · v1.1 | One derived (or manual) date per `(contract, kind)` | 21 §7.1 |
+| `reminders` | `reminders.key_dates` · stub · v1.1 | One `(key_date, offset, channel)` reminder with `send_at` | 21 §7.1 |
+| `hhh_scores` | `eval.hhh_human` · planned · — | One questionnaire answer set per subject per evaluator (`scorer_role` owner/sme for human rows); verdicts computed by trigger | 22 §3 |
+| `guardrail_events` | `observe.guardrail_events` · stub · v1.0 | One rule firing; hash only, never text | 23 §1 |
+| `alert_rules` | `observe.alerts` · stub · v1.0 | One threshold rule; seeded with six | 23 §2.1 |
+| `alert_events` | `observe.alerts` · stub · v1.0 | One firing of a rule | 23 §2.2 |
+| `contract_chunks` | `retrieval.vector` · stub · v2 | One text chunk with `embedding vector(1536)` — **present, unused**; no code writes it | 08 v1.1 §D |
+| `eval_gates` | `eval.judge_precision` · stub · — | Machine-written gate state (`judge_gate`, `sample_week`) | 23 §4 |
+
+### B. Columns added to existing tables
+
+| Table | Column | Why |
+|---|---|---|
+| `key_terms` | `reasoning text` | One-sentence reasoning from the model (FR-04, R-16) |
+| `key_terms` | `original_ai_reasoning text`, `original_ai_page integer` | Preserved originals for page and reasoning edits (US-009); captured at insert by `persist_key_terms`, never overwritten |
+| `key_terms` | `is_required boolean not null default false` | "required field not found ⇒ flag for review" (PRD agent table) — spec 06 v1.1 §C |
+| `key_terms` | `page_edited boolean default false`, `reasoning_edited boolean default false` | Per-field "Edited" badges (`is_edited` stays the value badge and the correction-rate signal) |
+| `contracts` | `summary_md text`, `summary_status text check in ('none','pending','processing','completed','error') default 'none'`, `summary_uncited boolean default false`, `summary_generated_ms integer`, `summary_error_code text`, `summary_claimed_at timestamptz` | US-015 (spec 06 v1.1 §B) |
+| `contracts` | `ocr_confidence numeric(5,2) check between 0 and 100` | `ingest.ocr` stub (spec 21 §4.1) |
+| `contracts` | `term_library_version text not null default 'v1.0'` | Which library produced the terms — never compare F1 across libraries (spec 22 §1) |
+| `profiles` | `rollout_cohort text not null default 'none' check in ('none','internal','measurement','beta','ga')` | `rollout.cohorts` (spec 23 §5) |
+| `chat_messages` | `enhanced_query text` | The query-enhancer rewrite, stored on the **user** row (spec 08 v1.1 §B) |
+| `openai_calls` | `purpose` CHECK widened to `('extraction','chat','repair','summary','query_enhancer','risk','judge')` | New call purposes; the constraint is dropped and re-added by name |
+| `processing_runs` | `stage` CHECK widened to `('upload','text_extract','ai_extract','summary','persist','risk','chat','crm_push','total')` — writers: `summary` (06 v1.1 §B), `chat` (08 v1.1 §A), `risk` (20 §3 route 19), `crm_push` (21 §5 route 27 / 06 step 11b, incl. the 501 path); component 3 (classify) shares `ai_extract` | Error rate per component 1–9 (spec 23 §3) |
+| `rate_limits` | `bucket` CHECK widened to add `'risks'` | Spec 20 §3 |
+
+### C. Functions, triggers, views and jobs added
+
+| Object | Behaviour |
+|---|---|
+| `persist_key_terms(...)` **re-declared** (same signature) | Also inserts `reasoning`, `original_ai_reasoning = reasoning`, `original_ai_page = page_number`, `is_required`; each term row carries `term_library_version` and the function writes `contracts.term_library_version = max(t->>'term_library_version')`; sets `summary_status='pending'` so the summary step (spec 06 v1.1 §B) has a state to claim |
+| `persist_risk_flags(p_contract_id, p_playbook_id, p_flags jsonb)` | Security invoker, granted to `authenticated`; deletes and re-inserts the contract's `risk_flags` in one statement, stamping `playbook_version` from the playbook row; raises `NOT_FOUND` for a non-owner (spec 20 §6.3) |
+| `compute_hhh_verdicts()` trigger, BEFORE INSERT OR UPDATE on `hhh_scores` | Derives the three `*_verdict` columns from the 29 answers using the polarity table baked into the function (yes-is-failure: h1–h3, o1–o3, a1–a4; no-is-failure: the rest); NULL never fails |
+| `compute_alert_metric(p_metric, p_window_days)` / `evaluate_alert_rules()` | Spec 23 §2.3 |
+| `mark_due_reminders()` | Flips `reminders.status` scheduled → due where `send_at <= now()` |
+| `risk_flag_corrections` view | `security_invoker`; flags with `was_wrong` (spec 20 §4.4) |
+| `v_kpi_north_star_weekly`, `v_kpi_contracts_per_user_monthly`, `v_kpi_time_to_clarity`, `v_kpi_task_completion`, `v_kpi_hhh_weekly`, `v_kpi_cost_per_contract`, `v_kpi_correction_rate_weekly`, `v_error_rate_by_component`, `v_intent_resolution`, `v_content_safety_weekly`, `v_guardrail_false_positive_rate` | Spec 23 §4; all `security_invoker = true` |
+| `set_updated_at` triggers | Attached to `playbooks`, `key_dates`, `hhh_scores`, `alert_rules` (every new table with `updated_at`) |
+| pg_cron `evaluate-alert-rules` 02:00 UTC, `mark-due-reminders` 08:00 UTC | Pure SQL, always scheduled; the `send-due-reminders` invocation stays commented like `purge-expired-pdfs` (spec 21 §7.3) |
+| Extension `vector` | `create extension if not exists vector with schema extensions;` — required by `contract_chunks.embedding` |
+
+### D. RLS matrix additions
+
+| Table | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `playbooks` | own **or `user_id is null`** | own | own | own |
+| `playbook_rules` | own or `user_id is null` | own | — | own |
+| `risk_flags` | own | own | own | — |
+| `escalations` | own | own | — | — |
+| `integration_connections` | own | **none** (service role) | **none** (service role) | own |
+| `integration_events` | own | own | — | — |
+| `key_dates` | own | own | own | own |
+| `reminders` | own | own | own | own |
+| `hhh_scores` | own | own **and `created_by = auth.uid()`** | own **and `created_by = auth.uid()`** — an owner cannot alter SME (`created_by = operator`) or judge rows on their contracts; those are service-role writes | — |
+| `guardrail_events` | own | own | — | — |
+| `alert_rules` | **none** | **none** | **none** | **none** |
+| `alert_events` | **none** | **none** | **none** | **none** |
+| `contract_chunks` | own | own | — | own |
+| `eval_gates` | `true` (authenticated) | — | — | — |
+
+The seeded playbook rows (`user_id IS NULL`) are inserted by the schema script itself (runs as `postgres`), which is why no INSERT policy needs to allow a NULL owner.
+
+### E. Tests added to §8 (`tests/rls/placeholders.test.ts`)
+
+11. For each of the 14 new tables: B cannot read, update or delete A's rows; B cannot insert rows carrying A's `user_id`.
+12. Both A and B can read the seeded `playbooks`/`playbook_rules` rows (`user_id IS NULL`) and neither can update or delete them.
+13. `alert_rules`, `alert_events`: A cannot select, insert, update or delete anything; `eval_gates`: A can select, cannot write.
+14. `escalations`: A cannot update `status`; `guardrail_events`: A cannot update `false_positive`; `hhh_scores`: A cannot delete, and **A cannot update or insert a row whose `created_by` is not A** (an SME row on A's contract, inserted with the service role, is readable by A but immutable to A).
+15. Cascades: deleting a `contracts` row removes its `risk_flags`, `escalations`, `integration_events`, `key_dates` (and their `reminders`), `hhh_scores`, `guardrail_events`, `contract_chunks`.
+16. `persist_risk_flags` for B's contract raises `NOT_FOUND` and writes nothing; `risk_flags` insert with `severity='High', requires_human_review=false` violates the CHECK.
+17. `compute_hhh_verdicts`: a client-supplied verdict is overwritten (spec 22 §13).
+18. Verification queries: `28` tables; `rowsecurity = true` on all 28; `cron.job` lists `purge-expired-pdfs, reclaim-stale-processing, evaluate-alert-rules, mark-due-reminders`; `select extname from pg_extension where extname='vector'` returns one row.
+
+**STATUS (2026-09-21): the complete file, v1.0 + v1.1 section, executed twice (idempotency) against `pgvector/pgvector:pg17` in Docker with a Supabase stand-in scaffold (roles, `auth.users`, `storage.*`, `cron.*` stubs, default grants).** Result (re-run after the round-1 review fixes): 28 tables, RLS on all 28, 67 policies, 13 views, `contract_chunks.embedding` of type `vector`, 4 cron jobs, 5 seeded rules, 6 alert rules; a functional smoke script exercised `persist_key_terms` (reasoning/originals/`summary_status='pending'`), cross-user denial, seed-playbook visibility and immutability, `alert_rules` denial, `compute_hhh_verdicts` polarity, the judge-fields and High-requires-review CHECKs, `escalations` non-closability, the hash CHECK, `mark_due_reminders()`, `evaluate_alert_rules()` firing once per 24 h, every view, and the contract-delete cascade. The only statements not exercised are the two `pg_cron`/`pg_net` `create extension` lines (Supabase-preloaded); `create extension vector` and the `vector(1536)` column ran for real.
