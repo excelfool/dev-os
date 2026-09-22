@@ -42,7 +42,8 @@ const APPENDIX_B: Array<[string, 'built' | 'stub' | 'planned']> = [
   ['crm.salesforce', 'stub'],
   ['esign.docusign', 'stub'],
   ['eval.golden_set_instructor', 'planned'],
-  ['eval.hhh_human', 'planned'],
+  // D53 (Stage 5d-3): Review mode saves rows today; the sheet export is Stage 7.
+  ['eval.hhh_human', 'stub'],
   ['eval.hhh_judge', 'stub'],
   ['eval.judge_precision', 'stub'],
   ['eval.redteam', 'planned'],

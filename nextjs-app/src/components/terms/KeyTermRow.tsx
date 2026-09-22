@@ -9,6 +9,8 @@ import { PageChip } from './PageChip';
 import { WhySection } from './WhySection';
 import { InlineTermEditor } from './InlineTermEditor';
 import { useTargetPage } from '@/hooks/use-target-page';
+import { useReviewMode } from '@/hooks/use-review-mode';
+import { HhhQuestionnaire } from '@/components/review/HhhQuestionnaire';
 import type { KeyTerm } from '@/types/domain';
 
 export function KeyTermRow({
@@ -18,6 +20,7 @@ export function KeyTermRow({
   contractId,
   pageCount,
   isRequired = false,
+  stitched = false,
 }: {
   term: KeyTerm;
   tooltip?: string;
@@ -27,8 +30,11 @@ export function KeyTermRow({
   pageCount: number;
   /** Spec 06 v1.1 §C: a required standard term (from the library). */
   isRequired?: boolean;
+  /** Spec 22 §2: O8 is only asked of a stitched document. */
+  stitched?: boolean;
 }) {
   const { goToPage } = useTargetPage();
+  const review = useReviewMode();
   const [value, setValue] = useState(term.value);
   const [isEdited, setIsEdited] = useState(term.is_edited);
   // Spec 07 v1.1 §D: the three fields save independently, so each keeps its
@@ -170,6 +176,17 @@ export function KeyTermRow({
             // the text that was actually quoted.
             pageNumber={term.original_ai_page ?? pageNumber}
             isSourceVerified={term.is_source_verified}
+          />
+        )}
+
+        {/* Spec 22 §4: the questionnaire sits below the Why section. */}
+        {review?.reviewMode && (
+          <HhhQuestionnaire
+            contractId={contractId}
+            subjectType="term"
+            termId={term.id}
+            stitched={stitched}
+            label="Review this term"
           />
         )}
       </div>

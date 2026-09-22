@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { PageCitationChip } from './PageCitationChip';
+import { HhhQuestionnaire } from '@/components/review/HhhQuestionnaire';
+import { useReviewMode } from '@/hooks/use-review-mode';
 import { cn } from '@/lib/utils/cn';
 import type { ChatMessage } from '@/types/domain';
 
@@ -9,12 +11,16 @@ export function MessageList({
   messages,
   isAwaitingReply,
   slowNotice,
+  contractId,
 }: {
   messages: ChatMessage[];
   isAwaitingReply: boolean;
   slowNotice: boolean;
+  /** Spec 22 §4: needed to score an answer; absent outside a contract. */
+  contractId?: string;
 }) {
   const endRef = useRef<HTMLDivElement>(null);
+  const review = useReviewMode();
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
@@ -50,6 +56,14 @@ export function MessageList({
                   We couldn&apos;t confirm a page reference for this answer — check the document
                   directly.
                 </p>
+              )}
+              {review?.reviewMode && contractId && (
+                <HhhQuestionnaire
+                  contractId={contractId}
+                  subjectType="message"
+                  messageId={message.id}
+                  label="Review this answer"
+                />
               )}
             </>
           )}

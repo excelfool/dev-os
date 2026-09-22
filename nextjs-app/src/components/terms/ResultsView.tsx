@@ -21,6 +21,9 @@ import {
 } from './ResultsBanners';
 import { requiredMissingNames } from '@/lib/ai/term-library';
 import { TargetPageProvider } from '@/hooks/use-target-page';
+import { ReviewModeProvider } from '@/hooks/use-review-mode';
+import { ReviewModeToggle } from '@/components/review/ReviewModeToggle';
+import { ReviewFooter } from '@/components/review/ReviewFooter';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { recordEvent } from '@/lib/metrics/events';
 import { Button } from '@/components/ui/button';
@@ -33,6 +36,7 @@ export function ResultsView({
   calibrationWarningActive,
   initialFeedback,
   initialKeyDates,
+  reviewModeRequested = false,
 }: {
   contract: Contract;
   keyTerms: KeyTerm[];
@@ -40,6 +44,8 @@ export function ResultsView({
   calibrationWarningActive: boolean;
   initialFeedback: { rating: Rating | null; survey_accuracy: SurveyAccuracy | null } | null;
   initialKeyDates?: KeyDate[];
+  /** Spec 22 §4: `?mode=review` opens the page with Review mode already on. */
+  reviewModeRequested?: boolean;
 }) {
   const [reviewCompleted, setReviewCompleted] = useState(
     Boolean(contract.review_completed_at),
@@ -107,7 +113,11 @@ export function ResultsView({
 
   return (
     <TargetPageProvider>
+      <ReviewModeProvider initialOn={reviewModeRequested}>
       <div className="flex flex-col gap-subsection">
+        <div className="flex items-center justify-end gap-2">
+          <ReviewModeToggle />
+        </div>
         <DisclaimerBanner />
         {current.type_mismatch_warning && (
           <TypeMismatchNotice contractType={current.contract_type as ContractType} />
@@ -167,6 +177,8 @@ export function ResultsView({
         {/* Session end: the user marked a review complete (spec 10 §3). */}
         <NpsSurvey trigger={reviewCompleted} />
       </div>
+        <ReviewFooter termCount={terms.length} />
+      </ReviewModeProvider>
     </TargetPageProvider>
   );
 }

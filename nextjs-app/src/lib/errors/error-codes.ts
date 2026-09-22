@@ -63,6 +63,10 @@ export const ERROR_DEFINITIONS = {
     defaults: { page_count: 1 },
   },
   INVALID_REASONING: { httpStatus: 400, message: 'Enter reasoning between 1 and 500 characters.', retryable: false },
+  // Stage 5d-3 (spec 22 §4, route 32): a Review-mode answer set that does not
+  // match the questionnaire. Internal-facing copy — Review mode is the
+  // owner's own quality tool, not a user-facing form.
+  INVALID_HHH_ANSWERS: { httpStatus: 400, message: "That review answer doesn't match the questionnaire.", retryable: false },
   ALREADY_SURVEYED: { httpStatus: 409, message: "Thanks — you've already given us feedback recently.", retryable: false },
   PLAN_REQUIRED: { httpStatus: 403, message: 'Export is available on the Growth and Pro plans. Upgrade to export this review.', retryable: false },
   VALIDATION: { httpStatus: 400, message: 'Some of the details you entered need fixing.', retryable: false },

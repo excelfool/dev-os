@@ -106,6 +106,18 @@ RLS (authoritative matrix: spec 02 v1.1 §D): SELECT own; INSERT and UPDATE own 
 - **Progress:** a sticky footer "Scored {n} of {m} terms on this contract · {k} human rows total" — the `k` is the count that unlocks the judge (§6) and the v0.2 MEP acceptance (≥ 50 human term rows, §8).
 - Review mode never changes term values or `is_edited`; it writes only `hhh_scores`.
 
+**v1.1 5d-3 (2026-09-22) — built.** Review mode ships; `eval.hhh_human` moves `planned → stub` (D53, spec 21 §1.2): the scores save today, and the evaluation-sheet export that turns them into a deliverable is Stage 7, so the toggle renders with that note rather than claiming the loop is closed.
+
+*The codes.* `src/lib/eval/hhh-codes.ts` is the single definition, re-exported by `eval/lib/hhh-codes.ts` for the runners. The CSV stays the source: `npm run eval:sync-refs` copies it to `eval/datasets/hhh-questionnaire.csv` **and** parses it into JSON the app imports, because Review mode renders these questions in the **browser** and a bundle cannot read a CSV off disk. A unit test asserts the copy is byte-identical and the questions verbatim. `applicableCodes(subject, { stitched })` applies the O8 rule, so an ordinary contract is asked **28** codes and a stitched one 29.
+
+*The upsert, and why it is not an upsert.* Uniqueness is a **partial** index (`… WHERE evaluator='human'`), and PostgREST cannot name a partial index in `on_conflict` — `supabase.upsert()` would either fail or, worse, target the wrong constraint. Route 32 therefore does it by hand: select this reviewer's row for this subject (`evaluator='human'`, `created_by=auth.uid()`), update it if present, otherwise insert; a `23505` from a concurrent save is retried **once** as an update. No RPC and no schema change. Every applicable column is written on each save, so an answer changed back to **Skip** clears the stored value instead of leaving the previous one behind.
+
+*The verdicts are never sent.* `compute_hhh_verdicts()` is a BEFORE INSERT OR UPDATE trigger; the route writes only the 29 answer columns, `notes` and the identity, and reads `helpful_verdict / honest_verdict / harmless_verdict` back for the three pills. A unit test asserts no verdict key ever appears in the payload — a client that sent one would be asserting a pillar outcome it did not compute.
+
+*Ownership.* The contract and the referenced term or message are re-verified on the caller's JWT before anything is written (`404 NOT_FOUND`), so another owner's ids stay indistinguishable from missing ones. RLS would refuse the write regardless; the check is there to give the honest status.
+
+*New error code:* `400 INVALID_HHH_ANSWERS` (spec 12 route 32) covers a bad subject-id combination, a code the subject type is never asked, a non-boolean answer and notes over 1,000 characters.
+
 `PUT /api/hhh-scores` validation (`hhh-score.schema.ts`): `subject_type` enum; exactly one id per the CHECK; `answers` keys ⊆ the applicable codes for the subject type, values boolean|null; ownership of `contract_id` and of the referenced term/message re-verified. Errors `400 INVALID_HHH_ANSWERS`, `404 NOT_FOUND`.
 
 ---

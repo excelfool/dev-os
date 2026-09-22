@@ -113,3 +113,58 @@ describe('a contract that does not auto-renew', () => {
     expect(screen.queryByText(/Term ends and auto-renews/)).toBeNull();
   });
 });
+
+/**
+ * L12 (5d-3). The card rendered rows in the order the query returned them —
+ * `key_dates.date` ascending, which is the STORED date. After the roll-forward
+ * the displayed dates differ, so a renewal rolled to 2027 could appear above a
+ * check in 2026. Rows are sorted by what the reader actually sees.
+ */
+describe('key-date order (L12)', () => {
+  const rowText = () =>
+    screen.getAllByRole('listitem').map((li) => li.textContent?.split(' · ')[0]?.trim() ?? '');
+
+  it('lists upcoming dates ascending, with passed ones last', () => {
+    renderCard([
+      // Deliberately out of display order: stored ascending, displayed not.
+      keyDate('end_date', '2022-09-21', { 'Contract end date': '2022-09-21' }),
+      keyDate('renewal_date', '2023-03-21', {
+        'Contract end date': '2022-09-21',
+        'Renewal Period (Months)': '6',
+        'Auto Renewal': 'Yes',
+      }),
+      keyDate('auto_renewal_check', '2022-06-23', {
+        'Contract end date': '2022-09-21',
+        'Auto Renewal': 'Yes',
+      }),
+    ]);
+
+    // Displayed: check 2026-12-21, renewal 2027-03-21, end 2022-09-21 (passed).
+    expect(rowText()).toEqual(['Auto-renewal check', 'Renews on', 'Contract ends']);
+  });
+
+  it('puts every passed row after every upcoming one', () => {
+    renderCard([
+      keyDate('end_date', '2021-01-01', { 'Contract end date': '2021-01-01' }),
+      keyDate('renewal_notice_deadline', '2020-12-02', {
+        'Contract end date': '2021-01-01',
+        'Notice to not auto renew (Days)': '30',
+      }),
+      keyDate('renewal_date', '2021-07-01', {
+        'Contract end date': '2021-01-01',
+        'Renewal Period (Months)': '6',
+        'Auto Renewal': 'Yes',
+      }),
+    ]);
+
+    const labels = rowText();
+    // The two rolled rows are upcoming; only the end date is history.
+    expect(labels.at(-1)).toBe('Contract ends');
+  });
+
+  it('keeps a single upcoming row alone', () => {
+    renderCard([keyDate('end_date', '2027-03-31', { 'Contract end date': '2027-03-31' })]);
+
+    expect(rowText()).toEqual(['Contract ends']);
+  });
+});

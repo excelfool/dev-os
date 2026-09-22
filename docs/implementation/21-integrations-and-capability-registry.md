@@ -60,7 +60,7 @@ The map is **static code**, not a table: it is the source of truth and is deploy
 | `crm.salesforce` | stub | Phase 1 | US-016 | "Push key terms to Salesforce" / "Arrives after HubSpot." |
 | `esign.docusign` | stub | GA | §3 roadmap v1.2 | "DocuSign hand-off" / "Planned for general availability." |
 | `eval.golden_set_instructor` | planned | — | §10 dataset 1 | (operator-only; `user_note` "Internal evaluation dataset.") **Flips to `built`** when `eval/datasets/msa-instructor/pdfs/` holds all 10 PDFs and `manifest.json` exists (spec 22 §8) — v0.2 |
-| `eval.hhh_human` | planned | — | §10 HHH | "Expert review mode" / "Internal quality scoring." **Flips to `built` with Review mode + the sheet import (spec 22 §4–§5) — v0.2 MEP, before the Alpha gate** |
+| `eval.hhh_human` | **stub** (5d-3) | v0.2 MEP | §10 HHH | "Expert review mode" / **"Scores are saved; the evaluation-sheet export arrives in Stage 7."** `since='2026-09-22'` |
 | `eval.hhh_judge` | stub | after 50 human rows | §10 judge | (internal) |
 | `eval.judge_precision` | stub | after 50 human rows | §10 judge | (internal) |
 | `eval.redteam` | planned | — | §9 red teaming | (internal) **Flips to `built`** when `eval/redteam/attacks.json` + `redteam.ts` land — **v0.4, with chat** (the PRD's Alpha gate needs it as soon as a chat endpoint exists; "on every deploy" from then on, hardened at v1.0) |
@@ -71,6 +71,8 @@ The map is **static code**, not a table: it is the source of truth and is deploy
 | `billing` | planned | GA | §12, A-06 | "Self-service billing" / "Plan changes are handled by our team today." |
 
 Keys marked (internal) carry `owner: 'engineering'` and are **omitted from the `/settings` table** (§3) but returned by the API and shown on the `/trust` page's "How we measure" section (spec 15 §2). `export.csv_pdf` is `built (v1.1 spec)` in the PRD: the registry stores `status: 'built'` and `phase: 'v1.1'` so the table can print both.
+
+**v1.1 5d-3 (2026-09-22) — D53: `eval.hhh_human` is `planned → stub`, not `built`.** Review mode is live on the results page and route 32 writes `hhh_scores` rows, so the capability is no longer `planned` — hiding the toggle would now be hiding something that works. It is not `built` either: the point of the capability is an **evaluation deliverable**, and the sheet export that produces one is Stage 7. `stub` with `stub="children"` states exactly that — the feature renders and saves, with a note naming what is still missing. The `<Capability>` wrapper of §1.4 gets its first `stub="children"` use outside `KeyDatesCard`.
 
 ### 1.3 `notImplemented(key)` and the 501 error (P-4)
 

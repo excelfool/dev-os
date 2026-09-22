@@ -69,7 +69,7 @@ export function ChatPanel({
           ))}
         </div>
       ) : (
-        <MessageList messages={messages} isAwaitingReply={isAwaitingReply} slowNotice={slowNotice} />
+        <MessageList messages={messages} isAwaitingReply={isAwaitingReply} slowNotice={slowNotice} contractId={contractId} />
       )}
 
       {error && (

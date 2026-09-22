@@ -5,6 +5,8 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageCitationChip } from '@/components/chat/PageCitationChip';
 import { parseCitationPages } from '@/lib/ai/summary-validation';
+import { HhhQuestionnaire } from '@/components/review/HhhQuestionnaire';
+import { useReviewMode } from '@/hooks/use-review-mode';
 import { isBuilt } from '@/lib/capabilities';
 import type { Contract, SummaryStatus } from '@/types/domain';
 
@@ -106,6 +108,8 @@ export function SummaryCard({ contract }: { contract: Contract }) {
     };
   }, [view.status, posting, contract.id]);
 
+  const review = useReviewMode();
+
   if (!isBuilt('extract.summary')) return null;
 
   return (
@@ -142,6 +146,15 @@ export function SummaryCard({ contract }: { contract: Contract }) {
             Generate summary
           </Button>
         </div>
+      )}
+
+      {/* Spec 22 §4: the summary is its own scored subject. */}
+      {review?.reviewMode && view.status === 'completed' && (
+        <HhhQuestionnaire
+          contractId={contract.id}
+          subjectType="summary"
+          label="Review this summary"
+        />
       )}
     </section>
   );

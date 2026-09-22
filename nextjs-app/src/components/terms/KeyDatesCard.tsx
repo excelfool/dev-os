@@ -83,8 +83,22 @@ export function KeyDatesCard({
   const renewalDate = rolled?.find((k) => k.kind === 'renewal_date')?.date;
   const endDate = rolled?.find((k) => k.kind === 'end_date')?.date;
   const termEndIsRenewal = renewalDate !== undefined && renewalDate === endDate;
-  const visibleDates =
+  const shown =
     rolled === null ? null : termEndIsRenewal ? rolled.filter((k) => k.kind !== 'end_date') : rolled;
+
+  // L12 (5d-3): sort by the DISPLAYED date. The query orders by the stored
+  // date, which after the roll-forward is a different value — a renewal rolled
+  // to 2027 could sit above a check in 2026. Upcoming first, ascending; the
+  // passed rows, which the reader can do nothing about, come last.
+  const visibleDates =
+    shown === null
+      ? null
+      : [...shown].sort((a, b) => {
+          const aPast = isPast(a.date);
+          const bPast = isPast(b.date);
+          if (aPast !== bPast) return aPast ? 1 : -1;
+          return a.date.localeCompare(b.date);
+        });
 
   return (
     <section aria-label="Key dates" className="mt-subsection flex flex-col gap-2 rounded-card border border-grey-100 p-4">

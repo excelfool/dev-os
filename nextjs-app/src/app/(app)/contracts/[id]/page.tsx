@@ -9,7 +9,13 @@ import type { Contract, KeyTerm } from '@/types/domain';
 export const metadata = { title: 'Review · ContractIQ' };
 export const dynamic = 'force-dynamic';
 
-export default async function ResultsPage({ params }: { params: { id: string } }) {
+export default async function ResultsPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { mode?: string };
+}) {
   const supabase = createServerSupabaseClient();
   const {
     data: { user },
@@ -59,6 +65,7 @@ export default async function ResultsPage({ params }: { params: { id: string } }
         calibrationWarningActive={getServerConfig().CALIBRATION_WARNING_ACTIVE}
         initialFeedback={feedback ?? null}
         initialKeyDates={keyDates as KeyDate[]}
+        reviewModeRequested={searchParams?.mode === 'review'}
       />
     </main>
   );

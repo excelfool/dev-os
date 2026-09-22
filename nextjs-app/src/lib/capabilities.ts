@@ -109,7 +109,18 @@ const ENTRIES: Capability[] = [
   entry('crm.salesforce', 'stub', 'Phase 1', 'US-016', 'Push key terms to Salesforce', 'Arrives after HubSpot.'),
   entry('esign.docusign', 'stub', 'GA', '§3 roadmap v1.2', 'DocuSign hand-off', 'Planned for general availability.'),
   entry('eval.golden_set_instructor', 'planned', '—', '§10 dataset 1', 'Instructor golden set', 'Internal evaluation dataset.', 'engineering'),
-  entry('eval.hhh_human', 'planned', '—', '§10 HHH', 'Expert review mode', 'Internal quality scoring.', 'engineering'),
+  // D53 (Stage 5d-3): Review mode is built and saving rows; the sheet export
+  // that turns them into an evaluation deliverable is Stage 7, so `stub`.
+  {
+    key: 'eval.hhh_human',
+    status: 'stub',
+    phase: 'v0.2 MEP',
+    owner: 'engineering',
+    prd_ref: '§10 HHH',
+    since: '2026-09-22',
+    label: 'Expert review mode',
+    user_note: 'Scores are saved; the evaluation-sheet export arrives in Stage 7.',
+  },
   entry('eval.hhh_judge', 'stub', 'after 50 human rows', '§10 judge', 'LLM-as-judge scoring', 'Internal quality scoring.', 'engineering'),
   entry('eval.judge_precision', 'stub', 'after 50 human rows', '§10 judge', 'Judge precision / recall gate', 'Internal quality scoring.', 'engineering'),
   entry('eval.redteam', 'planned', '—', '§9 red teaming', 'Red-team attack suite', 'Internal safety testing.', 'engineering'),
