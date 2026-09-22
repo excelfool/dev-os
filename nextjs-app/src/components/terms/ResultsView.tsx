@@ -37,6 +37,7 @@ export function ResultsView({
   initialFeedback,
   initialKeyDates,
   reviewModeRequested = false,
+  humanRowCount = 0,
 }: {
   contract: Contract;
   keyTerms: KeyTerm[];
@@ -46,6 +47,8 @@ export function ResultsView({
   initialKeyDates?: KeyDate[];
   /** Spec 22 §4: `?mode=review` opens the page with Review mode already on. */
   reviewModeRequested?: boolean;
+  /** L13: this reviewer's own human rows, counted server-side at load. */
+  humanRowCount?: number;
 }) {
   const [reviewCompleted, setReviewCompleted] = useState(
     Boolean(contract.review_completed_at),
@@ -113,7 +116,7 @@ export function ResultsView({
 
   return (
     <TargetPageProvider>
-      <ReviewModeProvider initialOn={reviewModeRequested}>
+      <ReviewModeProvider initialOn={reviewModeRequested} initialHumanRowCount={humanRowCount}>
       <div className="flex flex-col gap-subsection">
         <div className="flex items-center justify-end gap-2">
           <ReviewModeToggle />

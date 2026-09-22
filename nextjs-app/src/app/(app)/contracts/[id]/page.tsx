@@ -55,6 +55,15 @@ export default async function ResultsPage({
     .order('display_rank', { ascending: true })
     .order('term_name', { ascending: true });
 
+  // L13: the Review footer's "k human rows total" starts from the real count,
+  // so it is right before the first save as well as after it. RLS already
+  // limits this to the caller's rows; the filters say so explicitly.
+  const { count: humanRowCount } = await supabase
+    .from('hhh_scores')
+    .select('id', { count: 'exact', head: true })
+    .eq('evaluator', 'human')
+    .eq('created_by', user.id);
+
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-subsection px-4 py-8">
       <h1 className="text-h3 text-grey-900">{contract.file_name}</h1>
@@ -66,6 +75,7 @@ export default async function ResultsPage({
         initialFeedback={feedback ?? null}
         initialKeyDates={keyDates as KeyDate[]}
         reviewModeRequested={searchParams?.mode === 'review'}
+        humanRowCount={humanRowCount ?? 0}
       />
     </main>
   );

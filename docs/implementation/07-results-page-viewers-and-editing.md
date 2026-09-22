@@ -151,7 +151,7 @@ Ownership verified. `file_path IS NULL` → `404 NO_FILE` (the client falls back
 
 ### A. Right-panel order (Flow 3 step 5)
 
-Top to bottom: `ReviewNeededNotice` (spec 06 v1.1 §C, only when `required_missing` is non-empty) → **`SummaryCard`** (§B) → **`RiskPanel`** (spec 20 §4.1, via `<Capability key="risk.flag">`) → `KeyTermsPanel` → `KeyDatesCard` (spec 21 §7.4) → `CompleteReviewButton` + `FeedbackWidget` (spec 10). The header gains `ReviewModeToggle` (§E) and, once `risk.flag` is built, the High-flag count badge.
+Top to bottom: `ReviewNeededNotice` (spec 06 v1.1 §C, only when `required_missing` is non-empty) → **`SummaryCard`** (§B) → **`RiskPanel`** (spec 20 §4.1, via `<Capability capability="risk.flag">`) → `KeyTermsPanel` → `KeyDatesCard` (spec 21 §7.4) → `CompleteReviewButton` + `FeedbackWidget` (spec 10). The header gains `ReviewModeToggle` (§E) and, once `risk.flag` is built, the High-flag count badge.
 
 ### B. `SummaryCard` (US-015)
 
@@ -196,7 +196,7 @@ Badges: "Edited" on the value (existing); a small "Page edited" / "Reasoning edi
 
 ### E. Review mode entry (Flow 3 step 10)
 
-`ReviewModeToggle` in the results header (`<Capability key="eval.hhh_human">` — absent while `planned`): a switch labelled **"Review"** that turns on the per-term `HhhQuestionnaire` disclosures and the sticky progress footer defined in spec 22 §4, and reads `?mode=review`. Review mode changes nothing else on the page.
+`ReviewModeToggle` in the results header (`<Capability capability="eval.hhh_human">` — absent while `planned`): a switch labelled **"Review"** that turns on the per-term `HhhQuestionnaire` disclosures and the sticky progress footer defined in spec 22 §4, and reads `?mode=review`. Review mode changes nothing else on the page.
 
 ### F. High-risk label
 

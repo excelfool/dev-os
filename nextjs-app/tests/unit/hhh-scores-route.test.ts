@@ -20,6 +20,10 @@ interface Row {
 interface FakeState {
   contract: Record<string, unknown> | null;
   subject: Record<string, unknown> | null;
+  /** The contract the fake message's session belongs to. */
+  messageContractId: string;
+  /** What the owner's human-row count query returns. */
+  humanRowCount: number;
   existing: Row | null;
   /** Rows written, in order, as `{ table, op, payload }`. */
   writes: Array<{ table: string; op: 'insert' | 'update'; payload: Record<string, unknown> }>;
@@ -31,6 +35,8 @@ interface FakeState {
 const state: FakeState = {
   contract: null,
   subject: null,
+  messageContractId: '',
+  humanRowCount: 0,
   existing: null,
   writes: [],
   insertConflict: false,
@@ -42,10 +48,22 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } } }) },
     from(table: string) {
       let op: 'select' | 'insert' | 'update' = 'select';
+      let countMode = false;
+      const filters: Record<string, unknown> = {};
       const q = {
-        select: () => q,
-        eq: () => q,
+        select: (_cols?: string, opts?: { count?: string; head?: boolean }) => {
+          if (opts?.count) countMode = true;
+          return q;
+        },
+        eq: (column: string, value: unknown) => {
+          filters[column] = value;
+          return q;
+        },
         is: () => q,
+        /** A head+count query is awaited directly, not through maybeSingle. */
+        then(resolve: (v: unknown) => void) {
+          resolve(countMode ? { count: state.humanRowCount, error: null } : { data: null, error: null });
+        },
         insert(payload: Record<string, unknown>) {
           op = 'insert';
           state.writes.push({ table, op: 'insert', payload });
@@ -69,6 +87,15 @@ vi.mock('@/lib/supabase/server', () => ({
           if (op === 'update') return { data: state.returned, error: null };
           if (table === 'contracts') return { data: state.contract, error: null };
           if (table === 'hhh_scores') return { data: state.existing, error: null };
+          if (table === 'chat_messages') {
+            // A message is only visible when the query scoped it to the
+            // contract its session actually belongs to.
+            const wanted = filters['chat_sessions.contract_id'];
+            if (wanted !== undefined && wanted !== state.messageContractId) {
+              return { data: null, error: null };
+            }
+            return { data: state.subject, error: null };
+          }
           return { data: state.subject, error: null };
         },
         async single() {
@@ -118,6 +145,8 @@ const TERM_BODY = {
 beforeEach(() => {
   state.contract = { id: CONTRACT_ID, prompt_version: 'v2.0', term_library_version: 'lib-1' };
   state.subject = { id: TERM_ID };
+  state.messageContractId = CONTRACT_ID;
+  state.humanRowCount = 1;
   state.existing = null;
   state.writes = [];
   state.insertConflict = false;
@@ -268,11 +297,13 @@ describe('route 32 payload (spec 22 §3, §4)', () => {
     const res = await put(TERM_BODY);
 
     expect(res.status).toBe(200);
+    // 5d-3a adds `human_row_count` for the Review footer (L13).
     expect(await res.json()).toEqual({
       id: 'score-1',
       helpful_verdict: 'pass',
       honest_verdict: 'fail',
       harmless_verdict: 'pass',
+      human_row_count: 1,
     });
   });
 });
@@ -312,5 +343,71 @@ describe('route 32 upsert without an on_conflict target (spec 22 §4)', () => {
 
     const writes = state.writes.filter((w) => w.table === 'hhh_scores');
     expect(writes[0]!.payload).toMatchObject({ h1: null });
+  });
+});
+
+/**
+ * Stage 5d-3a item 2. A message was checked for ownership but not for which
+ * contract it belongs to, so an owner with two contracts could file a score
+ * against the wrong one — the answers would then count towards a contract the
+ * answer was never about.
+ */
+describe('route 32 scopes a message to its contract (5d-3a)', () => {
+  const MESSAGE_BODY = {
+    contract_id: CONTRACT_ID,
+    subject_type: 'message' as const,
+    message_id: MESSAGE_ID,
+    answers: { H1: true },
+  };
+
+  it('accepts a message whose session belongs to the contract', async () => {
+    const res = await put(MESSAGE_BODY);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('is 404 when the message belongs to another contract of the same owner', async () => {
+    state.messageContractId = '44444444-4444-4444-8444-444444444444';
+
+    const res = await put(MESSAGE_BODY);
+
+    expect(res.status).toBe(404);
+    expect(state.writes).toHaveLength(0);
+  });
+});
+
+/**
+ * Stage 5d-3a item 1 (L13). The footer's "k human rows total" was hardcoded:
+ * nothing ever fetched it and nothing refreshed it after a save, so it read 0
+ * however many rows the reviewer had. The count now comes back with every
+ * successful save, so the first one corrects it.
+ */
+describe('route 32 returns the reviewer’s human-row count (L13)', () => {
+  it('includes the count on an insert', async () => {
+    state.humanRowCount = 1;
+
+    const res = await put(TERM_BODY);
+
+    expect(await res.json()).toMatchObject({ human_row_count: 1 });
+  });
+
+  it('includes the count on an update', async () => {
+    state.existing = { id: 'score-1' };
+    state.humanRowCount = 7;
+
+    const res = await put(TERM_BODY);
+
+    expect(await res.json()).toMatchObject({ human_row_count: 7 });
+  });
+
+  it('still returns the verdicts alongside it', async () => {
+    const res = await put(TERM_BODY);
+
+    expect(await res.json()).toMatchObject({
+      id: 'score-1',
+      helpful_verdict: 'pass',
+      honest_verdict: 'fail',
+      harmless_verdict: 'pass',
+    });
   });
 });

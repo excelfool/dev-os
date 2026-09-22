@@ -82,11 +82,16 @@ export async function PUT(request: Request) {
     }
 
     if (input.message_id) {
+      // 5d-3a: scoped to the contract in the body, not just to the user. An
+      // owner with two contracts could otherwise file an answer against the
+      // wrong one, and the score would count towards a contract the answer
+      // was never about. `chat_sessions` is the only link between the two.
       const { data: message } = await supabase
         .from('chat_messages')
-        .select('id')
+        .select('id, chat_sessions!inner(contract_id)')
         .eq('id', input.message_id)
         .eq('user_id', user.id)
+        .eq('chat_sessions.contract_id', input.contract_id)
         .maybeSingle();
       if (!message) throw appError('NOT_FOUND');
     }
@@ -101,6 +106,24 @@ export async function PUT(request: Request) {
     }
 
     const notes = input.notes ?? null;
+
+    /**
+     * L13 (5d-3a): the reviewer's own human rows, counted after the write.
+     *
+     * The Review footer used to show a number nothing ever set, so it read 0
+     * however many rows existed. Returning it with every save means the count
+     * is right from the first one, without a second round trip. RLS already
+     * limits this to rows the caller may read; the filters state the same
+     * thing explicitly so the number matches what the footer claims it is.
+     */
+    const countHumanRows = async (): Promise<number> => {
+      const { count } = await supabase
+        .from('hhh_scores')
+        .select('id', { count: 'exact', head: true })
+        .eq('evaluator', 'human')
+        .eq('created_by', user.id);
+      return count ?? 0;
+    };
 
     /** Updates this reviewer's existing row; the trigger recomputes verdicts. */
     const updateRow = async (id: string) => {
@@ -134,7 +157,10 @@ export async function PUT(request: Request) {
     };
 
     const existingId = await findExisting();
-    if (existingId) return Response.json(await updateRow(existingId));
+    if (existingId) {
+      const updated = await updateRow(existingId);
+      return Response.json({ ...updated, human_row_count: await countHumanRows() });
+    }
 
     const { data: inserted, error: insertError } = await supabase
       .from('hhh_scores')
@@ -161,10 +187,11 @@ export async function PUT(request: Request) {
       if (insertError.code !== UNIQUE_VIOLATION) throw appError('INTERNAL');
       const racedId = await findExisting();
       if (!racedId) throw appError('INTERNAL');
-      return Response.json(await updateRow(racedId));
+      const updated = await updateRow(racedId);
+      return Response.json({ ...updated, human_row_count: await countHumanRows() });
     }
     if (!inserted) throw appError('INTERNAL');
 
-    return Response.json(inserted);
+    return Response.json({ ...inserted, human_row_count: await countHumanRows() });
   });
 }

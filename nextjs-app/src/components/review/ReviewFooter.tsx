@@ -13,9 +13,11 @@ export function ReviewFooter({ termCount }: { termCount: number }) {
   if (!review?.reviewMode) return null;
 
   const scored = review.scoredTermIds.size;
+  const rows = review.humanRowCount;
   return (
     <div className="sticky bottom-0 z-10 border-t border-grey-100 bg-grey-25 px-4 py-2 text-caption text-grey-600">
-      Scored {scored} of {termCount} terms on this contract · {review.humanRowCount} human rows total
+      Scored {scored} of {termCount} terms on this contract · {rows} human{' '}
+      {rows === 1 ? 'row' : 'rows'} total
     </div>
   );
 }

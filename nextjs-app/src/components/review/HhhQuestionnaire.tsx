@@ -28,6 +28,11 @@ interface Verdicts {
   harmless_verdict: string;
 }
 
+/** L13: the save response also carries the reviewer's own row count. */
+interface SaveResponse extends Verdicts {
+  human_row_count?: number;
+}
+
 const CHOICES: Array<{ label: string; value: Answer }> = [
   { label: 'Yes', value: true },
   { label: 'No', value: false },
@@ -94,8 +99,11 @@ export function HhhQuestionnaire({
         const body = await res.json().catch(() => null);
         throw new Error(body?.error?.message ?? 'Could not save that review.');
       }
-      const body = (await res.json()) as Verdicts;
+      const body = (await res.json()) as SaveResponse;
       setVerdicts(body);
+      // L13: the server's count is authoritative — an update does not add a
+      // row, so incrementing locally would drift on every re-save.
+      if (typeof body.human_row_count === 'number') review?.setHumanRowCount(body.human_row_count);
       if (termId) review?.markTermScored(termId);
     } catch (err) {
       // The answers stay on screen; only the save failed.

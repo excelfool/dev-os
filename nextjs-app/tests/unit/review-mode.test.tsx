@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { HhhQuestionnaire, SAVE_DEBOUNCE_MS } from '@/components/review/HhhQuestionnaire';
+import { ReviewFooter } from '@/components/review/ReviewFooter';
 import { ReviewModeToggle } from '@/components/review/ReviewModeToggle';
 import { ReviewModeProvider } from '@/hooks/use-review-mode';
 import { APPLICABLE_CODES, HHH_CODES } from '@/lib/eval/hhh-codes';
@@ -242,5 +243,117 @@ describe('saving (spec 22 §4)', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     // The answer the reviewer gave is still selected.
     expect((yes as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+/**
+ * L13 (5d-3a). Live on contract 93ba9b49, one saved term score left the
+ * footer reading "Scored 1 of 36 terms · 0 human rows total" while
+ * `hhh_scores` held exactly one row for that owner. The count was never
+ * fetched and never refreshed — the provider defaulted it to 0 and nothing
+ * ever set it. Every successful save now carries the true count back.
+ */
+describe('ReviewFooter count (L13)', () => {
+  function renderFooter(count: number, termCount = 36) {
+    return render(
+      <ReviewModeProvider initialOn initialHumanRowCount={count}>
+        <ReviewFooter termCount={termCount} />
+      </ReviewModeProvider>,
+    );
+  }
+
+  it('shows the count it was given, not zero', () => {
+    renderFooter(1);
+
+    expect(screen.getByText(/1 human row\b/)).toBeTruthy();
+  });
+
+  it('says "1 human row", singular', () => {
+    renderFooter(1);
+
+    expect(screen.getByText(/· 1 human row total/)).toBeTruthy();
+  });
+
+  it('says "2 human rows", plural', () => {
+    renderFooter(2);
+
+    expect(screen.getByText(/· 2 human rows total/)).toBeTruthy();
+  });
+
+  it('says "0 human rows" before anything is scored', () => {
+    renderFooter(0);
+
+    expect(screen.getByText(/· 0 human rows total/)).toBeTruthy();
+  });
+
+  it('still reports the per-contract term progress', () => {
+    renderFooter(3, 36);
+
+    expect(screen.getByText(/Scored 0 of 36 terms on this contract/)).toBeTruthy();
+  });
+});
+
+describe('the footer updates after a save (L13)', () => {
+  it('takes the count from the save response, correcting the first one', async () => {
+    global.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ ...VERDICTS, human_row_count: 1 }), { status: 200 }),
+    ) as never;
+
+    render(
+      <ReviewModeProvider initialOn initialHumanRowCount={0}>
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="term" termId={TERM_ID} />
+        <ReviewFooter termCount={36} />
+      </ReviewModeProvider>,
+    );
+    expect(screen.getByText(/· 0 human rows total/)).toBeTruthy();
+
+    openForm();
+    fireEvent.click(within(screen.getAllByRole('group')[0]!).getByRole('radio', { name: 'Yes' }));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(screen.getByText(/· 1 human row total/)).toBeTruthy());
+  });
+
+  it('counts the scored term towards the per-contract progress', async () => {
+    global.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({ ...VERDICTS, human_row_count: 1 }), { status: 200 }),
+    ) as never;
+
+    render(
+      <ReviewModeProvider initialOn>
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="term" termId={TERM_ID} />
+        <ReviewFooter termCount={36} />
+      </ReviewModeProvider>,
+    );
+
+    openForm();
+    fireEvent.click(within(screen.getAllByRole('group')[0]!).getByRole('radio', { name: 'Yes' }));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(screen.getByText(/Scored 1 of 36 terms/)).toBeTruthy());
+  });
+
+  it('leaves the count alone when the save fails', async () => {
+    global.fetch = vi.fn(async () => new Response('{}', { status: 500 })) as never;
+
+    render(
+      <ReviewModeProvider initialOn initialHumanRowCount={4}>
+        <HhhQuestionnaire contractId={CONTRACT_ID} subjectType="term" termId={TERM_ID} />
+        <ReviewFooter termCount={36} />
+      </ReviewModeProvider>,
+    );
+
+    openForm();
+    fireEvent.click(within(screen.getAllByRole('group')[0]!).getByRole('radio', { name: 'Yes' }));
+    await act(async () => {
+      vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    });
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText(/· 4 human rows total/)).toBeTruthy();
   });
 });

@@ -98,7 +98,9 @@ export function notImplemented(key: CapabilityKey): AppError {
 
 `GET /api/capabilities` (§2) is fetched once by the authed shell into TanStack Query (`staleTime: Infinity` — it changes only with a deploy) and exposed by `useCapability(key)` → `{ status, phase, label, user_note }`. Server Components import `CAPABILITIES` directly. **No component reads `process.env` for feature state** — the registry replaces ad-hoc flags for every key above. (`NEXT_PUBLIC_EXPORT_ENABLED` from spec 15 remains the operator kill-switch for export *availability*; the registry states export is `built`.)
 
-`<Capability key="risk.flag" stub="fallback">` wrapper (P-6): renders `children` when `built`; when `stub`, renders `fallback` (the empty state) by default, or `children` plus `stubNote` when the prop `stub="children"` is given — for stub capabilities whose data layer is live today (`KeyDatesCard`, spec 21 §7.4: dates and offsets work, only delivery is undeployed); and **nothing** when `planned`. Every placeholder panel in specs 20–23 uses it, so the "hidden, not absent" rule has one implementation: `RiskPanel`, `EscalateOffer`, `PlaybookAdmin` use the default; `KeyDatesCard` uses `stub="children"`.
+`<Capability capability="risk.flag" stub="fallback">` wrapper (P-6): renders `children` when `built`; when `stub`, renders `fallback` (the empty state) by default, or `children` plus `stubNote` when the prop `stub="children"` is given — for stub capabilities whose data layer is live today (`KeyDatesCard`, spec 21 §7.4: dates and offsets work, only delivery is undeployed); and **nothing** when `planned`. Every placeholder panel in specs 20–23 uses it, so the "hidden, not absent" rule has one implementation: `RiskPanel`, `EscalateOffer`, `PlaybookAdmin` use the default; `KeyDatesCard` uses `stub="children"`.
+
+**v1.1 5d-3a (2026-09-22) — the prop is `capability`, not `key`.** Earlier drafts wrote `<Capability key="risk.flag">`. That cannot work: **React reserves `key`** for reconciliation, strips it from `props`, and the component would receive `undefined` — the wrapper would read the registry for no capability at all and, worse, do it silently. The prop is therefore named **`capability`**, and every example above and in specs 07 and 22 now reads `<Capability capability="…">`. The rest of the contract — `stub`, `stubNote`, `fallback`, and the built/stub/planned behaviour — is unchanged. Implemented in `src/components/layout/Capability.tsx` (Stage 5d-3).
 
 ---
 
@@ -269,7 +271,7 @@ A period of zero or less cannot advance; the end date is returned. A non-auto-re
 
 `key_date_reminder` is added to the `send-notification` template union (spec 14 v1.1 amendment).
 
-### 7.4 UI — `KeyDatesCard` on the results page (below the key-terms panel; `<Capability key="reminders.key_dates" stub="children">` — the live card renders while stub, with the footer note as `stubNote`)
+### 7.4 UI — `KeyDatesCard` on the results page (below the key-terms panel; `<Capability capability="reminders.key_dates" stub="children">` — the live card renders while stub, with the footer note as `stubNote`)
 
 Lists each key date with its kind label ("Contract ends", "Last day to stop auto-renewal", "Renews on", "Auto-renewal check"), the date, a `PageChip` to the source term, and three toggles **30 / 60 / 90 days before** → route 30. Footer while stub: "Email reminders arrive in v1.1 — in-app reminders are shown in the bell today." Empty state: "No key dates were found in this contract."
 
