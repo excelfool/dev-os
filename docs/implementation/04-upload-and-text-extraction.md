@@ -144,3 +144,7 @@ Nothing at upload time detects contract type — detection happens during extrac
 ### C. Tests
 
 `tests/integration/upload-formats.test.ts` (spec 21 §9); `contract-review.spec.ts` asserts the five disabled options and that dropping a `.docx` shows the exact message.
+
+### D. D46 — content hash (capability `versioning.duplicate_detect`, built)
+
+Right after the magic-bytes check the route computes `sha-256` of the raw buffer and stores it as `contracts.content_hash` at step 8 (schema v1.1 §A11). Before the insert it queries the caller's own contracts for the same hash; a match does **not** reject — the upload proceeds and the `201` carries `duplicate_of: <existing contract_id>` and `duplicate_created_at`. `UploadWizard` shows a non-blocking notice — "You already uploaded this file on <date> — opening the existing analysis is faster." — linking to the existing contract, and still routes to the new contract's `/prepare`. Test: `tests/integration/upload-formats.test.ts` (same bytes twice ⇒ second `201` carries `duplicate_of`; different bytes ⇒ field absent).

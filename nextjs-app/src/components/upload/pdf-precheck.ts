@@ -6,11 +6,19 @@ import { publicConfig } from '@/lib/utils/config';
  * Client pre-checks, run before a single byte leaves the browser (spec 04 §1).
  * These are advisory only — the server re-validates everything.
  */
+export const DOCX_MESSAGE =
+  "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1.";
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 export interface PrecheckFailure {
   message: string;
 }
 
 export async function precheckFile(file: File): Promise<PrecheckFailure | null> {
+  // v1.1 (spec 04 §A): a Word document gets its own message, verbatim.
+  if (/\.docx$/i.test(file.name) || file.type === DOCX_MIME) {
+    return { message: DOCX_MESSAGE };
+  }
   if (file.type !== 'application/pdf') {
     return { message: "That file isn't a PDF. Please upload a PDF contract." };
   }

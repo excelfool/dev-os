@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardTitle } from '@/components/ui/card';
 import { FeedbackOptInSwitch } from '@/components/layout/FeedbackOptInSwitch';
 import { DangerZone } from '@/components/layout/DangerZone';
+import { CapabilityTable } from '@/components/layout/CapabilityTable';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getQuotaState, planLabel } from '@/lib/security/quota';
 import { formatDate } from '@/lib/utils/format';
@@ -83,6 +84,10 @@ export default async function SettingsPage() {
         <p className="text-caption text-grey-400">
           Plan changes are handled by our team — email support@contractiq.app.
         </p>
+      </Card>
+
+      <Card className="flex flex-col gap-subsection">
+        <CapabilityTable />
       </Card>
 
       <Card className="flex flex-col gap-subsection">

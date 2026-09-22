@@ -10,12 +10,18 @@ import { getServerConfig } from '@/lib/utils/server-config';
 import { formatMegabytes, sanitiseFilename } from '@/lib/utils/format';
 import { recordProcessingRun } from '@/lib/metrics/timings';
 import { recordEvent } from '@/lib/metrics/events';
+import { getDocxExtractor } from '@/lib/integrations/docx';
+import { getOcrAdapter } from '@/lib/integrations/ocr';
+import { createHash } from 'node:crypto';
 
 // pdf-parse requires the Node runtime.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const PDF_MAGIC = '%PDF-';
+// A .docx is a ZIP container: local-file-header signature PK\x03\x04.
+const ZIP_MAGIC = 'PK\x03\x04';
+const OCR_MIN_CONFIDENCE = 80;
 
 /**
  * POST /api/contracts/upload — the authoritative gate (spec 04 §2).
@@ -58,8 +64,26 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 6. Magic bytes — the declared MIME type is not trusted
-    if (buffer.subarray(0, 5).toString('latin1') !== PDF_MAGIC) throw appError('NOT_A_PDF');
+    // 6. Magic bytes — the declared MIME type is not trusted.
+    // v1.1 (spec 04 §B, spec 21 §4.1): PK\x03\x04 AND a .docx name → the DOCX
+    // extractor; NOT_CONFIGURED ⇒ 422 UNSUPPORTED_FORMAT, nothing stored.
+    // Any other non-%PDF- file ⇒ 400 NOT_A_PDF as before.
+    if (buffer.subarray(0, 5).toString('latin1') !== PDF_MAGIC) {
+      const isDocx =
+        buffer.subarray(0, 4).toString('latin1') === ZIP_MAGIC && /\.docx$/i.test(file.name);
+      if (isDocx) {
+        const docx = await getDocxExtractor().extract(buffer);
+        if (!docx.ok) throw appError('UNSUPPORTED_FORMAT');
+        // No extractor is wired today (spec 21 §4). When one is, its
+        // [PAGE N]-marked text feeds step 7 exactly like a parsed PDF.
+        throw appError('UNSUPPORTED_FORMAT');
+      }
+      throw appError('NOT_A_PDF');
+    }
+
+    // D46: content hash of the raw bytes, stored at step 8 and used for the
+    // non-blocking duplicate notice.
+    const contentHash = createHash('sha256').update(buffer).digest('hex');
 
     await recordEvent(supabase, {
       userId: user.id,
@@ -83,7 +107,25 @@ export async function POST(request: Request) {
     if (extracted.pageCount > cfg.MAX_PAGES) {
       throw appError('TOO_MANY_PAGES', { pages: extracted.pageCount });
     }
-    if (extracted.wordCount < cfg.MIN_TEXT_WORDS) throw appError('SCANNED_PDF');
+    // v1.1 scanned branch (spec 04 §B): below the word floor, try OCR.
+    // NOT_CONFIGURED ⇒ the existing 422 SCANNED_PDF. Configured: OCR text
+    // replaces the parse result; confidence < 80 ⇒ 422 OCR_LOW_CONFIDENCE.
+    let ocrConfidence: number | null = null;
+    if (extracted.wordCount < cfg.MIN_TEXT_WORDS) {
+      const ocr = await getOcrAdapter().extract(buffer);
+      if (!ocr.ok) throw appError('SCANNED_PDF');
+      if (ocr.value.confidence < OCR_MIN_CONFIDENCE) {
+        throw appError('OCR_LOW_CONFIDENCE', { n: Math.round(ocr.value.confidence) });
+      }
+      ocrConfidence = ocr.value.confidence;
+      extracted = {
+        ...extracted,
+        text: ocr.value.text,
+        pageCount: ocr.value.pageCount,
+        wordCount: ocr.value.text.split(/\s+/).filter(Boolean).length,
+      };
+      if (extracted.wordCount < cfg.MIN_TEXT_WORDS) throw appError('SCANNED_PDF');
+    }
 
     const tokenEstimate = estimateTokens(extracted.text);
     if (tokenEstimate > cfg.MAX_TOKENS) throw appError('TOO_MANY_TOKENS');
@@ -98,7 +140,20 @@ export async function POST(request: Request) {
     // Everything after this point refunds the unit on failure — a user is never
     // charged for a contract that does not exist.
     let contractId: string;
+    let duplicateOf: { id: string; created_at: string } | null = null;
     try {
+      // D46: an earlier upload of the same bytes by this user is reported,
+      // never rejected.
+      const { data: existing } = await supabase
+        .from('contracts')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('content_hash', contentHash)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (existing) duplicateOf = { id: existing.id, created_at: existing.created_at };
+
       // 8. Insert
       const { data: inserted, error: insertError } = await supabase
         .from('contracts')
@@ -114,6 +169,8 @@ export async function POST(request: Request) {
           status: 'uploaded',
           last_accessed_at: new Date().toISOString(),
           prompt_version: cfg.PROMPT_VERSION,
+          content_hash: contentHash,
+          ocr_confidence: ocrConfidence,
         })
         .select('id')
         .single();
@@ -177,6 +234,10 @@ export async function POST(request: Request) {
         token_estimate: tokenEstimate,
         storage_available: storageAvailable,
         status: 'uploaded',
+        ...(ocrConfidence !== null ? { ocr_confidence: ocrConfidence } : {}),
+        ...(duplicateOf
+          ? { duplicate_of: duplicateOf.id, duplicate_created_at: duplicateOf.created_at }
+          : {}),
       },
       { status: 201 },
     );

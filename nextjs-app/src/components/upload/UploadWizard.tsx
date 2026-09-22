@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import { ContractTypeSelect } from './ContractTypeSelect';
 import { PdfDropzone } from './PdfDropzone';
+import { ImportSourceOptions } from './ImportSourceOptions';
+import { formatDate } from '@/lib/utils/format';
+import { useState } from 'react';
 import { UploadProgress } from './UploadProgress';
 import { precheckFile, shouldShowDeviceAdvisory } from './pdf-precheck';
 import { UploadWizardProvider, useUploadWizard } from './UploadWizardContext';
@@ -22,6 +25,7 @@ function UploadWizardInner() {
   const router = useRouter();
   const { state, dispatch } = useUploadWizard();
   const { upload, cancel, progress, isPending } = useUpload();
+  const [duplicate, setDuplicate] = useState<{ id: string; createdAt: string } | null>(null);
 
   async function handleFile(file: File) {
     if (!state.contractType) return;
@@ -36,6 +40,10 @@ function UploadWizardInner() {
 
     try {
       const result = await upload({ file, contractType: state.contractType });
+      // D46: non-blocking — the notice is shown and the new upload proceeds.
+      if (result.duplicate_of && result.duplicate_created_at) {
+        setDuplicate({ id: result.duplicate_of, createdAt: result.duplicate_created_at });
+      }
       // Straight to /prepare — no intermediate screen.
       router.push(`/contracts/${result.contract_id}/prepare`);
     } catch (err) {
@@ -76,6 +84,16 @@ function UploadWizardInner() {
         </div>
       )}
 
+      {duplicate && (
+        <p role="status" className="rounded-card bg-brand-50 p-4 text-caption text-brand-700">
+          You already uploaded this file on {formatDate(duplicate.createdAt)} — opening the{' '}
+          <Link href={`/contracts/${duplicate.id}`} className="underline">
+            existing analysis
+          </Link>{' '}
+          is faster.
+        </p>
+      )}
+
       {state.deviceAdvisory && !error && (
         <p role="status" className="rounded-card bg-warning-50 p-4 text-caption text-warning-900">
           For files near 10 MB we recommend desktop Chrome or Firefox.
@@ -85,7 +103,10 @@ function UploadWizardInner() {
       {isPending && state.file ? (
         <UploadProgress fileName={state.file.name} progress={progress} onCancel={cancel} />
       ) : (
-        <PdfDropzone locked={!state.contractType} onFile={handleFile} />
+        <>
+          <ImportSourceOptions />
+          <PdfDropzone locked={!state.contractType} onFile={handleFile} />
+        </>
       )}
     </div>
   );

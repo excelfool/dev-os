@@ -1,4 +1,5 @@
 import { ERROR_DEFINITIONS, type ErrorCode } from './error-codes';
+import { getCapability, type CapabilityKey } from '@/lib/capabilities';
 
 /**
  * The only error type Route Handlers throw (spec 01 §2). Every non-Storage
@@ -27,6 +28,12 @@ export class AppError extends Error {
       retryable: this.retryable,
     };
     if (this.details?.fields) body.fields = this.details.fields;
+    // P-4: the 501 envelope names the capability so the contract is testable
+    // before the feature exists (spec 21 §1.3).
+    if (this.code === 'NOT_IMPLEMENTED') {
+      if (this.details?.capability) body.capability = this.details.capability;
+      if (this.details?.phase) body.phase = this.details.phase;
+    }
 
     return new Response(JSON.stringify({ error: body }), {
       status: this.httpStatus,
@@ -61,4 +68,19 @@ export function appErrorWithMessage(
 ): AppError {
   const def = ERROR_DEFINITIONS[code];
   return new AppError(code, def.httpStatus, message, def.retryable, details);
+}
+
+/**
+ * The 501 for a registered-but-unbuilt route (spec 21 §1.3, P-4). Throws if
+ * called for a built capability — that is a programming error, not a 501.
+ */
+export function notImplemented(key: CapabilityKey): AppError {
+  const c = getCapability(key);
+  if (c.status === 'built') throw new Error(`notImplemented() called for built capability ${key}`);
+  const phase = c.phase === '—' ? 'a later release' : c.phase;
+  return appError('NOT_IMPLEMENTED', { label: c.label, phase }, {
+    capability: key,
+    phase: c.phase,
+    status: c.status,
+  });
 }

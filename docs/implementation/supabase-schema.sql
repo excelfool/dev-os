@@ -883,6 +883,15 @@ alter table public.contracts add constraint contracts_ocr_confidence_check
   check (ocr_confidence is null or (ocr_confidence >= 0 and ocr_confidence <= 100));
 alter table public.contracts add column if not exists term_library_version text not null default 'v1.0';
 
+-- capability: versioning.duplicate_detect | status: built | phase: v1.1
+-- D46 — sha-256 of the raw upload bytes; same-user duplicates are reported on
+-- the 201, never rejected.
+alter table public.contracts add column if not exists content_hash text;
+alter table public.contracts drop constraint if exists contracts_content_hash_check;
+alter table public.contracts add constraint contracts_content_hash_check
+  check (content_hash is null or content_hash ~ '^[0-9a-f]{64}$');
+create index if not exists idx_contracts_user_hash on public.contracts (user_id, content_hash);
+
 -- rollout.cohorts (stub): selects the launch cohort without a deploy (PRD §5)
 alter table public.profiles add column if not exists rollout_cohort text not null default 'none';
 alter table public.profiles drop constraint if exists profiles_rollout_cohort_check;

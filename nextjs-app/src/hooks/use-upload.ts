@@ -10,6 +10,11 @@ export interface UploadResponse {
   token_estimate: number;
   storage_available: boolean;
   status: 'uploaded';
+  /** Present when OCR produced the text (spec 04 v1.1 §B). */
+  ocr_confidence?: number;
+  /** D46: an earlier upload of the same bytes by this user. */
+  duplicate_of?: string;
+  duplicate_created_at?: string;
 }
 
 export interface UploadError {

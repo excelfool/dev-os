@@ -85,6 +85,44 @@ test.describe('the full contract review journey', () => {
     await expect(row.getByText('Review complete')).toBeVisible();
   });
 
+  test('the five unavailable import options are present and aria-disabled, and a .docx shows the exact message', async ({
+    page,
+  }) => {
+    // Spec 04 v1.1 §C / spec 21 §8 — placeholders are hidden-not-absent (P-6).
+    await signUp(page, 'formats');
+    await gotoAfterAuth(page, '/contracts/new');
+
+    const options = page.getByRole('list', { name: 'Import sources not yet available' });
+    for (const [label, phase] of [
+      ['Google Drive', 'Planned for v1.1'],
+      ['Dropbox', 'Planned for v1.1'],
+      ['SharePoint', 'Planned for v1.1'],
+      ['Word (.docx)', 'Coming in v1.1'],
+      ['Scanned / photo', 'Coming in v1.2'],
+    ] as const) {
+      const button = options.getByRole('button', { name: new RegExp(`^${label.replace(/[.()/]/g, '\\$&')}`) });
+      await expect(button).toHaveAttribute('aria-disabled', 'true');
+      await expect(button).toContainText(phase);
+      // Activation does nothing: still on the upload page.
+      await button.click({ force: true });
+      await expect(page).toHaveURL(/\/contracts\/new$/);
+    }
+    await expect(options.getByRole('button')).toHaveCount(5);
+
+    await page.getByRole('combobox', { name: 'Contract type' }).click();
+    await page.getByRole('option', { name: 'NDA' }).click();
+    // The helper text belongs to the unlocked dropzone.
+    await expect(page.getByText('Text-layer PDF only for now.')).toBeVisible();
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'agreement.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.concat([Buffer.from('PK\x03\x04'), Buffer.alloc(64, 0)]),
+    });
+    await expect(page.getByRole('alert').filter({ hasText: 'Word documents' })).toHaveText(
+      "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1.",
+    );
+  });
+
   test('a thumbs-up on the review persists across a reload', async ({ page }) => {
     // Spec 10 §6 names this file for the feedback widget.
     const contractId = await processedContract(page, SHORT_NDA);

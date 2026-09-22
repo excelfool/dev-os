@@ -213,6 +213,7 @@ Everything above stands. This section adds what `supabase-schema.sql`'s delimite
 | `contracts` | `summary_md text`, `summary_status text check in ('none','pending','processing','completed','error') default 'none'`, `summary_uncited boolean default false`, `summary_generated_ms integer`, `summary_error_code text`, `summary_claimed_at timestamptz` | US-015 (spec 06 v1.1 §B) |
 | `contracts` | `ocr_confidence numeric(5,2) check between 0 and 100` | `ingest.ocr` stub (spec 21 §4.1) |
 | `contracts` | `term_library_version text not null default 'v1.0'` | Which library produced the terms — never compare F1 across libraries (spec 22 §1) |
+| `contracts` | **D46 — content hash:** `content_hash text check (null or ~ '^[0-9a-f]{64}$')` + `idx_contracts_user_hash (user_id, content_hash)` | sha-256 of the raw upload bytes; a same-user duplicate is reported as `duplicate_of` on the upload `201`, never rejected (spec 04 v1.1 §D; capability `versioning.duplicate_detect`, built) |
 | `profiles` | `rollout_cohort text not null default 'none' check in ('none','internal','measurement','beta','ga')` | `rollout.cohorts` (spec 23 §5) |
 | `chat_messages` | `enhanced_query text` | The query-enhancer rewrite, stored on the **user** row (spec 08 v1.1 §B) |
 | `openai_calls` | `purpose` CHECK widened to `('extraction','chat','repair','summary','query_enhancer','risk','judge')` | New call purposes; the constraint is dropped and re-added by name |

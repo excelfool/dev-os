@@ -68,6 +68,7 @@ export function PdfDropzone({
             <p className="text-caption text-grey-400">
               PDF · up to {publicConfig.maxUploadMb} MB · up to {publicConfig.maxPages} pages
             </p>
+            <p className="text-caption text-grey-400">Text-layer PDF only for now.</p>
           </>
         )}
       </div>

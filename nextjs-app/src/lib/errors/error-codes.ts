@@ -68,6 +68,21 @@ export const ERROR_DEFINITIONS = {
     retryable: false,
   },
   INTERNAL: { httpStatus: 500, message: 'Something went wrong on our side. Please try again.', retryable: true },
+  // --- v1.1 additions (spec 01 v1.1 §A) ---------------------------------------
+  /** P-4: a registered-but-unbuilt route. Built by `notImplemented()` (spec 21 §1.3). */
+  NOT_IMPLEMENTED: { httpStatus: 501, message: '{label} arrives in {phase}.', retryable: false },
+  UNSUPPORTED_FORMAT: {
+    httpStatus: 422,
+    message:
+      "Word documents aren't supported yet — export the contract as a PDF and upload that. DOCX support arrives in v1.1.",
+    retryable: false,
+  },
+  OCR_LOW_CONFIDENCE: {
+    httpStatus: 422,
+    message:
+      'This scan is too low-quality to read reliably ({n}% confidence). Please upload a native digital PDF or a clearer scan.',
+    retryable: false,
+  },
 } as const satisfies Record<string, ErrorDefinition>;
 
 export type ErrorCode = keyof typeof ERROR_DEFINITIONS;
