@@ -6,15 +6,17 @@ import { chatMessageSchema } from '@/lib/validation/chat.schema';
 import { callLlm } from '@/lib/ai/openai-client';
 import { analyseQuery, GREETING_REPLY, isGreeting, shouldEnhanceQuery } from '@/lib/ai/query-classifier';
 import { enhanceQuery } from '@/lib/ai/query-enhancer';
+import { getRetrievalStrategy } from '@/lib/ai/retrieval';
 import { OFF_SCOPE_REPLY, recordEscalationFlag, screenInbound, screenOutbound } from '@/lib/security/guardrails';
 import { CITATION_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
 import {
-  assembleChatMessages,
+  assembleFromBlocks,
   CHAT_TURN_BUDGET_MS,
   countUnresolvedTurns,
   ESCALATION_OFFER_THRESHOLD,
   UNRESOLVED_WINDOW_MESSAGES,
   validateCitations,
+  validateDelegatedAnswer,
   type HistoryMessage,
   type TurnRecord,
 } from '@/lib/services/chat-service';
@@ -121,6 +123,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     // 2. Must be processed
     if (contract.status !== 'completed') throw appError('NOT_PROCESSED');
+
+    // Spec 08 v1.1 §D: the selected RetrievalStrategy. An unconfigured n8n
+    // backend is 501 NOT_IMPLEMENTED (capability retrieval.n8n) here — after
+    // the 401/404 checks, before anything is counted or stored.
+    const strategy = getRetrievalStrategy();
+    strategy.assertAvailable();
 
     // 3. Rate limit
     await enforceRateLimit(user.id, 'chat');
@@ -270,30 +278,81 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const userMessage = await persistUserMessage(enhancedQuery);
 
-    let result: Awaited<ReturnType<typeof callLlm>>;
-    let messages: ReturnType<typeof assembleChatMessages>;
+    let content: string;
+    let citation: { citedPages: number[]; citationVerified: boolean };
+    let promptTokens: number | undefined;
+    let completionTokens: number | undefined;
     try {
-      // 7. Assemble context
-      messages = assembleChatMessages({
-        queryClass,
-        contractText: contract.contract_text,
-        history,
-        userMessage: message,
-        maxHistoryTokens: cfg.MAX_CHAT_HISTORY_TOKENS,
+      // 7. Retrieval (spec 08 v1.1 §D): context blocks, or a delegated answer.
+      const retrieval = await strategy.buildContext({
+        contract: { id: contract.id, contract_text: contract.contract_text, page_count: contract.page_count },
+        question: message,
         enhancedQuery: userMessage.enhanced_query,
+        queryClass,
+        history,
+        deadlineAt,
       });
 
-      // 8. Call GPT-4o — OPENAI_MAX_RETRIES attempts, all inside the turn budget.
-      result = await callLlm({
-        purpose: 'chat',
-        messages,
-        temperature: cfg.OPENAI_CHAT_TEMPERATURE,
-        maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
-        userId: user.id,
-        contractId: contract.id,
-        deadlineAt,
-        supabase,
-      });
+      if (retrieval.mode === 'delegated') {
+        // 8–9. The external backend answered; the shared citation validation
+        // decides what it may claim. No repair call — it is not ours to re-prompt.
+        content = retrieval.answer;
+        citation = validateDelegatedAnswer(retrieval.answer, retrieval.cited_pages, contract.page_count, queryClass);
+      } else {
+        const messages = assembleFromBlocks({
+          queryClass,
+          contextBlocks: retrieval.blocks,
+          history,
+          userMessage: message,
+          maxHistoryTokens: cfg.MAX_CHAT_HISTORY_TOKENS,
+        });
+
+        // 8. Call GPT-4o — OPENAI_MAX_RETRIES attempts, all inside the turn budget.
+        const result = await callLlm({
+          purpose: 'chat',
+          messages,
+          temperature: cfg.OPENAI_CHAT_TEMPERATURE,
+          maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
+          userId: user.id,
+          contractId: contract.id,
+          deadlineAt,
+          supabase,
+        });
+
+        // 9. Citation post-validation, with one repair retry.
+        content = result.content;
+        const firstCitation = validateCitations(content, contract.page_count, queryClass);
+        citation = firstCitation;
+        promptTokens = result.promptTokens;
+        completionTokens = result.completionTokens;
+
+        if (firstCitation.needsRepair) {
+          try {
+            const repaired = await callLlm({
+              purpose: 'repair',
+              messages: [...messages, { role: 'assistant', content }, { role: 'user', content: CITATION_REPAIR_PROMPT }],
+              temperature: cfg.OPENAI_CHAT_TEMPERATURE,
+              maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
+              // One attempt, and only if the turn budget still has room for it.
+              maxAttempts: 1,
+              deadlineAt,
+              userId: user.id,
+              contractId: contract.id,
+              supabase,
+            });
+            const repairedCitation = validateCitations(repaired.content, contract.page_count, queryClass);
+            // Keep the repaired answer only if it actually cited a page.
+            if (repairedCitation.citationVerified) {
+              content = repaired.content;
+              citation = repairedCitation;
+            }
+            promptTokens += repaired.promptTokens;
+            completionTokens += repaired.completionTokens;
+          } catch {
+            // The original answer is still shown — the user keeps control.
+          }
+        }
+      }
     } catch (err) {
       // §A step 10: one `chat` row per turn, failed turns included.
       await recordProcessingRun(supabase, {
@@ -307,50 +366,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
       throw err;
     }
 
-    // 9. Citation post-validation, with one repair retry.
-    let content = result.content;
-    let citation = validateCitations(content, contract.page_count, queryClass);
-    let promptTokens = result.promptTokens;
-    let completionTokens = result.completionTokens;
-
-    if (citation.needsRepair) {
-      try {
-        const repaired = await callLlm({
-          purpose: 'repair',
-          messages: [
-            ...messages,
-            { role: 'assistant', content },
-            { role: 'user', content: CITATION_REPAIR_PROMPT },
-          ],
-          temperature: cfg.OPENAI_CHAT_TEMPERATURE,
-          maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
-          // One attempt, and only if the turn budget still has room for it.
-          maxAttempts: 1,
-          deadlineAt,
-          userId: user.id,
-          contractId: contract.id,
-          supabase,
-        });
-        const repairedCitation = validateCitations(repaired.content, contract.page_count, queryClass);
-        // Keep the repaired answer only if it actually cited a page.
-        if (repairedCitation.citationVerified) {
-          content = repaired.content;
-          citation = repairedCitation;
-        }
-        promptTokens += repaired.promptTokens;
-        completionTokens += repaired.completionTokens;
-      } catch {
-        // The original answer is still shown — the user keeps control.
-      }
-    }
-
     // 9a. Outbound guardrail screen: profanity → competitor → PII. A rewrite
     //     replaces the stored content with the rule's fixed sentence, which
     //     cites nothing and so claims nothing to verify.
     const outbound = await screenOutbound(content, screenOpts);
     if (outbound.action === 'rewrite' && outbound.replacement) {
       content = outbound.replacement;
-      citation = { citedPages: [], citationVerified: true, needsRepair: false };
+      citation = { citedPages: [], citationVerified: true };
     }
 
     return completeTurn({

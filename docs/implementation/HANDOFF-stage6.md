@@ -112,3 +112,39 @@ Stage 6 is **chat and retrieval**, not the security pass the previous handoff na
 **Chat-answer HHH scoring is already wired** (5d-3): each assistant bubble carries an `HhhQuestionnaire` for `subject_type='message'`, route 32 accepts it, and 5d-3a scopes it to the contract. Stage 6 does not need to build scoring — it needs to not break it, and the message subset (`APPLICABLE_CODES.message`) is what the judge will answer for the same subjects later.
 
 Repo hygiene: `.gitignore` covers `eval/reports/.cache/` and the instructor PDFs. `npm run eval:sync-refs` must be re-run if `docs/reference/key-terms-msa-instructor.json` **or** `docs/reference/hhh-questionnaire-instructor.csv` changes — unit tests enforce byte-identity for both.
+
+---
+
+## 8. Stage 6 (CLAUDE.md Stage 8, Memory Layer) — done, 2026-09-23
+
+Worked in a Docker sandbox against a **local** Supabase stack (`npm run supabase:start`, `npm run supabase:reset`); every suite now refuses a non-loopback Supabase URL (G35 closed for the suites by 49f983c). Prep commits before the chat work: 49f983c (suite guard), 6ecc383 (fixtures, harness process group, `hhh_scores` policy scope G40), ecb1c02 (frozen key-dates clock), 2f8822a (dev-only loopback CSP, G42), 0c084ac (PDF re-scroll after render, L16).
+
+| Commit | What it did |
+|---|---|
+| **02693cb** | **Chat budget, citations, greeting, enhancer.** One 15 s budget per chat turn from request start, shared by the enhancer, the answer's retries and the one-attempt repair; out of budget ⇒ `504 AI_TIMEOUT` with the question kept (G43). Chat and the summary share one citation parser, `src/lib/ai/citations.ts`, so chat accepts `[Page 1, 5, 7]`, `[Pages 3–4]`, `[Page 3, Page 5]` (G44). Greeting pre-check (§A 5b): fixed reply, no classifier/enhancer/model call. Query enhancer (§B): 5 s, 120 tokens, one attempt, JSON mode; runs only without a history signal (C28); `Search focus:` after the document; `enhanced_query` on the user row; one `processing_runs` `chat` row per turn. `retrieval.query_enhancer` → built. |
+| **721331f** | **Guardrails and escalation.** `src/lib/security/guardrails.ts` (spec 13 v1.1 §A): five PRD rules + injection, three entry points, one hash-only `guardrail_events` row per match. The Lab 3 injection patterns folded in under the `inj.*` ids. A blocked chat message is now a stored fixed reply, not `400 PROMPT_INJECTION`; the process route flags injected directives in the contract text. Chat prompt gained the harmless sentence (`PROMPT_VERSION` v2.1). Unresolved-turn counter (spec 20 §5.1) → `escalation_offer`, `EscalateOffer` stub note. E2E time zone pinned to UTC (G46). |
+| **Checkpoint 3** (the commit that adds this section) | **RetrievalStrategy and the external RAG adapter.** `src/lib/ai/retrieval/` (full-context built and byte-identical to before; vector/graph stubs rejected at boot; n8n delegating to `src/lib/integrations/rag/`, `501 retrieval.n8n` while unconfigured). A delegated answer passes the shared citation validation and the outbound screen. The C25/C27 case written into spec 08 v1.1 §D; `run-all.ts` emits a SKIPPED row per blocked contract. "summarize" memory eval case; a 31st-chat-message `429` integration test. |
+
+| Gap | One line |
+|---|---|
+| **G43** | The chat turn had no overall budget: each call had its own 20 s timeout, so enhancer + answer + retries + repair could run far past the 15 s P95. Now one deadline for the whole turn. |
+| **G44** | Chat's citation regex only understood `[Page N]`; the multi-page forms the summary already parsed (L8) counted as uncited in chat and triggered needless repairs. One shared parser now. |
+| **G45** | `callLlm` returned `AI_UNAVAILABLE` (503) when a caller's deadline left no room for even a first attempt; it now returns `AI_TIMEOUT` (504) — the budget ran out, the provider was never tried (spec 06 §3 note). |
+| **G46** | E2E date assertions were formatted in the runner's `TZ=EDT4` while the browsers rendered in UTC, so `duplicate-upload` failed every night from 20:00 EDT. Browsers and app server now share one pinned zone. |
+| **G47** | `chat_messages` is append-only (no UPDATE policy), so writing `enhanced_query` onto the user row after the enhancer failed silently. The enhancer now runs first and the user row is inserted once, with it (spec 08 §B "Order, as built"). |
+
+**Deploy steps this stage adds (Stage 9 / CLAUDE.md deploy — none done here):**
+1. **Netlify env: set `PROMPT_VERSION=v2.1`.** The code default moved to v2.1 (the chat prompt changed), but the site's env var overrides the default, so without this every row is still stamped v2.0.
+2. Apply the `hhh_scores_insert_own` / `hhh_scores_update_own` policy change (G40, 6ecc383) to the live project.
+3. Optional: `OPENAI_ENHANCER_TIMEOUT_MS=5000`, `OPENAI_ENHANCER_MAX_TOKENS=120` (the defaults already match). Leave `RETRIEVAL_STRATEGY` unset (`full_context`).
+
+**Gates at the checkpoint 3 commit:** lint, `tsc`, `test:unit` (unit + `tests/ai`), `test:hooks`, integration, RLS and Playwright (Chromium + WebKit) — all run once, locally; see the commit report for counts.
+
+## 9. Next — Stage 7 (CLAUDE.md Stage 9, Evaluation)
+
+Run the evaluation suite against the deployed release and write `eval/reports/<release>.json`, one verdict per metric — `PASS`, `FAIL` or `SKIPPED` with a reason, never `PASS` for something unmeasured: HHH (% helpful / honest / harmful over the 29-question questionnaire), extraction F1, page accuracy, confidence calibration, red-team pass rate, judge precision (and recall) against human `hhh_scores` rows.
+
+- **This needs live model calls** (OpenAI) and, for the deployed release, the live project — both external: only when the student names them.
+- The five instructor MSAs blocked by `MAX_PAGES`/`MAX_TOKENS` (spec 08 §D note) are reported as SKIPPED rows naming `retrieval.vector`; they are not failures of the extraction prompt.
+- The chat memory set now includes the "summarize" case (`mustNotRepeatPrevious`).
+- In the sandbox, `npm run eval` uses `tsx`, whose bundled esbuild (0.23.1) has no linux-arm64 binary in the Mac-installed `node_modules`; add `@esbuild/linux-arm64@0.23.1` under `node_modules/tsx/node_modules/@esbuild/` first, as was done for vitest's esbuild, rollup and Next SWC.

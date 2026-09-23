@@ -247,6 +247,20 @@ export interface RetrievalStrategy {
 
 Selection: `RETRIEVAL_STRATEGY` env (`full_context` default | `n8n`), read once in `chat-service`; `vector`/`graph` are rejected at boot while their registry status is not `built`. Contract text stays the single source of truth for every strategy (PRD §7).
 
+**As built (2026-09-23).** `src/lib/ai/retrieval/`: `types.ts` (the interface above, plus `assertAvailable()` so an unconfigured backend is `501` right after the route's 401/404/409 checks, before the turn is rate-counted or stored, and a `deadlineAt` on the input so a delegated backend shares the turn's 15 s budget, G43), `full-context.ts`, `vector-rag.ts`, `graph-rag.ts`, `n8n.ts`, `index.ts` (`getRetrievalStrategy()`). `RETRIEVAL_STRATEGY` is parsed in `server-config.ts`; `vector`/`graph` fail config parsing with "RETRIEVAL_STRATEGY=vector needs retrieval.vector to be built (it is stub)". Full-context returns the document block and the §B `Search focus:` line as its context blocks, so the assembled prompt is byte-identical to before (pinned by `tests/ai/chat-prompt.test.ts` and `tests/unit/retrieval-strategy.test.ts`). The enhancer, greeting pre-check, guardrail screens, escalation counter and HHH scoring sit around the strategy unchanged. A delegated n8n answer gets **no citation repair call** (the backend is not ours to re-prompt): `validateDelegatedAnswer` merges the pages it claims with the pages its text cites, drops anything outside `1..page_count`, and marks it unverified if none remain; it then passes the outbound guardrail screen like a model answer.
+
+**Design note — C25/C27, the case for chunked retrieval (2026-09-23).** Measured with the app's own `extractPdfText` and `estimateTokens` (o200k_base) on the instructor PDFs in `eval/datasets/msa-instructor/pdfs/`, gated in the upload route's order (pages first, then tokens; `MAX_PAGES` = 20, `MAX_TOKENS` = 15,000):
+
+| Contract | Pages | Tokens | Stopped by |
+|---|---:|---:|---|
+| Stripe | 35 | 17,546 | `MAX_PAGES` (tokens over too) |
+| Celonis | 31 | 20,213 | `MAX_PAGES` (tokens over too) |
+| Square | 141 | 53,829 | `MAX_PAGES` (tokens over too) |
+| Salesforce | 16 | 15,704 | `MAX_TOKENS` |
+| Intuit | 20 | 17,259 | `MAX_TOKENS` (20 pages is within `MAX_PAGES`) |
+
+Five of the ten instructor MSAs — half the golden set — never reach a model call, so no eval can score them and no user can review them. The two gates exist because full-context retrieval sends the **whole** contract on every chat turn and extraction batch: at 53,829 tokens Square alone would be ~3.5× the per-turn document budget and push a chat turn well past the 15 s P95. Raising the limits only moves the wall and multiplies cost per turn. Chunked retrieval (`retrieval.vector`) removes the coupling: the contract is split per page into `contract_chunks` (`page_number`, `chunk_index`, `embedding vector(1536)`), and each turn sends only the top-k chunks for the (enhanced, §B) question, so the input size is bounded by k, not by the contract. Page attribution survives because every chunk carries its page. What it costs: an embedding pass at upload, a retrieval-quality eval (recall of the gold clause in top-k) as a new gate before `retrieval.vector` flips to `built`, and loss of whole-document context for questions that genuinely span the contract (the `both`/summary cases), which argues for a hybrid — full context under the limits, chunks above them. Until then, `eval/runners/run-all.ts` reports each blocked contract as a **SKIPPED** row naming the gate and `retrieval.vector` (never PASS), so the gap stays visible in every release report.
+
 ### E. Tests added
 
 - `tests/unit/query-enhancer.test.ts` — runs only for `contract` class; a timeout yields `null` and the turn proceeds; the system context contains `Search focus:` only when a rewrite exists.

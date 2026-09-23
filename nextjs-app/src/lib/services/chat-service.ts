@@ -30,6 +30,36 @@ export interface HistoryMessage {
   content: string;
 }
 
+/**
+ * The context blocks full-context retrieval places before the history (spec
+ * 08 §5 and v1.1 §B/§D): the document for `contract`/`both`, followed by the
+ * enhancer's `Search focus:` line when there is one; nothing for `history`,
+ * which omits the document body to cut tokens and latency.
+ */
+export function fullContextBlocks(queryClass: QueryClass, contractText: string, enhancedQuery?: string | null): string[] {
+  if (queryClass === 'history') return [];
+  // §B: the rewrite follows the document block. The user's own words stay the
+  // last user turn, so the answer still addresses what they asked.
+  return [buildDocumentContextBlock(contractText), ...(enhancedQuery ? [buildSearchFocusBlock(enhancedQuery)] : [])];
+}
+
+/** System prompt, context blocks, history (oldest-first truncated), the question last. */
+export function assembleFromBlocks(params: {
+  queryClass: QueryClass;
+  contextBlocks: string[];
+  history: HistoryMessage[];
+  userMessage: string;
+  maxHistoryTokens: number;
+}): LlmMessage[] {
+  return [
+    { role: 'system', content: buildChatSystemPrompt(params.queryClass) },
+    ...params.contextBlocks.map((content) => ({ role: 'system' as const, content })),
+    ...truncateHistory(params.history, params.maxHistoryTokens),
+    { role: 'user', content: params.userMessage },
+  ];
+}
+
+/** Today's full-context prompt, in one call (kept for callers and tests). */
 export function assembleChatMessages(params: {
   queryClass: QueryClass;
   contractText: string;
@@ -39,25 +69,10 @@ export function assembleChatMessages(params: {
   /** Spec 08 v1.1 §B: the query enhancer's rewrite, or null when it did not run or failed. */
   enhancedQuery?: string | null;
 }): LlmMessage[] {
-  const { queryClass, contractText, history, userMessage, maxHistoryTokens, enhancedQuery } = params;
-
-  const messages: LlmMessage[] = [
-    { role: 'system', content: buildChatSystemPrompt(queryClass) },
-  ];
-
-  // Class 'history' omits the document body, cutting tokens and latency for
-  // questions about the conversation itself.
-  if (queryClass !== 'history') {
-    messages.push({ role: 'system', content: buildDocumentContextBlock(contractText) });
-    // §B: the rewrite follows the document block. The user's own words stay
-    // the last user turn, so the answer still addresses what they asked.
-    if (enhancedQuery) messages.push({ role: 'system', content: buildSearchFocusBlock(enhancedQuery) });
-  }
-
-  messages.push(...truncateHistory(history, maxHistoryTokens));
-  messages.push({ role: 'user', content: userMessage });
-
-  return messages;
+  return assembleFromBlocks({
+    ...params,
+    contextBlocks: fullContextBlocks(params.queryClass, params.contractText, params.enhancedQuery),
+  });
 }
 
 /** Drops oldest-first until the history fits the token budget. */
@@ -154,4 +169,25 @@ export function countUnresolvedTurns(messagesAscending: TurnRecord[]): number {
     count += 1;
   }
   return count;
+}
+
+/**
+ * A delegated answer (external RAG, spec 08 v1.1 §D) passes the SAME citation
+ * validation as a model answer: the pages it claims and the pages its text
+ * cites are merged, anything outside `1..page_count` is discarded, and an
+ * answer left with no valid page is unverified. There is no repair call — the
+ * external backend is not ours to re-prompt.
+ */
+export function validateDelegatedAnswer(
+  answer: string,
+  claimedPages: number[],
+  pageCount: number,
+  queryClass: QueryClass,
+): { citedPages: number[]; citationVerified: boolean } {
+  const fromText = validateCitations(answer, pageCount, queryClass);
+  if (queryClass === 'history' || isCannotFindAnswer(answer)) return { citedPages: [], citationVerified: true };
+  const pages = [...new Set([...fromText.citedPages, ...claimedPages])]
+    .filter((page) => Number.isInteger(page) && page >= 1 && page <= pageCount)
+    .sort((a, b) => a - b);
+  return { citedPages: pages, citationVerified: pages.length > 0 };
 }

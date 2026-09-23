@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { repeatsPreviousAnswer } from '../lib/memory-checks';
 import { callLlm } from '@/lib/ai/openai-client';
 import { classifyQuery } from '@/lib/ai/query-classifier';
 import { assembleChatMessages, validateCitations, isCannotFindAnswer } from '@/lib/services/chat-service';
@@ -201,6 +202,18 @@ export async function memoryRegression(params: { supabase: SupabaseClient; opera
           expected: `an answer containing "${turn.expectedContains}"`,
           got: answer.slice(0, 120),
         });
+      }
+
+      if (turn.mustNotRepeatPrevious) {
+        const previous = [...history].reverse().find((m) => m.role === 'assistant')?.content;
+        if (repeatsPreviousAnswer(answer, previous)) {
+          failures.push({
+            case: testCase.name,
+            turn: turn.question,
+            expected: 'a new answer (a summary), not the previous answer verbatim',
+            got: answer.slice(0, 120),
+          });
+        }
       }
 
       history.push({ role: 'user', content: turn.question });

@@ -13,6 +13,8 @@ import { calibration } from './calibration';
 import { chatGroundedness, hallucinationRegression, memoryRegression } from './chat-groundedness';
 import { latency } from './latency';
 import { writeCsv, writeSummary, gate, formatGate } from '../lib/report';
+import { blockedContractRows, type BlockedContractRow } from '../lib/blocked-contracts';
+import { measureContracts } from '../lib/measure-contracts';
 
 /**
  * Orchestrates the per-release set and writes the report (spec 17 §2).
@@ -22,8 +24,29 @@ import { writeCsv, writeSummary, gate, formatGate } from '../lib/report';
  *   npm run eval -- --offline scores whatever is cached, makes no calls
  *   npm run eval -- --no-chat skips the chat runners
  */
+/**
+ * C25/C27: contracts the upload gates stop before any model call. One SKIPPED
+ * row each — gate named, `retrieval.vector` as the reason — never PASS.
+ */
+async function reportBlockedContracts(): Promise<BlockedContractRow[]> {
+  // The app's limits, read the way ingest.ts reads MAX_PAGES: from the env with
+  // the server-config defaults, so this runs even where no OpenAI key is set.
+  const limit = (name: string, fallback: number) => Number(process.env[name] || fallback);
+  const rows = blockedContractRows(await measureContracts(), {
+    maxPages: limit('MAX_PAGES', 20),
+    maxTokens: limit('MAX_TOKENS', 15_000),
+  });
+  if (rows.length > 0) {
+    console.log('blocked by the upload gates (C25/C27)');
+    for (const row of rows) console.log(`  SKIPPED ${row.contract}: ${row.reason}`);
+    console.log('');
+  }
+  return rows;
+}
+
 async function main() {
   const argv = process.argv.slice(2);
+  const blockedContracts = await reportBlockedContracts();
   const args = new Set(argv);
   // v1.1 (spec 22 §1): `--dataset msa-instructor --prompt v1|v2` runs the
   // re-baseline against the instructor golden set and nothing else. It never
@@ -171,6 +194,7 @@ async function main() {
     memory_regression: memory,
     latency: lat,
     gates,
+    blocked_contracts: blockedContracts,
     extraction_errors: runs.filter((r) => r.error).map((r) => ({ contract_id: r.contract_id, error: r.error })),
   });
 

@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { getCapability, type CapabilityKey } from '@/lib/capabilities';
 
 /**
  * Typed, validated SERVER environment (spec 01 §1).
@@ -101,9 +102,46 @@ const serverSchema = z.object({
   PROCESS_JOB_URL: z.string().url().optional().or(z.literal('')),
   // The background function's own budget for extraction → persist → summary.
   PROCESS_JOB_BUDGET_MS: num(120_000),
+  // Spec 08 v1.1 §D: which RetrievalStrategy answers chat. `n8n` delegates to
+  // the external RAG adapter (spec 21 §4) — 501 while it is not configured.
+  RETRIEVAL_STRATEGY: z.enum(['full_context', 'n8n', 'vector', 'graph']).default('full_context'),
+  N8N_RAG_WEBHOOK_URL: z.string().url().optional().or(z.literal('')),
+  N8N_RAG_TOKEN: z.string().optional().or(z.literal('')),
+});
+
+/** The registry key behind each RETRIEVAL_STRATEGY value. */
+export const RETRIEVAL_CAPABILITY: Record<ServerConfig['RETRIEVAL_STRATEGY'], CapabilityKey> = {
+  full_context: 'retrieval.full_context',
+  n8n: 'retrieval.n8n',
+  vector: 'retrieval.vector',
+  graph: 'retrieval.graph',
+};
+
+/**
+ * Spec 08 v1.1 §D: `vector` and `graph` are rejected at boot while their
+ * registry status is not `built` — a strategy that would throw on every chat
+ * turn must not be selectable. `n8n` is allowed (a configured operator backend
+ * is the point of the stub); unconfigured, the route answers 501.
+ */
+const serverEnvSchema = serverSchema.superRefine((env, ctx) => {
+  if (env.RETRIEVAL_STRATEGY !== 'vector' && env.RETRIEVAL_STRATEGY !== 'graph') return;
+  const capability = RETRIEVAL_CAPABILITY[env.RETRIEVAL_STRATEGY];
+  const { status } = getCapability(capability);
+  if (status !== 'built') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['RETRIEVAL_STRATEGY'],
+      message: `RETRIEVAL_STRATEGY=${env.RETRIEVAL_STRATEGY} needs ${capability} to be built (it is ${status})`,
+    });
+  }
 });
 
 export type ServerConfig = z.infer<typeof serverSchema>;
+
+/** Parses an environment without caching — for boot and for tests. */
+export function parseServerEnv(env: Record<string, string | undefined>) {
+  return serverEnvSchema.safeParse(env);
+}
 
 let cached: ServerConfig | null = null;
 
@@ -114,9 +152,9 @@ let cached: ServerConfig | null = null;
  */
 export function getServerConfig(): ServerConfig {
   if (!cached) {
-    const parsed = serverSchema.safeParse(process.env);
+    const parsed = parseServerEnv(process.env);
     if (!parsed.success) {
-      const missing = parsed.error.issues.map((i) => i.path.join('.')).join(', ');
+      const missing = parsed.error.issues.map((i) => (i.code === 'custom' ? i.message : i.path.join('.'))).join(', ');
       throw new Error(`Invalid server environment configuration: ${missing}`);
     }
     cached = parsed.data;

@@ -20,6 +20,12 @@ export interface MemoryCase {
     /** A correct answer here must never be the "cannot find" refusal. */
     expectRefusal: boolean;
     expectedContains?: string;
+    /**
+     * Stage 5 chat item (2026-09-23): the answer must not be the previous
+     * assistant answer repeated verbatim — "summarize" on the `both` path used
+     * to hand back the prior answer unchanged instead of summarising.
+     */
+    mustNotRepeatPrevious?: boolean;
   }>;
 }
 
@@ -54,6 +60,15 @@ export const MEMORY_CASES: MemoryCase[] = [
     turns: [
       { question: 'What are the payment terms?', expectedClass: 'contract', expectRefusal: false },
       { question: 'and in plain English', expectedClass: 'both', expectRefusal: false },
+    ],
+  },
+  {
+    contract_id: 'msa-01',
+    name: '"summarize" on the both path is a summary, not the prior answer again',
+    turns: [
+      { question: 'What are the payment terms?', expectedClass: 'contract', expectRefusal: false },
+      // No contract signal, a conversation exists ⇒ `both` through the R10 fallback.
+      { question: 'summarize', expectedClass: 'both', expectRefusal: false, mustNotRepeatPrevious: true },
     ],
   },
   {

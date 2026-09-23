@@ -149,6 +149,8 @@ export type AdapterResult<T> =
 | `graph/` | `KnowledgeGraphAdapter { upsert(contractId, triples): …; query(question): … }` | `retrieval.graph` | (planned; NullAdapter only) |
 | `rag/` | `ExternalRagAdapter { answer(input: { contractId, question, history }): Promise<AdapterResult<{ answer: string; cited_pages: number[] }>> }` — the `retrieval.n8n` backend (spec 08 v1.1 §D) | `retrieval.n8n` | `N8N_RAG_WEBHOOK_URL`, `N8N_RAG_TOKEN` |
 
+**Note (2026-09-23) — `rag/` as built.** The answer input also carries **`enhancedQuery`** (the §B rewrite or null), per spec 08 v1.1 §D's payload `{ contract_id, question, enhanced_query, history }`, and a `deadlineAt`: the call shares the chat turn's 15 s budget (G43) rather than a separate 10 s timeout. The getter is `getRagAdapter()`; it returns the n8n adapter (`rag/n8n-adapter.ts`, `Authorization: Bearer N8N_RAG_TOKEN`) only when **both** `N8N_RAG_WEBHOOK_URL` and `N8N_RAG_TOKEN` are set, and the NullAdapter otherwise. Registry statuses are unchanged — `retrieval.vector` stub, `retrieval.graph` planned, `retrieval.n8n` stub — each now backed by code in `src/lib/ai/retrieval/`.
+
 `email/` is the only adapter with a real implementation at v1.1; every other `index.ts` returns the `NullAdapter` unless its config is set, and **no vendor adapter file exists yet** — wiring one is "one file plus config" (P-2).
 
 ### 4.1 Where the adapters are called today
