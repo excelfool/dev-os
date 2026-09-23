@@ -49,7 +49,7 @@ The map is **static code**, not a table: it is the source of truth and is deploy
 | `qa.single_contract` | built | — | US-007 | "Chat with your contract" / "Grounded answers with page citations." |
 | `qa.cross_contract` | planned | Phase 3 | §3 roadmap v2 | "Questions across several contracts" / "Planned." |
 | `retrieval.full_context` | built | — | §7 | "Full-document grounding" / "The whole contract is read on every question." |
-| `retrieval.query_enhancer` | planned | v0.4 | §7, Flow 4 step 2 | "Question rewriting for better answers" / "First build item." (becomes `built` with spec 08 v1.1 §B) |
+| `retrieval.query_enhancer` | **built** (2026-09-23; was planned, v0.4) | — | §7, Flow 4 step 2 | "Question rewriting for better answers" / "Your question is rewritten into a precise search before the contract is read." (built with spec 08 v1.1 §B, Stage 6) |
 | `retrieval.vector` | stub | v2 | §7 | "Vector retrieval for long contracts" / "Reserved for contracts beyond 20 pages." |
 | `retrieval.graph` | planned | v2 | §7 | "Knowledge-graph retrieval" / "Planned." |
 | `retrieval.n8n` | stub | — | §7 | "External RAG backend (n8n)" / "Available only when an operator configures it." |

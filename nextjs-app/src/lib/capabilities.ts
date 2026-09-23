@@ -77,8 +77,9 @@ function entry(
   label: string,
   user_note: string,
   owner: Capability['owner'] = 'product',
+  since: string = SINCE,
 ): Capability {
-  return { key, status, phase, owner, prd_ref, since: SINCE, label, user_note };
+  return { key, status, phase, owner, prd_ref, since, label, user_note };
 }
 
 const ENTRIES: Capability[] = [
@@ -98,7 +99,8 @@ const ENTRIES: Capability[] = [
   entry('qa.single_contract', 'built', '—', 'US-007', 'Chat with your contract', 'Grounded answers with page citations.'),
   entry('qa.cross_contract', 'planned', 'Phase 3', '§3 roadmap v2', 'Questions across several contracts', 'Planned.'),
   entry('retrieval.full_context', 'built', '—', '§7', 'Full-document grounding', 'The whole contract is read on every question.'),
-  entry('retrieval.query_enhancer', 'planned', 'v0.4', '§7, Flow 4 step 2', 'Question rewriting for better answers', 'First build item.'),
+  // Spec 08 v1.1 §B shipped (Stage 6): planned → built.
+  entry('retrieval.query_enhancer', 'built', '—', '§7, Flow 4 step 2', 'Question rewriting for better answers', 'Your question is rewritten into a precise search before the contract is read.', 'product', '2026-09-23'),
   entry('retrieval.vector', 'stub', 'v2', '§7', 'Vector retrieval for long contracts', 'Reserved for contracts beyond 20 pages.'),
   entry('retrieval.graph', 'planned', 'v2', '§7', 'Knowledge-graph retrieval', 'Planned.'),
   entry('retrieval.n8n', 'stub', '—', '§7', 'External RAG backend (n8n)', 'Available only when an operator configures it.'),

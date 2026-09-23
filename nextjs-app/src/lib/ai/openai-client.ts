@@ -212,13 +212,17 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
 
   let lastError: unknown = null;
   let lastWasTimeout = false;
+  let outOfBudget = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     // Deadline arithmetic: never start an attempt that cannot finish.
     let timeoutForAttempt = perAttemptTimeout;
     if (opts.deadlineAt !== undefined) {
       const remaining = opts.deadlineAt - Date.now();
-      if (remaining < MIN_ATTEMPT_BUDGET_MS) break;
+      if (remaining < MIN_ATTEMPT_BUDGET_MS) {
+        outOfBudget = true;
+        break;
+      }
       timeoutForAttempt = Math.min(perAttemptTimeout, remaining - 1_000);
     }
 
@@ -322,7 +326,10 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
     }
   }
 
-  if (lastWasTimeout) throw appError('AI_TIMEOUT');
+  // G43: a deadline that leaves no room for even a first attempt is a timeout
+  // of the caller's budget, not an unavailable provider — the chat turn's 15 s
+  // budget runs out as 504 AI_TIMEOUT, as spec 08 §3 says.
+  if (lastWasTimeout || (outOfBudget && lastError === null)) throw appError('AI_TIMEOUT');
   if (isInsufficientQuota(lastError)) {
     // Ops-actionable and not self-healing: no amount of retrying or waiting
     // clears it, so it is called out separately from an ordinary rate limit.

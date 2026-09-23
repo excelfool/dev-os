@@ -3,8 +3,10 @@ import {
   api,
   createUser,
   destroyUser,
+  enhancerRequests,
   openAiRequests,
   resetOpenAiStub,
+  scriptEnhancer,
   scriptOpenAi,
   setPlan,
   startApp,
@@ -14,6 +16,7 @@ import {
   type TestUser,
 } from './harness';
 import { SHORT_NDA } from './pdf-fixtures';
+import { GREETING_REPLY } from '@/lib/ai/query-classifier';
 
 /** Spec 08 §8 — grounded chat against a stubbed model. */
 
@@ -34,7 +37,10 @@ const EXTRACTION = JSON.stringify({
 });
 
 beforeAll(async () => {
-  await startApp();
+  // Production timeout and retries, not the harness's short defaults: with a
+  // 4 s per-attempt timeout the answer call gives up long before the 15 s turn
+  // budget (G43) could be what stops it.
+  await startApp({ OPENAI_TIMEOUT_MS: '20000', OPENAI_MAX_RETRIES: '3' });
   user = await createUser('chat');
   await setPlan(user, 'pro');
 
@@ -310,3 +316,177 @@ describe('prompt injection (security-foundation §4)', () => {
   });
 });
 
+
+/** A processed contract with a fresh, empty chat session. */
+async function freshContract(): Promise<string> {
+  resetOpenAiStub();
+  scriptOpenAi({ content: EXTRACTION });
+  const upload = await uploadPdf(user, SHORT_NDA, 'NDA');
+  const id = upload.body.contract_id;
+  const processed = await api(user, `/api/contracts/${id}/process`, { method: 'POST' });
+  expect(processed.status).toBe(200);
+  resetOpenAiStub();
+  return id;
+}
+
+interface ChatResponse {
+  user_message_id: string;
+  user_message: { id: string; enhanced_query: string | null };
+  assistant_message: { content: string; cited_pages: number[]; citation_verified: boolean; query_class: string | null; latency_ms: number };
+}
+
+const ask = (contractId: string, message: string) =>
+  api<ChatResponse>(user, `/api/contracts/${contractId}/chat`, { method: 'POST', body: JSON.stringify({ message }) });
+
+async function chatRuns(contractId: string) {
+  const { data } = await user.client.from('processing_runs').select('stage, outcome, error_code').eq('contract_id', contractId).eq('stage', 'chat');
+  return data ?? [];
+}
+
+describe('greeting pre-check (spec 08 v1.1 §A step 5b)', () => {
+  it.each(['hi', 'Hello there!', 'thanks'])(
+    '%j on an empty session: the fixed reply, no model call, no enhancement',
+    async (greeting) => {
+      const id = await freshContract();
+      scriptOpenAi({ content: 'must not be used' });
+
+      const res = await ask(id, greeting);
+
+      expect(res.status).toBe(200);
+      expect(res.body.assistant_message).toMatchObject({
+        content: GREETING_REPLY,
+        query_class: null,
+        cited_pages: [],
+        citation_verified: true,
+      });
+      expect(res.body.assistant_message.latency_ms).toBeGreaterThanOrEqual(0);
+      expect(res.body.user_message.enhanced_query).toBeNull();
+
+      // No classifier-driven call of any kind: no answer, no enhancer, no
+      // document block, no Search focus — nothing reached the model.
+      expect(openAiRequests()).toHaveLength(0);
+      expect(enhancerRequests()).toHaveLength(0);
+      const { data: calls } = await user.client
+        .from('openai_calls')
+        .select('purpose')
+        .eq('contract_id', id)
+        .in('purpose', ['chat', 'repair', 'query_enhancer']);
+      expect(calls).toEqual([]);
+
+      const { data: rows } = await user.client.from('chat_messages').select('role, enhanced_query, query_class').eq('user_id', user.id).in('id', [res.body.user_message_id]);
+      expect(rows).toEqual([{ role: 'user', enhanced_query: null, query_class: null }]);
+
+      const { data: events } = await user.client
+        .from('activity_events')
+        .select('metadata')
+        .eq('contract_id', id)
+        .eq('event_type', 'chat_message_sent');
+      expect(events).toHaveLength(1);
+      expect(events![0]!.metadata).toMatchObject({ greeting: true, query_class: null });
+
+      expect(await chatRuns(id)).toEqual([{ stage: 'chat', outcome: 'success', error_code: null }]);
+    },
+    120_000,
+  );
+
+  it('"hi, is there an auto-renewal clause?" is a question: classified contract and enhanced', async () => {
+    const id = await freshContract();
+    scriptEnhancer({ content: '{"query": "auto-renewal clause: renewal term and non-renewal notice period"}' });
+    scriptOpenAi({ content: 'Based on the document, I cannot see an auto-renewal term. [Page 1]' });
+
+    const res = await ask(id, 'hi, is there an auto-renewal clause?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.assistant_message.query_class).toBe('contract');
+    expect(res.body.assistant_message.content).not.toBe(GREETING_REPLY);
+    expect(res.body.user_message.enhanced_query).toBe('auto-renewal clause: renewal term and non-renewal notice period');
+    expect(enhancerRequests()).toHaveLength(1);
+
+    // The rewrite follows the document block; the user's own words stay last.
+    const sent = openAiRequests().at(-1)!.messages as Array<{ role: string; content: string }>;
+    const focus = sent.findIndex((m) => m.content === 'Search focus: auto-renewal clause: renewal term and non-renewal notice period');
+    expect(focus).toBeGreaterThan(0);
+    expect(sent[focus - 1]!.content).toMatch(/Harborlight Robotics/);
+    expect(sent.at(-1)).toEqual({ role: 'user', content: 'hi, is there an auto-renewal clause?' });
+  }, 120_000);
+});
+
+describe('query enhancer in the turn (spec 08 v1.1 §B, C28)', () => {
+  it('stores enhanced_query on the user row and writes one chat processing run per turn', async () => {
+    const id = await freshContract();
+    scriptEnhancer({ content: '{"query": "governing law clause"}' });
+    scriptOpenAi({ content: 'Based on the document, Delaware law governs. [Page 1]' });
+
+    const res = await ask(id, 'Which law governs this agreement?');
+
+    expect(res.status).toBe(200);
+    const { data: row } = await user.client
+      .from('chat_messages')
+      .select('role, content, enhanced_query')
+      .eq('id', res.body.user_message.id)
+      .single();
+    expect(row).toEqual({ role: 'user', content: 'Which law governs this agreement?', enhanced_query: 'governing law clause' });
+    expect(await chatRuns(id)).toEqual([{ stage: 'chat', outcome: 'success', error_code: null }]);
+  }, 120_000);
+
+  it('never runs when the message carries a history signal', async () => {
+    const id = await freshContract();
+    scriptEnhancer({ content: '{"query": "must not be used"}' });
+    scriptOpenAi({ content: 'Based on the document, notice is 30 days. [Page 1]' });
+
+    const res = await ask(id, 'what did you say earlier about the notice clause?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.assistant_message.query_class).toBe('both');
+    expect(enhancerRequests()).toHaveLength(0);
+    expect(res.body.user_message.enhanced_query).toBeNull();
+    const sent = JSON.stringify(openAiRequests().at(-1)!.messages);
+    expect(sent).not.toContain('Search focus:');
+  }, 120_000);
+
+  it('an enhancer timeout yields null and the turn still answers', async () => {
+    const id = await freshContract();
+    scriptEnhancer({ content: '{"query": "too late"}', delayMs: 8_000 });
+    scriptOpenAi({ content: 'Based on the document, Delaware law governs. [Page 1]' });
+
+    const startedAt = Date.now();
+    const res = await ask(id, 'Which law governs this agreement?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.user_message.enhanced_query).toBeNull();
+    expect(res.body.assistant_message.cited_pages).toEqual([1]);
+    // 5 s enhancer timeout, one attempt, never retried.
+    expect(enhancerRequests()).toHaveLength(1);
+    expect(Date.now() - startedAt).toBeLessThan(8_000);
+    const { data: calls } = await user.client.from('openai_calls').select('outcome').eq('contract_id', id).eq('purpose', 'query_enhancer');
+    expect(calls).toEqual([{ outcome: 'timeout' }]);
+    expect(JSON.stringify(openAiRequests().at(-1)!.messages)).not.toContain('Search focus:');
+  }, 120_000);
+});
+
+describe('chat turn budget (G43)', () => {
+  it('a stub slower than the 15 s budget returns 504 AI_TIMEOUT within about 15 s, keeping the user row', async () => {
+    const id = await freshContract();
+    scriptEnhancer({ content: '{"query": "x"}', delayMs: 30_000 });
+    scriptOpenAi({ content: 'Based on the document, too late. [Page 1]', delayMs: 30_000 });
+    const question = `does the budget keep this question ${Date.now()}`;
+
+    const startedAt = Date.now();
+    const res = await api<ErrorEnvelope>(user, `/api/contracts/${id}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message: question }),
+    });
+    const elapsed = Date.now() - startedAt;
+
+    expect(res.status).toBe(504);
+    expect(res.body.error.code).toBe('AI_TIMEOUT');
+    // Enhancer 5 s, then the answer capped at the remaining budget; nothing
+    // runs past request start + 15 s.
+    expect(elapsed).toBeGreaterThan(10_000);
+    expect(elapsed).toBeLessThan(16_500);
+
+    const history = await api<{ messages: Array<{ role: string; content: string }> }>(user, `/api/contracts/${id}/chat`);
+    expect(history.body.messages).toEqual([expect.objectContaining({ role: 'user', content: question })]);
+    expect(await chatRuns(id)).toEqual([{ stage: 'chat', outcome: 'error', error_code: 'AI_TIMEOUT' }]);
+  }, 120_000);
+});

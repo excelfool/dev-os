@@ -182,3 +182,37 @@ describe('validateCitations — a history answer needs no page', () => {
     expect(result.citationVerified).toBe(true);
   });
 });
+
+describe('validateCitations — every citation form the summary accepts (G44)', () => {
+  it.each([
+    ['a list', 'Based on the document, the cap applies. [Page 1, 5, 7]', [1, 5, 7]],
+    ['a range', 'Based on the document, see the schedule. [Pages 3–4]', [3, 4]],
+    ['a hyphen range', 'Based on the document, see the schedule. [Pages 3-4]', [3, 4]],
+    ['repeated Page words', 'Based on the document, both apply. [Page 3, Page 5]', [3, 5]],
+    ['a mix across brackets, deduped and sorted', 'It renews [Page 6] with notice [Pages 2–3] and [Page 3].', [2, 3, 6]],
+  ])('accepts %s', (_label, content, pages) => {
+    const result = validateCitations(content, 8, 'contract');
+    expect(result.citedPages).toEqual(pages);
+    expect(result.citationVerified).toBe(true);
+    expect(result.needsRepair).toBe(false);
+  });
+
+  it('drops out-of-range pages from a multi-page citation and keeps the rest', () => {
+    expect(validateCitations('See [Page 2, 9, 12].', 8, 'contract').citedPages).toEqual([2]);
+    expect(validateCitations('See [Pages 7–10].', 8, 'contract').citedPages).toEqual([7, 8]);
+  });
+
+  it('a multi-page citation naming only out-of-range pages is no citation', () => {
+    const result = validateCitations('See [Page 9, 12].', 8, 'contract');
+    expect(result.citedPages).toEqual([]);
+    expect(result.needsRepair).toBe(true);
+  });
+
+  it('the history rule is unchanged: no page demanded, none recorded', () => {
+    expect(validateCitations('You asked about [Page 1, 5].', 8, 'history')).toEqual({
+      citedPages: [],
+      citationVerified: true,
+      needsRepair: false,
+    });
+  });
+});

@@ -38,17 +38,44 @@ export interface StubResponse {
 let responseQueue: StubResponse[] = [];
 let requestLog: Array<{ model: string; messages: unknown[] }> = [];
 
+/**
+ * The query enhancer (spec 08 v1.1 §B) gets its own queue and log, so a chat
+ * turn's enhancer call never consumes the answer a test scripted, and
+ * `openAiRequests()` still lists only extraction, summary, chat and repair
+ * calls. Unscripted, the enhancer answers `{"query": null}` — no rewrite —
+ * which leaves every pre-enhancer test's prompts unchanged.
+ */
+const ENHANCER_REQUEST = /^Rewrite the user's question about a contract/;
+const NO_REWRITE: StubResponse = { content: '{"query": null}' };
+let enhancerQueue: StubResponse[] = [];
+let enhancerLog: Array<{ model: string; messages: unknown[] }> = [];
+
 export function scriptOpenAi(...responses: StubResponse[]): void {
   responseQueue = [...responses];
+}
+
+export function scriptEnhancer(...responses: StubResponse[]): void {
+  enhancerQueue = [...responses];
 }
 
 export function openAiRequests() {
   return requestLog;
 }
 
+export function enhancerRequests() {
+  return enhancerLog;
+}
+
 export function resetOpenAiStub(): void {
   responseQueue = [];
   requestLog = [];
+  enhancerQueue = [];
+  enhancerLog = [];
+}
+
+function isEnhancerRequest(request: { messages?: unknown[] }): boolean {
+  const first = request.messages?.[0] as { role?: string; content?: string } | undefined;
+  return first?.role === 'system' && ENHANCER_REQUEST.test(first.content ?? '');
 }
 
 let stubServer: Server | null = null;
@@ -70,14 +97,22 @@ async function startOpenAiStub(): Promise<string> {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', async () => {
+      let request: { model: string; messages: unknown[] };
       try {
-        requestLog.push(JSON.parse(body));
+        request = JSON.parse(body);
       } catch {
-        requestLog.push({ model: 'unparsed', messages: [] });
+        request = { model: 'unparsed', messages: [] };
       }
 
-      const next = responseQueue.length > 1 ? responseQueue.shift()! : responseQueue[0];
-      const response = next ?? { content: '{}' };
+      let response: StubResponse;
+      if (isEnhancerRequest(request)) {
+        enhancerLog.push(request);
+        response = (enhancerQueue.length > 1 ? enhancerQueue.shift() : enhancerQueue[0]) ?? NO_REWRITE;
+      } else {
+        requestLog.push(request);
+        const next = responseQueue.length > 1 ? responseQueue.shift()! : responseQueue[0];
+        response = next ?? { content: '{}' };
+      }
 
       if (response.delayMs) await new Promise((r) => setTimeout(r, response.delayMs));
 

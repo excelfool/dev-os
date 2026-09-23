@@ -42,12 +42,34 @@ const BARE_BACK_REFERENCE = /\b(that|it|those)\b/i;
 
 const TERM_NAMES = [...NDA_TERMS, ...MSA_TERMS].map((t) => t.term_name.toLowerCase());
 
+/** A term-library name, a contract word or a contract stem. */
+function hasContractSignal(text: string): boolean {
+  const mentionsTerm = TERM_NAMES.some((name) => text.toLowerCase().includes(name));
+  return mentionsTerm || CONTRACT_WORD.test(text) || CONTRACT_STEM.test(text);
+}
+
+export interface QueryAnalysis {
+  queryClass: QueryClass;
+  /** The message references the conversation itself (rule 1). */
+  historySignal: boolean;
+  /** The message names a contract term, word or stem (rule 2). */
+  contractSignal: boolean;
+}
+
 export function classifyQuery(message: string, hasHistory: boolean): QueryClass {
+  return analyseQuery(message, hasHistory).queryClass;
+}
+
+/**
+ * The class plus the signals behind it, so callers that gate on a signal
+ * (the query enhancer, spec 08 v1.1 §B / C28) read the same regexes rather
+ * than duplicating them.
+ */
+export function analyseQuery(message: string, hasHistory: boolean): QueryAnalysis {
   const text = message.trim();
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-  const mentionsTerm = TERM_NAMES.some((name) => text.toLowerCase().includes(name));
-  const contractSignal = mentionsTerm || CONTRACT_WORD.test(text) || CONTRACT_STEM.test(text);
+  const contractSignal = hasContractSignal(text);
 
   // A short bare back-reference with no contract noun is about the conversation.
   const historySignal =
@@ -55,8 +77,10 @@ export function classifyQuery(message: string, hasHistory: boolean): QueryClass 
     HISTORY_SIGNAL_FIRST_PERSON.test(text) ||
     (wordCount < 8 && BARE_BACK_REFERENCE.test(text) && !contractSignal);
 
-  if (historySignal && contractSignal) return 'both';
-  if (historySignal && hasHistory) return 'history';
+  const result = (queryClass: QueryClass): QueryAnalysis => ({ queryClass, historySignal, contractSignal });
+
+  if (historySignal && contractSignal) return result('both');
+  if (historySignal && hasHistory) return result('history');
 
   /**
    * DEVIATION from spec 08 §4 rule 3 (2026-09-20). The spec ends "Otherwise →
@@ -73,7 +97,40 @@ export function classifyQuery(message: string, hasHistory: boolean): QueryClass 
    * contract signal still classifies `contract`, so the class stays meaningful
    * for the spec 17 evaluation.
    */
-  if (!contractSignal && hasHistory) return 'both';
+  if (!contractSignal && hasHistory) return result('both');
 
-  return 'contract';
+  return result('contract');
 }
+
+/**
+ * Spec 08 v1.1 §B, as amended by C28 (2026-09-23): the enhancer runs whenever
+ * the message carries no history signal — class `contract`, or `both` reached
+ * only through the R10 fallback above (no contract signal, a conversation
+ * exists). It never runs when a real history signal exists: a question about
+ * the conversation keeps the user's own wording.
+ */
+export function shouldEnhanceQuery(analysis: QueryAnalysis): boolean {
+  return !analysis.historySignal && analysis.queryClass !== 'history';
+}
+
+/** Spec 08 v1.1 §A step 5b, verbatim. */
+const GREETING =
+  /^(hi|hello|hey|yo|thanks|thank you|cheers|ok|okay|good (morning|afternoon|evening)|how are you)\b[\s!.?,]*(there|contractiq)?[\s!.?]*$/i;
+
+const GREETING_MAX_WORDS = 6;
+
+/**
+ * Greeting / small-talk pre-check (spec 08 v1.1 §A step 5b): ≤ 6 words, the
+ * spec's pattern, and no contract signal. A greeting is answered with a fixed
+ * reply and never reaches the classifier, the enhancer, the document or the
+ * model — PRD §7 "greetings … never touch the document store".
+ */
+export function isGreeting(message: string): boolean {
+  const text = message.trim();
+  if (text.split(/\s+/).filter(Boolean).length > GREETING_MAX_WORDS) return false;
+  return GREETING.test(text) && !hasContractSignal(text);
+}
+
+/** The fixed greeting reply (spec 08 v1.1 §A step 5b), verbatim. */
+export const GREETING_REPLY =
+  "Hi — I'm ContractIQ. Ask me anything about this contract, for example: *Is there an auto-renewal clause?*";

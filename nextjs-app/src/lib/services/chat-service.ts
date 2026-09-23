@@ -1,13 +1,28 @@
 import 'server-only';
 import { estimateTokens } from '@/lib/pdf/page-utils';
 import { normalise } from '@/lib/utils/normalise-text';
-import { buildChatSystemPrompt, buildDocumentContextBlock, CANNOT_FIND_ANSWER } from '@/lib/ai/prompts/chat.v1';
+import { citedPagesIn } from '@/lib/ai/citations';
+import {
+  buildChatSystemPrompt,
+  buildDocumentContextBlock,
+  buildSearchFocusBlock,
+  CANNOT_FIND_ANSWER,
+} from '@/lib/ai/prompts/chat.v1';
 import type { LlmMessage } from '@/lib/ai/openai-client';
 import type { QueryClass } from '@/types/domain';
 
 /**
  * Context assembly and citation enforcement (spec 08 §§5–6).
  */
+
+/**
+ * G43: the whole turn — enhancer, answer with its retries, citation repair —
+ * runs inside one budget measured from request start. Spec 08's chat budget
+ * (≤ 15 s P95); never above route 34's 22 s (Netlify's sync ceiling is 26 s,
+ * D36). callLlm starts no attempt that cannot finish before it, so a turn that
+ * runs out returns 504 AI_TIMEOUT with the user's question already stored.
+ */
+export const CHAT_TURN_BUDGET_MS = 15_000;
 
 export interface HistoryMessage {
   role: 'user' | 'assistant';
@@ -20,8 +35,10 @@ export function assembleChatMessages(params: {
   history: HistoryMessage[];
   userMessage: string;
   maxHistoryTokens: number;
+  /** Spec 08 v1.1 §B: the query enhancer's rewrite, or null when it did not run or failed. */
+  enhancedQuery?: string | null;
 }): LlmMessage[] {
-  const { queryClass, contractText, history, userMessage, maxHistoryTokens } = params;
+  const { queryClass, contractText, history, userMessage, maxHistoryTokens, enhancedQuery } = params;
 
   const messages: LlmMessage[] = [
     { role: 'system', content: buildChatSystemPrompt(queryClass) },
@@ -31,6 +48,9 @@ export function assembleChatMessages(params: {
   // questions about the conversation itself.
   if (queryClass !== 'history') {
     messages.push({ role: 'system', content: buildDocumentContextBlock(contractText) });
+    // §B: the rewrite follows the document block. The user's own words stay
+    // the last user turn, so the answer still addresses what they asked.
+    if (enhancedQuery) messages.push({ role: 'system', content: buildSearchFocusBlock(enhancedQuery) });
   }
 
   messages.push(...truncateHistory(history, maxHistoryTokens));
@@ -78,17 +98,12 @@ export function validateCitations(
     return { citedPages: [], citationVerified: true, needsRepair: false };
   }
 
-  const matches = [...content.matchAll(/\[Page\s+(\d+)\]/gi)];
-
-  const citedPages = [
-    ...new Set(
-      matches
-        .map((m) => Number(m[1]))
-        // A citation naming a page outside the document is discarded and
-        // counts as "no citation".
-        .filter((page) => Number.isInteger(page) && page >= 1 && page <= pageCount),
-    ),
-  ].sort((a, b) => a - b);
+  // G44: the shared parser, so `[Page 1, 5, 7]`, `[Pages 3–4]` and
+  // `[Page 3, Page 5]` count as citations here exactly as in the summary. A
+  // page outside the document is discarded and counts as "no citation".
+  const citedPages = citedPagesIn(content)
+    .filter((page) => Number.isInteger(page) && page >= 1 && page <= pageCount)
+    .sort((a, b) => a - b);
 
   // The exact fallback is a correct, expected answer — not a failure.
   if (isCannotFindAnswer(content)) {

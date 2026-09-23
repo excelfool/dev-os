@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export type ProcessingStage = 'upload' | 'text_extract' | 'ai_extract' | 'summary' | 'persist' | 'total';
+export type ProcessingStage = 'upload' | 'text_extract' | 'ai_extract' | 'summary' | 'persist' | 'chat' | 'total';
 
 export async function timed<T>(fn: () => Promise<T>): Promise<{ result: T; durationMs: number }> {
   const startedAt = Date.now();

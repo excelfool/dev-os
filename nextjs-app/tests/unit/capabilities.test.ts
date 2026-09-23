@@ -31,7 +31,8 @@ const APPENDIX_B: Array<[string, 'built' | 'stub' | 'planned']> = [
   ['qa.single_contract', 'built'],
   ['qa.cross_contract', 'planned'],
   ['retrieval.full_context', 'built'],
-  ['retrieval.query_enhancer', 'planned'],
+  // PRD Appendix B says planned; spec 08 v1.1 §B: flips to built when the enhancer ships (Stage 6).
+  ['retrieval.query_enhancer', 'built'],
   ['retrieval.vector', 'stub'],
   ['retrieval.graph', 'planned'],
   ['retrieval.n8n', 'stub'],

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageCitationChip } from '@/components/chat/PageCitationChip';
-import { parseCitationPages } from '@/lib/ai/summary-validation';
+import { parseCitationPages } from '@/lib/ai/citations';
 import { HhhQuestionnaire } from '@/components/review/HhhQuestionnaire';
 import { useReviewMode } from '@/hooks/use-review-mode';
 import { isBuilt } from '@/lib/capabilities';

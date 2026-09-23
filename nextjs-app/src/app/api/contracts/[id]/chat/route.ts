@@ -4,12 +4,20 @@ import { withErrorHandling } from '@/lib/errors/to-user-message';
 import { enforceRateLimit } from '@/lib/security/rate-limit';
 import { chatMessageSchema } from '@/lib/validation/chat.schema';
 import { callLlm } from '@/lib/ai/openai-client';
-import { classifyQuery } from '@/lib/ai/query-classifier';
+import { analyseQuery, GREETING_REPLY, isGreeting, shouldEnhanceQuery } from '@/lib/ai/query-classifier';
+import { enhanceQuery } from '@/lib/ai/query-enhancer';
 import { detectPromptInjection } from '@/lib/security/prompt-injection';
 import { CITATION_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
-import { assembleChatMessages, validateCitations, type HistoryMessage } from '@/lib/services/chat-service';
+import {
+  assembleChatMessages,
+  CHAT_TURN_BUDGET_MS,
+  validateCitations,
+  type HistoryMessage,
+} from '@/lib/services/chat-service';
 import { getServerConfig } from '@/lib/utils/server-config';
 import { recordEvent } from '@/lib/metrics/events';
+import { recordProcessingRun } from '@/lib/metrics/timings';
+import { AppError } from '@/lib/errors/app-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -84,6 +92,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
 /** POST /api/contracts/{id}/chat (spec 08 §3). */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const requestStartedAt = Date.now();
+  const deadlineAt = requestStartedAt + CHAT_TURN_BUDGET_MS;
+
   return withErrorHandling({ route: '/api/contracts/[id]/chat', method: 'POST' }, async (ctx) => {
     const cfg = getServerConfig();
     const supabase = createServerSupabaseClient();
@@ -137,38 +148,113 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const history = (historyRows ?? []) as HistoryMessage[];
 
-    // 5. Persist the user message BEFORE the model call, so a failed turn
-    //    still records the question.
-    const { data: userMessageRow, error: userInsertError } = await supabase
-      .from('chat_messages')
-      .insert({ session_id: sessionId, user_id: user.id, role: 'user', content: message })
-      .select('id')
-      .single();
-    if (userInsertError || !userMessageRow) throw appError('INTERNAL');
+    const turnStartedAt = Date.now();
+
+    // 5. Persist the user message BEFORE the answer call, so a failed turn
+    //    still records the question. `chat_messages` is append-only (no UPDATE
+    //    policy), so `enhanced_query` is written with the row, not after it:
+    //    the enhancer (6a) runs first, and it can never fail a turn.
+    const persistUserMessage = async (enhancedQuery: string | null) => {
+      const { data: row, error } = await supabase
+        .from('chat_messages')
+        .insert({ session_id: sessionId, user_id: user.id, role: 'user', content: message, enhanced_query: enhancedQuery })
+        .select('id')
+        .single();
+      if (error || !row) throw appError('INTERNAL');
+      return { id: row.id as string, enhanced_query: enhancedQuery };
+    };
+
+    // 5b. Greeting / small talk (spec 08 v1.1 §A): a fixed reply, and no
+    //     classifier, enhancer, document or model call.
+    if (isGreeting(message)) {
+      const userMessage = await persistUserMessage(null);
+      const latencyMs = Date.now() - turnStartedAt;
+      const { data: greetingRow, error: greetingError } = await supabase
+        .from('chat_messages')
+        .insert({
+          session_id: sessionId,
+          user_id: user.id,
+          role: 'assistant',
+          content: GREETING_REPLY,
+          cited_pages: [],
+          citation_verified: true,
+          query_class: null,
+          latency_ms: latencyMs,
+        })
+        .select('id, role, content, cited_pages, citation_verified, created_at')
+        .single();
+      if (greetingError || !greetingRow) throw appError('INTERNAL');
+
+      await supabase
+        .from('chat_sessions')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', sessionId);
+      await Promise.all([
+        recordEvent(supabase, {
+          userId: user.id,
+          contractId: contract.id,
+          eventType: 'chat_message_sent',
+          durationMs: latencyMs,
+          metadata: { query_class: null, greeting: true },
+        }),
+        recordProcessingRun(supabase, { contractId: contract.id, userId: user.id, stage: 'chat', durationMs: latencyMs, outcome: 'success' }),
+      ]);
+
+      return Response.json({
+        user_message_id: userMessage.id,
+        user_message: userMessage,
+        assistant_message: { ...greetingRow, query_class: null, latency_ms: latencyMs },
+      });
+    }
 
     // 6. Classify locally — no extra API call.
-    const queryClass = classifyQuery(message, history.length > 0);
+    const analysis = analyseQuery(message, history.length > 0);
+    const queryClass = analysis.queryClass;
 
-    // 7. Assemble context
-    const messages = assembleChatMessages({
-      queryClass,
-      contractText: contract.contract_text,
-      history,
-      userMessage: message,
-      maxHistoryTokens: cfg.MAX_CHAT_HISTORY_TOKENS,
-    });
+    // 6a. Query enhancer (§B, C28): only when the message carries no history
+    //     signal. Never throws: a failure or timeout is null and the turn goes on.
+    const enhancedQuery = shouldEnhanceQuery(analysis)
+      ? await enhanceQuery({ question: message, history, userId: user.id, contractId: contract.id, deadlineAt, supabase })
+      : null;
 
-    // 8. Call GPT-4o
-    const startedAt = Date.now();
-    const result = await callLlm({
-      purpose: 'chat',
-      messages,
-      temperature: cfg.OPENAI_CHAT_TEMPERATURE,
-      maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
-      userId: user.id,
-      contractId: contract.id,
-      supabase,
-    });
+    const userMessage = await persistUserMessage(enhancedQuery);
+
+    let result: Awaited<ReturnType<typeof callLlm>>;
+    let messages: ReturnType<typeof assembleChatMessages>;
+    try {
+      // 7. Assemble context
+      messages = assembleChatMessages({
+        queryClass,
+        contractText: contract.contract_text,
+        history,
+        userMessage: message,
+        maxHistoryTokens: cfg.MAX_CHAT_HISTORY_TOKENS,
+        enhancedQuery: userMessage.enhanced_query,
+      });
+
+      // 8. Call GPT-4o — OPENAI_MAX_RETRIES attempts, all inside the turn budget.
+      result = await callLlm({
+        purpose: 'chat',
+        messages,
+        temperature: cfg.OPENAI_CHAT_TEMPERATURE,
+        maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
+        userId: user.id,
+        contractId: contract.id,
+        deadlineAt,
+        supabase,
+      });
+    } catch (err) {
+      // §A step 10: one `chat` row per turn, failed turns included.
+      await recordProcessingRun(supabase, {
+        contractId: contract.id,
+        userId: user.id,
+        stage: 'chat',
+        durationMs: Date.now() - turnStartedAt,
+        outcome: 'error',
+        errorCode: err instanceof AppError ? err.code : 'INTERNAL',
+      });
+      throw err;
+    }
 
     // 9. Citation post-validation, with one repair retry.
     let content = result.content;
@@ -187,6 +273,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
           ],
           temperature: cfg.OPENAI_CHAT_TEMPERATURE,
           maxTokens: cfg.OPENAI_CHAT_MAX_TOKENS,
+          // One attempt, and only if the turn budget still has room for it.
+          maxAttempts: 1,
+          deadlineAt,
           userId: user.id,
           contractId: contract.id,
           supabase,
@@ -204,7 +293,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
     }
 
-    const latencyMs = Date.now() - startedAt;
+    const latencyMs = Date.now() - turnStartedAt;
 
     // 10. Persist the assistant message
     const { data: assistantRow, error: assistantError } = await supabase
@@ -231,17 +320,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .eq('id', sessionId);
 
     // 11. Telemetry — metadata carries the class and latency only, never the
-    //     question or the answer.
-    await recordEvent(supabase, {
-      userId: user.id,
-      contractId: contract.id,
-      eventType: 'chat_message_sent',
-      durationMs: latencyMs,
-      metadata: { query_class: queryClass },
-    });
+    //     question or the answer. §A step 10: one `chat` processing run per turn.
+    await Promise.all([
+      recordEvent(supabase, {
+        userId: user.id,
+        contractId: contract.id,
+        eventType: 'chat_message_sent',
+        durationMs: latencyMs,
+        metadata: { query_class: queryClass, enhanced: userMessage.enhanced_query !== null },
+      }),
+      recordProcessingRun(supabase, { contractId: contract.id, userId: user.id, stage: 'chat', durationMs: latencyMs, outcome: 'success' }),
+    ]);
 
     return Response.json({
-      user_message_id: userMessageRow.id,
+      user_message_id: userMessage.id,
+      user_message: userMessage,
       assistant_message: { ...assistantRow, query_class: queryClass, latency_ms: latencyMs },
     });
   });

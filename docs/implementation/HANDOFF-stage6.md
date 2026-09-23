@@ -105,7 +105,7 @@ Carried from Stage 4, still open: the v2 page-accuracy drop (64 % → 53 %) is u
 
 Stage 6 is **chat and retrieval**, not the security pass the previous handoff named — the security foundation moves to Stage 8 with G36 and L15.
 
-1. **Query enhancer** — spec 08 v1.1 §B. `retrieval.query_enhancer` goes `planned → built`. It already has its config (`OPENAI_MODEL_ENHANCER`, `OPENAI_ENHANCER_MAX_TOKENS`, `OPENAI_ENHANCER_TIMEOUT_MS`) and its purpose in `LlmPurpose`; it runs on `OPENAI_TIMEOUT_MS` (20 s), which L5 deliberately left alone.
+1. **Query enhancer** — spec 08 v1.1 §B. `retrieval.query_enhancer` goes `planned → built`. It already has its config (`OPENAI_MODEL_ENHANCER`, `OPENAI_ENHANCER_MAX_TOKENS`, `OPENAI_ENHANCER_TIMEOUT_MS`) and its purpose in `LlmPurpose`. It runs on the §B values, not `OPENAI_TIMEOUT_MS`: **`OPENAI_ENHANCER_TIMEOUT_MS` = 5 s, `OPENAI_ENHANCER_MAX_TOKENS` = 120, one attempt, never retried**, inside the 15 s chat-turn budget (G43). *(Corrected 2026-09-23: this line previously said it runs on `OPENAI_TIMEOUT_MS` (20 s).)*
 2. **`RetrievalStrategy` interface** — spec 08 v1.1 §D, spec 21 §4. Full-context is the one **built** strategy; **vector**, **graph** and **n8n** are registered stubs behind it, so the capability table stays honest and the swap is an adapter change rather than a rewrite.
 3. **The C25/C27 argument.** Chunked retrieval is what makes a 35- or 141-page contract reachable. Stage 6 is where that case gets made with the instructor set in hand.
 

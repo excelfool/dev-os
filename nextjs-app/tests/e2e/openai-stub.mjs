@@ -9,7 +9,13 @@
  *   POST /v1/chat/completions   the model
  *   POST /__control/script      { responses: [{ content, status?, delayMs? }] }
  *   GET  /__control/requests    every request body the app has sent
- *   POST /__control/reset       clear queue and log
+ *   POST /__control/reset       clear queues and logs
+ *   POST /__control/script-enhancer   { responses: [...] } for the query enhancer
+ *   GET  /__control/enhancer-requests every query-enhancer request
+ *
+ * Query-enhancer calls (spec 08 v1.1 §B) have their own queue and log, as in
+ * the integration harness: an enhancer call never consumes a scripted answer,
+ * and unscripted it answers {"query": null} — no rewrite.
  */
 import { createServer } from 'node:http';
 
@@ -17,6 +23,16 @@ const PORT = Number(process.env.OPENAI_STUB_PORT ?? 3300);
 
 let responseQueue = [];
 let requestLog = [];
+let enhancerQueue = [];
+let enhancerLog = [];
+
+const ENHANCER_REQUEST = /^Rewrite the user's question about a contract/;
+const NO_REWRITE = { content: '{"query": null}' };
+
+function isEnhancerRequest(request) {
+  const first = request.messages?.[0];
+  return first?.role === 'system' && ENHANCER_REQUEST.test(first.content ?? '');
+}
 
 function readBody(req) {
   return new Promise((resolve) => {
@@ -32,6 +48,8 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/__control/reset') {
     responseQueue = [];
     requestLog = [];
+    enhancerQueue = [];
+    enhancerLog = [];
     res.writeHead(200).end('{}');
     return;
   }
@@ -43,6 +61,19 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === '/__control/script-enhancer') {
+    const { responses } = JSON.parse(await readBody(req));
+    enhancerQueue = [...responses];
+    res.writeHead(200).end('{}');
+    return;
+  }
+
+  if (url.pathname === '/__control/enhancer-requests') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(enhancerLog));
+    return;
+  }
+
   if (url.pathname === '/__control/requests') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(requestLog));
@@ -51,16 +82,24 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname.endsWith('/chat/completions')) {
     const body = await readBody(req);
+    let request;
     try {
-      requestLog.push(JSON.parse(body));
+      request = JSON.parse(body);
     } catch {
-      requestLog.push({ model: 'unparsed', messages: [] });
+      request = { model: 'unparsed', messages: [] };
     }
 
     // The last scripted response repeats once the queue drains, matching the
     // integration harness.
-    const next = responseQueue.length > 1 ? responseQueue.shift() : responseQueue[0];
-    const response = next ?? { content: '{}' };
+    let response;
+    if (isEnhancerRequest(request)) {
+      enhancerLog.push(request);
+      response = (enhancerQueue.length > 1 ? enhancerQueue.shift() : enhancerQueue[0]) ?? NO_REWRITE;
+    } else {
+      requestLog.push(request);
+      const next = responseQueue.length > 1 ? responseQueue.shift() : responseQueue[0];
+      response = next ?? { content: '{}' };
+    }
 
     if (response.delayMs) await new Promise((r) => setTimeout(r, response.delayMs));
 
