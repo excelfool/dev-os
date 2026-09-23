@@ -35,7 +35,8 @@ export const MEMORY_CASES: MemoryCase[] = [
     name: 'demonstrative follow-up (T2 of the live failure)',
     turns: [
       { question: 'What is the governing law', expectedClass: 'contract', expectRefusal: false, expectedContains: 'Delaware' },
-      { question: 'What does that mean in practice?', expectedClass: 'history', expectRefusal: false },
+      // L17 (2026-09-23): a bare back-reference now routes to `both` — the document is included.
+      { question: 'What does that mean in practice?', expectedClass: 'both', expectRefusal: false },
     ],
   },
   {

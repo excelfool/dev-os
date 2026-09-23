@@ -111,7 +111,12 @@ export function validateCitations(
   queryClass: QueryClass = 'contract',
 ): CitationResult {
   if (queryClass === 'history') {
-    return { citedPages: [], citationVerified: true, needsRepair: false };
+    // L17 (2026-09-23): a history turn never reads the document, so a page
+    // citation in its answer cannot be backed by anything. It is stored with
+    // no pages and unverified — the bubble shows the unverified-citation note
+    // — and no repair is asked for, because no repair could supply a real page.
+    const cites = citedPagesIn(content).length > 0;
+    return { citedPages: [], citationVerified: !cites, needsRepair: false };
   }
 
   // G44: the shared parser, so `[Page 1, 5, 7]`, `[Pages 3–4]` and
@@ -185,7 +190,9 @@ export function validateDelegatedAnswer(
   queryClass: QueryClass,
 ): { citedPages: number[]; citationVerified: boolean } {
   const fromText = validateCitations(answer, pageCount, queryClass);
-  if (queryClass === 'history' || isCannotFindAnswer(answer)) return { citedPages: [], citationVerified: true };
+  // History (L17): the same rule as a model answer — no pages, unverified if it cites any.
+  if (queryClass === 'history') return { citedPages: [], citationVerified: fromText.citationVerified };
+  if (isCannotFindAnswer(answer)) return { citedPages: [], citationVerified: true };
   const pages = [...new Set([...fromText.citedPages, ...claimedPages])]
     .filter((page) => Number.isInteger(page) && page >= 1 && page <= pageCount)
     .sort((a, b) => a - b);

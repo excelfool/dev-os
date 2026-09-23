@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyQuery } from '@/lib/ai/query-classifier';
+import { analyseQuery, classifyQuery, shouldEnhanceQuery } from '@/lib/ai/query-classifier';
 import { validateCitations, isCannotFindAnswer, truncateHistory } from '@/lib/services/chat-service';
 import { buildChatSystemPrompt, CANNOT_FIND_ANSWER } from '@/lib/ai/prompts/chat.v1';
 
@@ -139,8 +139,14 @@ describe('classifyQuery — conversational questions in the user\'s own voice', 
     }
   });
 
-  it('keeps a demonstrative follow-up as history', () => {
-    expect(classifyQuery('What does that mean in practice?', true)).toBe('history');
+  it('routes a demonstrative follow-up to both, not history (L17)', () => {
+    // "that" continues the conversation; its referent is usually a clause, so
+    // the document must be in the prompt.
+    expect(analyseQuery('What does that mean in practice?', true)).toEqual({
+      queryClass: 'both',
+      historySignal: false,
+      contractSignal: false,
+    });
   });
 
   it('falls back to both, not contract, once a conversation exists', () => {
@@ -208,10 +214,43 @@ describe('validateCitations — every citation form the summary accepts (G44)', 
     expect(result.needsRepair).toBe(true);
   });
 
-  it('the history rule is unchanged: no page demanded, none recorded', () => {
-    expect(validateCitations('You asked about [Page 1, 5].', 8, 'history')).toEqual({
+  it('history: no page demanded, none recorded; a cited page makes it unverified (L17)', () => {
+    expect(validateCitations('You asked about the notice period.', 8, 'history')).toEqual({
       citedPages: [],
       citationVerified: true,
+      needsRepair: false,
+    });
+    expect(validateCitations('You asked about [Page 1, 5].', 8, 'history')).toEqual({
+      citedPages: [],
+      citationVerified: false,
+      needsRepair: false,
+    });
+  });
+});
+
+describe('L17 — the live walk: a bare back-reference is not a history question', () => {
+  const WALK = 'And what happens after it expires?';
+
+  it('classifies both with historySignal false once a conversation exists, and the enhancer runs', () => {
+    const analysis = analyseQuery(WALK, true);
+    expect(analysis).toEqual({ queryClass: 'both', historySignal: false, contractSignal: false });
+    expect(shouldEnhanceQuery(analysis)).toBe(true);
+  });
+
+  it('with no conversation it is a contract question', () => {
+    expect(classifyQuery(WALK, false)).toBe('contract');
+  });
+
+  it('explicit history questions are unchanged', () => {
+    expect(classifyQuery('What did you say earlier?', true)).toBe('history');
+    expect(classifyQuery('repeat that', true)).toBe('history');
+    expect(classifyQuery('What have I asked you so far', true)).toBe('history');
+  });
+
+  it('a history answer citing a page is stored with no pages and unverified, never repaired', () => {
+    expect(validateCitations('After expiry the obligations survive for three years. [Page 6]', 8, 'history')).toEqual({
+      citedPages: [],
+      citationVerified: false,
       needsRepair: false,
     });
   });

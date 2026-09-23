@@ -138,7 +138,14 @@ Worked in a Docker sandbox against a **local** Supabase stack (`npm run supabase
 | **D57** (was G45 in 5527f9b's first draft) | `callLlm` returns **`AI_TIMEOUT`** (504), not `AI_UNAVAILABLE` (503), when a caller's deadline leaves no room for even a first attempt — the budget ran out, the provider was never tried (spec 06 §3 note, 02693cb). |
 | **D58** (was G47 in 5527f9b's first draft) | The query enhancer runs **before** the user-row insert and `enhanced_query` is written **with** the row: `chat_messages` is append-only (no UPDATE policy), so updating it afterwards failed silently. The question is still stored before the answer call (spec 08 §B "Order, as built", 02693cb). |
 
-**Next free identifiers: D59, C29, G48, L17.**
+**Found in the live walk (2026-09-23), fixed in "Stage 6 live fixes: enhancer JSON-mode 400 (G48), bare back-reference routes to both and history answers never verified citations (L17)":**
+
+| Id | One line |
+|---|---|
+| **G48** | Every live query-enhancer call failed with HTTP 400 and 0 tokens: OpenAI's JSON mode refuses a request whose messages never say "json", and the §B prompt ended `Return { "query": "…" }`. Prompt now ends `Return JSON: { "query": "…" }`; `callLlm` refuses such a request before sending it; the attempt_failed line carries the API's 4xx message. |
+| **L17** | "And what happens after it expires?" classified `history` on the bare "it", was sent without the document (209 prompt tokens), and the model answered from general knowledge citing "[Page 6]", stored as verified. A bare back-reference no longer makes a history signal (it falls through to `both`, document + enhancer); a history answer that cites a page is stored unverified with no pages; the history prompt says "Do not cite pages". |
+
+**Next free identifiers: D59, C29, G49, L18.**
 
 **C25/C27 — instructor MSAs the upload gates stop** (measured with the app's `extractPdfText` + `estimateTokens`; gates in the route's order, `MAX_PAGES` = 20 then `MAX_TOKENS` = 15,000; full argument in spec 08 v1.1 §D):
 

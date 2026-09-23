@@ -38,8 +38,6 @@ const CONTRACT_WORD =
 
 const CONTRACT_STEM = /\b(terminat|indemni|renew)/i;
 
-const BARE_BACK_REFERENCE = /\b(that|it|those)\b/i;
-
 const TERM_NAMES = [...NDA_TERMS, ...MSA_TERMS].map((t) => t.term_name.toLowerCase());
 
 /** A term-library name, a contract word or a contract stem. */
@@ -67,15 +65,23 @@ export function classifyQuery(message: string, hasHistory: boolean): QueryClass 
  */
 export function analyseQuery(message: string, hasHistory: boolean): QueryAnalysis {
   const text = message.trim();
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   const contractSignal = hasContractSignal(text);
 
-  // A short bare back-reference with no contract noun is about the conversation.
-  const historySignal =
-    HISTORY_SIGNAL.test(text) ||
-    HISTORY_SIGNAL_FIRST_PERSON.test(text) ||
-    (wordCount < 8 && BARE_BACK_REFERENCE.test(text) && !contractSignal);
+  /**
+   * DEVIATION from spec 08 §4 rule 1 (L17, 2026-09-23): a short bare
+   * back-reference (`that`, `it`, `those`, under 8 words, no contract noun) is
+   * NO LONGER a history signal. "And what happens after it expires?" matched
+   * it, classified `history`, was sent with no document (209 prompt tokens),
+   * and the model answered from general knowledge while citing "[Page 6]" — a
+   * page it never read. A pronoun says the question continues the
+   * conversation, not that it is ABOUT the conversation: the referent is
+   * usually a clause. Such a message now falls through to the R10 fallback
+   * below — `both` once a conversation exists — which includes the document
+   * and lets the enhancer expand the pronoun. Only the explicit history
+   * regexes (second and first person) still make a history signal.
+   */
+  const historySignal = HISTORY_SIGNAL.test(text) || HISTORY_SIGNAL_FIRST_PERSON.test(text);
 
   const result = (queryClass: QueryClass): QueryAnalysis => ({ queryClass, historySignal, contractSignal });
 

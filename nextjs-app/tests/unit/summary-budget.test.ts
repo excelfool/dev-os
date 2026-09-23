@@ -61,6 +61,13 @@ describe('summary call budget (L4)', () => {
     expect(callLlm.mock.calls[0]![0].timeoutMs).toBe(20_000);
   });
 
+  it('the summary call is Markdown, not JSON mode — the G48 json-word guard does not apply to it', async () => {
+    callLlm.mockResolvedValueOnce({ content: CITED, promptTokens: 1, completionTokens: 1, latencyMs: 1, attempts: 1 });
+    const { client } = fakeSupabase();
+    await runSummary(client, contract, [], {});
+    expect(callLlm.mock.calls[0]![0].jsonMode).toBeFalsy();
+  });
+
   it('caps the timeout at deadlineAt − now − 1 s', async () => {
     callLlm.mockResolvedValueOnce({ content: CITED, promptTokens: 1, completionTokens: 1, latencyMs: 1, attempts: 1 });
     const { client } = fakeSupabase();

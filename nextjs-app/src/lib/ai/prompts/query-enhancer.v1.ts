@@ -1,6 +1,10 @@
-/** Query-enhancer prompt, verbatim from spec 08 v1.1 §B. */
+/**
+ * Query-enhancer prompt, verbatim from spec 08 v1.1 §B — except the last
+ * sentence, which says "Return JSON:" (G48, 2026-09-23): JSON mode is refused
+ * with HTTP 400 unless a message contains the word "json".
+ */
 export const QUERY_ENHANCER_SYSTEM_PROMPT =
-  "Rewrite the user's question about a contract into one precise, self-contained retrieval query: expand pronouns using the conversation, name the clause type in contract vocabulary (e.g. 'auto-renewal', 'termination for convenience', 'limitation of liability'), keep every constraint the user stated, add nothing the user did not ask. Return `{ \"query\": \"…\" }`.";
+  "Rewrite the user's question about a contract into one precise, self-contained retrieval query: expand pronouns using the conversation, name the clause type in contract vocabulary (e.g. 'auto-renewal', 'termination for convenience', 'limitation of liability'), keep every constraint the user stated, add nothing the user did not ask. Return JSON: { \"query\": \"…\" }.";
 
 /** The conversation is given only so pronouns can be expanded; recent turns suffice. */
 export const ENHANCER_HISTORY_TURNS = 6;

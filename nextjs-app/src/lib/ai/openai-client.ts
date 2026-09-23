@@ -203,7 +203,36 @@ function isRetryable(err: unknown): boolean {
   return true;
 }
 
+/**
+ * G48: OpenAI's JSON mode (`response_format: json_object`) rejects, with HTTP
+ * 400 and 0 tokens, any request whose messages never contain the word "json".
+ * Live, the §B enhancer prompt said `Return { "query": "…" }` without it, so
+ * every enhancer call failed and the turn quietly went on without a rewrite.
+ * Checked here, before the request, so a prompt edit that drops the word fails
+ * loudly in tests instead of silently in production.
+ */
+export function assertJsonModeMessages(messages: LlmMessage[]): void {
+  if (!messages.some((m) => /json/i.test(m.content))) {
+    throw new Error(
+      'JSON mode requires the word "json" in at least one message (OpenAI answers 400 otherwise); add it to the prompt.',
+    );
+  }
+}
+
+/**
+ * The API's own error string for a 4xx (e.g. the JSON-mode 400), for the
+ * attempt_failed log. It describes the request's shape, never its content;
+ * capped so an unexpected body cannot flood the log.
+ */
+function clientErrorMessage(err: unknown): string | null {
+  if (!(err instanceof OpenAI.APIError) || err.status === undefined || err.status < 400 || err.status >= 500) return null;
+  const body = err.error as { message?: unknown } | undefined;
+  const message = typeof body?.message === 'string' ? body.message : err.message;
+  return message.slice(0, 300);
+}
+
 export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
+  if (opts.jsonMode) assertJsonModeMessages(opts.messages);
   const cfg = getServerConfig();
   const perAttemptTimeout = opts.timeoutMs ?? cfg.OPENAI_TIMEOUT_MS;
   const maxAttempts = opts.maxAttempts ?? cfg.OPENAI_MAX_RETRIES;
@@ -285,6 +314,8 @@ export async function callLlm(opts: LlmCallOptions): Promise<LlmResult> {
           name: errorName(err),
           status: err instanceof OpenAI.APIError ? err.status ?? null : null,
           code: err instanceof OpenAI.APIError ? err.code ?? null : null,
+          // G48: the API's error string for a 4xx — what named the JSON-mode 400.
+          message: clientErrorMessage(err),
           retryAfterMs,
           latencyMs,
         }),

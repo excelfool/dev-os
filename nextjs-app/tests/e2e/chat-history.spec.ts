@@ -27,6 +27,12 @@ import {
  *   T4 "What have I asked you so far"      never classified `history` at all:
  *      the history regex was written only in the second person.
  *
+ * L17 (2026-09-23): T2 now routes to `both`, not `history`. A bare pronoun
+ * continues the conversation but its referent is a clause, and a `history`
+ * turn with no document answered from general knowledge while citing a page
+ * it never read. `both` carries the document AND permission to use the
+ * conversation, so the follow-up is still never forced into the refusal.
+ *
  * These tests assert on what the app SENDS to the model, because that is where
  * both bugs lived. A stub cannot judge a model's answer, but it records the
  * prompt exactly.
@@ -37,7 +43,7 @@ const GROUNDED_ANSWER =
   'Based on the document, the governing law is the State of Delaware. [Page 1]';
 
 test.describe('conversational memory — the two turns that failed live', () => {
-  test('a demonstrative follow-up is never told to answer only from the document', async ({
+  test('a demonstrative follow-up gets the document and the conversation, and is never forced to refuse', async ({
     page,
   }) => {
     const contractId = await processedContract(page, SHORT_NDA);
@@ -51,21 +57,22 @@ test.describe('conversational memory — the two turns that failed live', () => 
 
     // T2 — the follow-up. Its subject is only recoverable from T1.
     await scriptStub(page.request, [
-      'You asked about the governing law, which means Delaware law applies to disputes.',
+      'Based on the document, disputes are decided under Delaware law. [Page 1]',
     ]);
     await ask(page, 'What does that mean in practice?');
-    await expect(chat(page).getByText(/Delaware law applies to disputes/)).toHaveCount(1);
+    await expect(chat(page).getByText(/decided under Delaware law/)).toHaveCount(1);
 
     const sent = systemBlocks((await stubRequests(page.request))[0]!).join(' ');
 
-    // The bug: the refusal instruction reached a turn with no document.
-    expect(sent).not.toContain(REFUSAL);
-    expect(sent).not.toContain('Answer only from the document text provided');
-    expect(sent).toContain('earlier conversation');
-    // Class `history` omits the document body (spec 08 §4).
-    expect(sent).not.toContain("user's uploaded contract");
+    // L17: class `both` — the document is in the prompt, so a page it cites was read.
+    expect(sent).toContain("user's uploaded contract");
+    // The original bug stays fixed: the prompt lets the model answer from the
+    // conversation and reserves the refusal for the contract part only.
+    expect(sent).toContain('Part of this question is about your earlier conversation');
+    expect(sent).toContain(`only when the question asks about the contract and the document does not answer it`);
+    expect(sent).not.toContain('This question is about your earlier conversation with the user, not about the contract text');
 
-    // And the answer must not be forced through a repair call it cannot satisfy.
+    // A grounded, cited answer needs no repair call.
     expect(await stubRequests(page.request)).toHaveLength(1);
   });
 

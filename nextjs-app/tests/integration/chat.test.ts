@@ -543,3 +543,56 @@ describe('escalation counter (spec 20 §5.1, spec 08 v1.1 §C)', () => {
     expect(resolved.body.escalation_offer).toBe(false);
   }, 120_000);
 });
+
+describe('L17 — bare back-references and history citations (live walk)', () => {
+  it('"And what happens after it expires?" after a contract turn is both, with the document, and is enhanced', async () => {
+    const id = await freshContract();
+    scriptOpenAi({ content: 'Based on the document, the obligations last two years. [Page 1]' });
+    const first = await ask(id, 'How long do the confidentiality obligations last?');
+    expect(first.body.assistant_message.query_class).toBe('contract');
+
+    resetOpenAiStub();
+    scriptEnhancer({ content: '{"query": "confidentiality obligations after the agreement expires"}' });
+    scriptOpenAi({ content: 'Based on the document, they survive for three years after termination. [Page 1]' });
+
+    const res = await ask(id, 'And what happens after it expires?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.assistant_message.query_class).toBe('both');
+    expect(res.body.assistant_message.citation_verified).toBe(true);
+    expect(res.body.assistant_message.cited_pages).toEqual([1]);
+    // The enhancer ran (no history signal) and its rewrite reached the prompt.
+    expect(enhancerRequests()).toHaveLength(1);
+    expect(res.body.user_message.enhanced_query).toBe('confidentiality obligations after the agreement expires');
+    const sent = openAiRequests().at(-1)!.messages as Array<{ role: string; content: string }>;
+    expect(sent.map((m) => m.content).join('\n')).toMatch(/Harborlight Robotics/);
+  }, 120_000);
+
+  it('a history-class answer that cites a page is stored unverified with no pages, and no repair is asked', async () => {
+    const id = await freshContract();
+    scriptOpenAi({ content: 'Based on the document, Delaware law governs. [Page 1]' });
+    await ask(id, 'Which law governs this agreement?');
+
+    resetOpenAiStub();
+    scriptOpenAi({ content: 'Earlier I said the obligations survive after expiry. [Page 6]' });
+    const res = await ask(id, 'What did you say earlier?');
+
+    expect(res.status).toBe(200);
+    expect(res.body.assistant_message.query_class).toBe('history');
+    expect(res.body.assistant_message.cited_pages).toEqual([]);
+    expect(res.body.assistant_message.citation_verified).toBe(false);
+    expect(openAiRequests()).toHaveLength(1);
+    // The history prompt forbids pages and carries no document.
+    const sent = openAiRequests()[0]!.messages as Array<{ role: string; content: string }>;
+    const joined = sent.map((m) => m.content).join('\n');
+    expect(joined).toContain('Do not cite pages; you are answering about the conversation, not the document.');
+    expect(joined).not.toMatch(/Harborlight Robotics/);
+
+    const { data: row } = await user.client
+      .from('chat_messages')
+      .select('cited_pages, citation_verified')
+      .eq('id', (res.body.assistant_message as unknown as { id: string }).id)
+      .single();
+    expect(row).toEqual({ cited_pages: [], citation_verified: false });
+  }, 120_000);
+});
