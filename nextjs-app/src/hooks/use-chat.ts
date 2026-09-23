@@ -22,6 +22,8 @@ export function useChat(contractId: string) {
   const [error, setError] = useState<string | null>(null);
   /** A failed turn restores the question so nothing is lost. */
   const [restoredDraft, setRestoredDraft] = useState<string | null>(null);
+  /** Spec 20 §5.1: the latest turn reached ~3 unresolved turns. */
+  const [escalationOffer, setEscalationOffer] = useState(false);
 
   /**
    * The mount-time history load used to apply its result unconditionally. When
@@ -86,6 +88,7 @@ export function useChat(contractId: string) {
     async (text: string) => {
       setError(null);
       setRestoredDraft(null);
+      setEscalationOffer(false);
       setIsAwaitingReply(true);
       turnInFlightRef.current = true;
 
@@ -123,6 +126,7 @@ export function useChat(contractId: string) {
           );
           return applyPendingLoad(mergeById(renamed, [body.assistant_message as ChatMessage]));
         });
+        setEscalationOffer(body.escalation_offer === true);
       } catch {
         setMessages((prev) => applyPendingLoad(prev.filter((m) => m.id !== optimistic.id)));
         setError("We couldn't reach the AI service. Try again in a few minutes.");
@@ -135,5 +139,5 @@ export function useChat(contractId: string) {
     [contractId, applyPendingLoad],
   );
 
-  return { messages, isLoaded, isAwaitingReply, slowNotice, error, restoredDraft, send };
+  return { messages, isLoaded, isAwaitingReply, slowNotice, error, restoredDraft, escalationOffer, send };
 }

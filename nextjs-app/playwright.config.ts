@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { SUPABASE_ENV_KEYS, loadTestEnv } from './tests/supabase-guard';
+import { E2E_TIMEZONE } from './tests/e2e/timezone';
 
 // Refuses to start unless the Supabase URL is a local stack. The resolved
 // values are handed to the app explicitly, so a process.env value wins over
@@ -26,6 +27,8 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    // G46: browsers and app server share one time zone (tests/e2e/timezone.ts).
+    timezoneId: E2E_TIMEZONE,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -51,6 +54,7 @@ export default defineConfig({
       env: {
         ...supabaseEnv,
         NEXT_DIST_DIR: '.next-e2e',
+        TZ: E2E_TIMEZONE,
         NEXT_TELEMETRY_DISABLED: '1',
         // No billed calls from the E2E suite.
         OPENAI_BASE_URL: `http://127.0.0.1:${OPENAI_STUB_PORT}/v1`,

@@ -30,13 +30,21 @@ const HISTORY_SYSTEM_PROMPT =
 const BOTH_SUFFIX =
   'Part of this question is about your earlier conversation. You may answer from the conversation history as well as the document. Use the exact sentence \'I cannot find this in the document.\' only when the question asks about the contract and the document does not answer it.';
 
+/**
+ * Spec 13 v1.1 §A: the harmless-policy sentence, added to every class's
+ * prompt. The outbound screen (guardrails.ts) is the enforcement; this is the
+ * instruction. Added in PROMPT_VERSION v2.1.
+ */
+export const HARMLESS_SENTENCE =
+  'Never ask the user for personal information, never compare other products or tools, and never repeat abusive language.';
+
 /** The exact fallback. "Not found" is a correct answer, not a failure. */
 export const CANNOT_FIND_ANSWER = 'I cannot find this in the document.';
 
 export function buildChatSystemPrompt(queryClass: QueryClass): string {
-  if (queryClass === 'history') return HISTORY_SYSTEM_PROMPT;
-  if (queryClass === 'both') return `${BASE_SYSTEM_PROMPT} ${BOTH_SUFFIX}`;
-  return BASE_SYSTEM_PROMPT;
+  if (queryClass === 'history') return `${HISTORY_SYSTEM_PROMPT} ${HARMLESS_SENTENCE}`;
+  if (queryClass === 'both') return `${BASE_SYSTEM_PROMPT} ${HARMLESS_SENTENCE} ${BOTH_SUFFIX}`;
+  return `${BASE_SYSTEM_PROMPT} ${HARMLESS_SENTENCE}`;
 }
 
 /**

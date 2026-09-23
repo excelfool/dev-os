@@ -3,6 +3,7 @@ import { appError, AppError } from '@/lib/errors/app-error';
 import { withErrorHandling } from '@/lib/errors/to-user-message';
 import { enforceRateLimit } from '@/lib/security/rate-limit';
 import { withAnalysisSlot } from '@/lib/security/concurrency';
+import { screenDocument } from '@/lib/security/guardrails';
 import { persistPipelineFailure, runProcessingPipeline } from '@/lib/services/process-pipeline';
 import { enqueueProcessJob, isAsyncPipelineEnabled } from '@/lib/services/process-job';
 import { recordEvent } from '@/lib/metrics/events';
@@ -88,6 +89,12 @@ export async function POST(_request: Request, { params }: { params: { id: string
           contractId: contract.id,
           eventType: 'process_started',
         });
+
+        // 5b. Document guardrail screen (spec 13 v1.1 §A): an instruction
+        //     aimed at the model inside the user's own contract is flagged and
+        //     logged to guardrail_events — never blocked, processing continues.
+        //     Extraction output is still schema-validated and source-verified.
+        await screenDocument(contract.contract_text, { supabase, userId: user.id, contractId: contract.id });
 
         // 5a. pipeline.async — hand the run to the background function.
         if (isAsyncPipelineEnabled()) {

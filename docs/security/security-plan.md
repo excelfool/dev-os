@@ -17,7 +17,7 @@ tested code and, in several places, weakened it — see *Reconciliation* below.
 
 | # | Severity | Issue | Fix |
 |---|---|---|---|
-| 1 | **High** | **No prompt-injection screening on chat input.** User messages went straight to GPT-4o. The existing posture was architectural only (system prompt first, contract body labelled as data). Skill §4 requires an input-side control. | `src/lib/security/prompt-injection.ts` + screening in the chat route before the session is touched and before any model call. Returns `400 PROMPT_INJECTION`. |
+| 1 | **High** | **No prompt-injection screening on chat input.** User messages went straight to GPT-4o. The existing posture was architectural only (system prompt first, contract body labelled as data). Skill §4 requires an input-side control. | `src/lib/security/prompt-injection.ts` + screening in the chat route before the session is touched and before any model call. Returns `400 PROMPT_INJECTION`. **Superseded 2026-09-23 — see §3, "Stage 6 update".** |
 | 2 | **Medium** | **Open redirect via `?next=`.** `safeNextPath` checked for a literal `//` but browsers normalise `\` to `/`, so `/\evil.com` navigated cross-origin. A phishing link could go through the real login page and bounce the user to an attacker's site *after* a genuine sign-in — the most credible version of this attack. Control characters had the same effect: `/\t/evil.com`. | Backslashes normalised before the check; control characters rejected. |
 | 3 | **Low** | **Forged `[PAGE N]` markers in contract text.** `[PAGE N]` is load-bearing — the prompts, the citation validator and `page-utils` all trust it for attribution. Contract bodies are attacker-controlled, so a PDF containing a literal `[PAGE 99]` line could move a citation to a page the text is not on. Honesty failure in a product whose core claim is page traceability. | `sanitiseForLlm()` applied in `extract-text.ts` to each raw page body **before** the genuine markers are inserted. See the note below on getting this wrong first. |
 | 4 | **Low** | **Custom term names reach the extraction *system* prompt** — the highest-trust position in the request — with only a length bound. | `sanitiseCustomTermName()` strips newlines and leading list/heading markers. |
@@ -83,6 +83,19 @@ app would have regressed it. Each was a deliberate decision, not an oversight.
 | `lib/security/authGuard.ts`, `chatSecurity.ts`, `inputValidator.ts`, `tokenLimiter.ts` | Inline `getUser()` + ownership filters, `src/lib/validation/*`, `src/lib/utils/server-config.ts` | The controls exist and are tested. Re-homing them behind new wrappers is churn on audited code, and every route would need re-verifying to gain nothing. |
 | `app/api/auth/login` + `logout` routes | Client `supabase.auth` + `updateSession` middleware | The `@supabase/ssr` client already sets cookies correctly through the middleware; signup/login/logout round trips are covered by `auth.spec.ts` on two engines. Replacing a working, tested auth path carries more risk than it removes. |
 | camelCase filenames | kebab-case | Matches every other file in `src/lib/`. |
+
+### Stage 6 update (2026-09-23) — injection screening folded into the harmless policy
+
+Spec 13 v1.1 §A replaces the standalone injection guard with one rule table,
+`src/lib/security/guardrails.ts`, and the chat route now follows it:
+
+| Before (2026-09-20) | Now (2026-09-23) | Why |
+|---|---|---|
+| `detectPromptInjection` in `prompt-injection.ts` | The `prompt_injection` rule; its patterns are `src/lib/security/patterns/injection.ts` (`inj.ignore_instructions`, `inj.system_prompt`, `inj.role_override`, `inj.exfil`, `inj.doc_directive`) | One implementation. The Lab 3 regexes moved under the spec's pattern ids **unchanged in intent**: still anchored to an imperative aimed at the assistant, so "Does clause 7 override the previous agreement instructions?" still passes (the false positive in §1 stays fixed and tested). `inj.system_prompt` matches a bare mention of "system prompt"/"system message"/"developer message", as the spec names it — contract questions do not use those words. `prompt-injection.ts` keeps only the defanging helpers (`sanitiseForLlm`, `sanitiseCustomTermName`). |
+| A blocked message returned `400 PROMPT_INJECTION`; nothing was stored | A block stores the user message and the rule's fixed reply as the assistant message ("I can only answer about this contract. Try rephrasing…", `query_class` null, `cited_pages` [], `citation_verified` true, latency measured) — no model call | Spec 08 v1.1 §A step 5a. The conversation shows a refusal rather than an error, and the refusal counts toward the escalation offer (spec 20 §5.1). |
+| An `activity_events` `prompt_injection_blocked` row | A `guardrail_events` row per match — `rule`, `stage`, `action`, `input_hash` (sha256), `matched` (pattern id) — **never the text**, written on the caller's JWT before the action applies | The PRD's injection log. Hash-only is asserted by `tests/integration/guardrail-events.test.ts` (spec 13 §E item 10). |
+| Contract text was not screened | The process route calls `screenDocument(contract_text)`: `flag` + event only, processing continues | It is the user's own document; extraction output is still schema-validated and source-verified, so a directive in it cannot become a high-confidence term. |
+| — | Off-scope (`off_scope.*`, block), profanity (seed list, inbound flag/block, outbound rewrite), competitor and PII-solicitation (outbound rewrite) | The rest of spec 13 v1.1 §A. Profanity, competitor and PII are `stub` (seed lists); the operator maintains `patterns/profanity-list.ts` and `patterns/competitors.ts`. |
 
 ---
 

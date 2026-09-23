@@ -20,7 +20,7 @@ export function ChatPanel({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState('');
-  const { messages, isAwaitingReply, slowNotice, error, restoredDraft, send } = useChat(contractId);
+  const { messages, isAwaitingReply, slowNotice, error, restoredDraft, escalationOffer, send } = useChat(contractId);
 
   useEffect(() => {
     if (restoredDraft !== null) setDraft(restoredDraft);
@@ -69,7 +69,13 @@ export function ChatPanel({
           ))}
         </div>
       ) : (
-        <MessageList messages={messages} isAwaitingReply={isAwaitingReply} slowNotice={slowNotice} contractId={contractId} />
+        <MessageList
+          messages={messages}
+          isAwaitingReply={isAwaitingReply}
+          slowNotice={slowNotice}
+          contractId={contractId}
+          escalationOffer={escalationOffer}
+        />
       )}
 
       {error && (

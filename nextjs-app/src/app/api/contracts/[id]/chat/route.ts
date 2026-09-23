@@ -6,14 +6,19 @@ import { chatMessageSchema } from '@/lib/validation/chat.schema';
 import { callLlm } from '@/lib/ai/openai-client';
 import { analyseQuery, GREETING_REPLY, isGreeting, shouldEnhanceQuery } from '@/lib/ai/query-classifier';
 import { enhanceQuery } from '@/lib/ai/query-enhancer';
-import { detectPromptInjection } from '@/lib/security/prompt-injection';
+import { OFF_SCOPE_REPLY, recordEscalationFlag, screenInbound, screenOutbound } from '@/lib/security/guardrails';
 import { CITATION_REPAIR_PROMPT } from '@/lib/ai/prompts/repair.v1';
 import {
   assembleChatMessages,
   CHAT_TURN_BUDGET_MS,
+  countUnresolvedTurns,
+  ESCALATION_OFFER_THRESHOLD,
+  UNRESOLVED_WINDOW_MESSAGES,
   validateCitations,
   type HistoryMessage,
+  type TurnRecord,
 } from '@/lib/services/chat-service';
+import type { QueryClass } from '@/types/domain';
 import { getServerConfig } from '@/lib/utils/server-config';
 import { recordEvent } from '@/lib/metrics/events';
 import { recordProcessingRun } from '@/lib/metrics/timings';
@@ -122,19 +127,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     const { message } = chatMessageSchema.parse(await request.json());
 
-    // Screened BEFORE the session is touched and before any model call, so a
-    // blocked attempt costs nothing and leaves no conversation history.
-    const injection = detectPromptInjection(message);
-    if (injection.blocked) {
-      await recordEvent(supabase, {
-        userId: user.id,
-        contractId: contract.id,
-        eventType: 'prompt_injection_blocked',
-        metadata: { rule: injection.rule },
-      });
-      throw appError('PROMPT_INJECTION');
-    }
-
     // 4. Session
     const sessionId = await ensureSession(supabase, contract.id, user.id);
 
@@ -147,8 +139,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .limit(cfg.MAX_CHAT_HISTORY_MESSAGES);
 
     const history = (historyRows ?? []) as HistoryMessage[];
-
     const turnStartedAt = Date.now();
+    const screenOpts = { supabase, userId: user.id, contractId: contract.id };
 
     // 5. Persist the user message BEFORE the answer call, so a failed turn
     //    still records the question. `chat_messages` is append-only (no UPDATE
@@ -164,46 +156,105 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return { id: row.id as string, enhanced_query: enhancedQuery };
     };
 
-    // 5b. Greeting / small talk (spec 08 v1.1 §A): a fixed reply, and no
-    //     classifier, enhancer, document or model call.
-    if (isGreeting(message)) {
-      const userMessage = await persistUserMessage(null);
+    /**
+     * Steps 10–11 for every path (block, greeting, answer): persist the
+     * assistant row, the unresolved-turn counter (spec 20 §5.1, step 10a),
+     * telemetry and the one `chat` processing run.
+     */
+    const completeTurn = async (turn: {
+      userMessage: { id: string; enhanced_query: string | null };
+      content: string;
+      citedPages: number[];
+      citationVerified: boolean;
+      queryClass: QueryClass | null;
+      promptTokens?: number;
+      completionTokens?: number;
+      metadata: Record<string, unknown>;
+    }) => {
       const latencyMs = Date.now() - turnStartedAt;
-      const { data: greetingRow, error: greetingError } = await supabase
+      const { data: assistantRow, error: assistantError } = await supabase
         .from('chat_messages')
         .insert({
           session_id: sessionId,
           user_id: user.id,
           role: 'assistant',
-          content: GREETING_REPLY,
-          cited_pages: [],
-          citation_verified: true,
-          query_class: null,
+          content: turn.content,
+          cited_pages: turn.citedPages,
+          citation_verified: turn.citationVerified,
+          query_class: turn.queryClass,
           latency_ms: latencyMs,
+          prompt_tokens: turn.promptTokens ?? null,
+          completion_tokens: turn.completionTokens ?? null,
         })
         .select('id, role, content, cited_pages, citation_verified, created_at')
         .single();
-      if (greetingError || !greetingRow) throw appError('INTERNAL');
+      if (assistantError || !assistantRow) throw appError('INTERNAL');
 
       await supabase
         .from('chat_sessions')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', sessionId);
+
+      // 10a. Consecutive unresolved turns within the session's last 6 messages.
+      const { data: recent } = await supabase
+        .from('chat_messages')
+        .select('role, content, citation_verified')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(UNRESOLVED_WINDOW_MESSAGES);
+      const unresolvedTurns = countUnresolvedTurns(((recent ?? []) as TurnRecord[]).reverse());
+      const escalationOffer = unresolvedTurns >= ESCALATION_OFFER_THRESHOLD;
+      // Rule 4: the offer fired — a flag event; the offer itself is UI, never model text.
+      if (escalationOffer) await recordEscalationFlag(turn.content, screenOpts);
+
+      // 11. Telemetry — class, latency and counts only, never the question or the answer.
       await Promise.all([
         recordEvent(supabase, {
           userId: user.id,
           contractId: contract.id,
           eventType: 'chat_message_sent',
           durationMs: latencyMs,
-          metadata: { query_class: null, greeting: true },
+          metadata: { query_class: turn.queryClass, unresolved_turns: unresolvedTurns, ...turn.metadata },
         }),
         recordProcessingRun(supabase, { contractId: contract.id, userId: user.id, stage: 'chat', durationMs: latencyMs, outcome: 'success' }),
       ]);
 
       return Response.json({
-        user_message_id: userMessage.id,
-        user_message: userMessage,
-        assistant_message: { ...greetingRow, query_class: null, latency_ms: latencyMs },
+        user_message_id: turn.userMessage.id,
+        user_message: turn.userMessage,
+        assistant_message: { ...assistantRow, query_class: turn.queryClass, latency_ms: latencyMs },
+        escalation_offer: escalationOffer,
+      });
+    };
+
+    // 5a. Inbound guardrail screen (spec 13 v1.1 §A): injection → off-scope →
+    //     profanity. A block is answered with the rule's fixed reply and no
+    //     model call; the guardrail_events row is written before it applies.
+    const inbound = await screenInbound(message, { ...screenOpts, hasHistory: history.length > 0 });
+    if (inbound.action === 'block') {
+      const userMessage = await persistUserMessage(null);
+      const blockedBy = inbound.matches.at(-1)!;
+      return completeTurn({
+        userMessage,
+        content: inbound.replacement ?? OFF_SCOPE_REPLY,
+        citedPages: [],
+        citationVerified: true,
+        queryClass: null,
+        metadata: { guardrail: blockedBy.rule },
+      });
+    }
+
+    // 5b. Greeting / small talk (spec 08 v1.1 §A): a fixed reply, and no
+    //     classifier, enhancer, document or model call.
+    if (isGreeting(message)) {
+      const userMessage = await persistUserMessage(null);
+      return completeTurn({
+        userMessage,
+        content: GREETING_REPLY,
+        citedPages: [],
+        citationVerified: true,
+        queryClass: null,
+        metadata: { greeting: true },
       });
     }
 
@@ -293,49 +344,28 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
     }
 
-    const latencyMs = Date.now() - turnStartedAt;
+    // 9a. Outbound guardrail screen: profanity → competitor → PII. A rewrite
+    //     replaces the stored content with the rule's fixed sentence, which
+    //     cites nothing and so claims nothing to verify.
+    const outbound = await screenOutbound(content, screenOpts);
+    if (outbound.action === 'rewrite' && outbound.replacement) {
+      content = outbound.replacement;
+      citation = { citedPages: [], citationVerified: true, needsRepair: false };
+    }
 
-    // 10. Persist the assistant message
-    const { data: assistantRow, error: assistantError } = await supabase
-      .from('chat_messages')
-      .insert({
-        session_id: sessionId,
-        user_id: user.id,
-        role: 'assistant',
-        content,
-        cited_pages: citation.citedPages,
-        citation_verified: citation.citationVerified,
-        query_class: queryClass,
-        latency_ms: latencyMs,
-        prompt_tokens: promptTokens,
-        completion_tokens: completionTokens,
-      })
-      .select('id, role, content, cited_pages, citation_verified, created_at')
-      .single();
-    if (assistantError || !assistantRow) throw appError('INTERNAL');
-
-    await supabase
-      .from('chat_sessions')
-      .update({ last_message_at: new Date().toISOString() })
-      .eq('id', sessionId);
-
-    // 11. Telemetry — metadata carries the class and latency only, never the
-    //     question or the answer. §A step 10: one `chat` processing run per turn.
-    await Promise.all([
-      recordEvent(supabase, {
-        userId: user.id,
-        contractId: contract.id,
-        eventType: 'chat_message_sent',
-        durationMs: latencyMs,
-        metadata: { query_class: queryClass, enhanced: userMessage.enhanced_query !== null },
-      }),
-      recordProcessingRun(supabase, { contractId: contract.id, userId: user.id, stage: 'chat', durationMs: latencyMs, outcome: 'success' }),
-    ]);
-
-    return Response.json({
-      user_message_id: userMessage.id,
-      user_message: userMessage,
-      assistant_message: { ...assistantRow, query_class: queryClass, latency_ms: latencyMs },
+    return completeTurn({
+      userMessage,
+      content,
+      citedPages: citation.citedPages,
+      citationVerified: citation.citationVerified,
+      queryClass,
+      promptTokens,
+      completionTokens,
+      metadata: {
+        enhanced: userMessage.enhanced_query !== null,
+        ...(inbound.action === 'flag' ? { guardrail_flag: true } : {}),
+        ...(outbound.action === 'rewrite' ? { guardrail_rewrite: true } : {}),
+      },
     });
   });
 }

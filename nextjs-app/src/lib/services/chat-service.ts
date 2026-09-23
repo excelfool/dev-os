@@ -2,6 +2,7 @@ import 'server-only';
 import { estimateTokens } from '@/lib/pdf/page-utils';
 import { normalise } from '@/lib/utils/normalise-text';
 import { citedPagesIn } from '@/lib/ai/citations';
+import { OFF_SCOPE_REPLY } from '@/lib/security/guardrails';
 import {
   buildChatSystemPrompt,
   buildDocumentContextBlock,
@@ -119,4 +120,38 @@ export function validateCitations(
 
 export function isCannotFindAnswer(content: string): boolean {
   return normalise(content) === normalise(CANNOT_FIND_ANSWER);
+}
+
+/**
+ * Spec 20 §5.1 — "~3 unresolved turns" (PRD Flow 4 step 7, harmless rule 4).
+ * An assistant turn is unresolved when it is the exact "cannot find" fallback,
+ * or `citation_verified = false`, or the rule-3 off-scope reply.
+ */
+export const UNRESOLVED_WINDOW_MESSAGES = 6;
+export const ESCALATION_OFFER_THRESHOLD = 3;
+
+export interface TurnRecord {
+  role: 'user' | 'assistant';
+  content: string;
+  citation_verified: boolean | null;
+}
+
+export function isUnresolvedAnswer(message: TurnRecord): boolean {
+  if (message.role !== 'assistant') return false;
+  return isCannotFindAnswer(message.content) || message.citation_verified === false || message.content === OFF_SCOPE_REPLY;
+}
+
+/**
+ * Consecutive unresolved assistant turns ending at the latest one, counted
+ * within the session's last 6 messages (ascending order in); any resolved
+ * answer resets it to 0.
+ */
+export function countUnresolvedTurns(messagesAscending: TurnRecord[]): number {
+  let count = 0;
+  for (const message of messagesAscending.slice(-UNRESOLVED_WINDOW_MESSAGES).reverse()) {
+    if (message.role !== 'assistant') continue;
+    if (!isUnresolvedAnswer(message)) break;
+    count += 1;
+  }
+  return count;
 }

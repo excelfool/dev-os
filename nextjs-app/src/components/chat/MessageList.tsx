@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PageCitationChip } from './PageCitationChip';
+import { EscalateOffer } from '@/components/risk/EscalateOffer';
 import { HhhQuestionnaire } from '@/components/review/HhhQuestionnaire';
 import { useReviewMode } from '@/hooks/use-review-mode';
 import { cn } from '@/lib/utils/cn';
@@ -12,13 +13,17 @@ export function MessageList({
   isAwaitingReply,
   slowNotice,
   contractId,
+  escalationOffer = false,
 }: {
   messages: ChatMessage[];
   isAwaitingReply: boolean;
   slowNotice: boolean;
   /** Spec 22 §4: needed to score an answer; absent outside a contract. */
   contractId?: string;
+  /** Spec 20 §5.1: render EscalateOffer under the last assistant bubble. */
+  escalationOffer?: boolean;
 }) {
+  const lastAssistantId = [...messages].reverse().find((m) => m.role === 'assistant')?.id;
   const endRef = useRef<HTMLDivElement>(null);
   const review = useReviewMode();
 
@@ -65,6 +70,7 @@ export function MessageList({
                   label="Review this answer"
                 />
               )}
+              {escalationOffer && message.id === lastAssistantId && <EscalateOffer />}
             </>
           )}
         </div>

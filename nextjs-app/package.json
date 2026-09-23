@@ -14,7 +14,7 @@
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/types/database.types.ts",
     "scan:secrets": "node scripts/scan-client-bundle.mjs",
     "test": "vitest run",
-    "test:unit": "vitest run tests/unit",
+    "test:unit": "vitest run tests/unit tests/ai",
     "test:hooks": "vitest run tests/hooks",
     "test:rls": "vitest run tests/rls",
     "test:integration": "vitest run tests/integration",

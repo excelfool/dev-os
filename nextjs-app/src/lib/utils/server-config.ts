@@ -61,7 +61,10 @@ const serverSchema = z.object({
   OPENAI_INPUT_COST_PER_1K: z.coerce.number().default(0.005),
   OPENAI_OUTPUT_COST_PER_1K: z.coerce.number().default(0.015),
   OPENAI_MONTHLY_BUDGET_USD: z.coerce.number().default(300),
-  PROMPT_VERSION: z.string().default('v2.0'), // v1.1: extraction.v2 is the only prompt that renders the 36-term library
+  // v2.0: extraction.v2 (the 36-term library). v2.1: the chat prompt gained
+  // spec 13 v1.1 §A's harmless sentence — bumped per the .env.example rule.
+  // The extraction prompt itself is still EXTRACTION_PROMPT_VERSION 'v2.0'.
+  PROMPT_VERSION: z.string().default('v2.1'),
   // Per-purpose model ids (spec 01 v1.1 §B). Unset ⇒ OPENAI_MODEL. The judge is
   // eval-only and must differ from the product models (spec 22 §6.1).
   OPENAI_MODEL_EXTRACTION: z.string().optional().or(z.literal('')),

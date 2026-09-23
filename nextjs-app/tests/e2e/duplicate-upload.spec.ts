@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { format } from 'date-fns';
 import { SHORT_NDA } from '../integration/pdf-fixtures';
 import { gotoAfterAuth, signUp, uploadViaApi } from './helpers';
+import { formatDateInE2eZone } from './timezone';
 
 /**
  * D46 (Stage 5a): a second upload of the same bytes proceeds as a new
@@ -27,7 +27,8 @@ test('a second upload of the same file shows the duplicate notice on the prepare
   const banner = page.getByRole('status', { name: 'Duplicate upload' });
   await expect(banner).toBeVisible();
   await expect(banner).toHaveText(
-    `You already uploaded this file on ${format(new Date(), 'd MMM yyyy')} — opening the existing analysis is faster.`,
+    // G46: formatted in the pinned E2E zone, the one the browser renders in.
+    `You already uploaded this file on ${formatDateInE2eZone(new Date())} — opening the existing analysis is faster.`,
   );
   await expect(banner.getByRole('link', { name: 'existing analysis' })).toHaveAttribute('href', `/contracts/${firstId}`);
 
