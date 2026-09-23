@@ -64,8 +64,10 @@ const serverSchema = z.object({
   OPENAI_MONTHLY_BUDGET_USD: z.coerce.number().default(300),
   // v2.0: extraction.v2 (the 36-term library). v2.1: the chat prompt gained
   // spec 13 v1.1 §A's harmless sentence — bumped per the .env.example rule.
-  // The extraction prompt itself is still EXTRACTION_PROMPT_VERSION 'v2.0'.
-  PROMPT_VERSION: z.string().default('v2.1'),
+  // v2.2: enhancer prompt says "Return JSON" (G48); history prompt forbids page
+  // citations (L17). The extraction prompt itself is still
+  // EXTRACTION_PROMPT_VERSION 'v2.0' (one version stamps both — G47).
+  PROMPT_VERSION: z.string().default('v2.2'),
   // Per-purpose model ids (spec 01 v1.1 §B). Unset ⇒ OPENAI_MODEL. The judge is
   // eval-only and must differ from the product models (spec 22 §6.1).
   OPENAI_MODEL_EXTRACTION: z.string().optional().or(z.literal('')),

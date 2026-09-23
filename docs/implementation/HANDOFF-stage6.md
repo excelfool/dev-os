@@ -160,7 +160,7 @@ Worked in a Docker sandbox against a **local** Supabase stack (`npm run supabase
 Salesforce is the near miss: a small raise of `MAX_TOKENS` would admit it, but not the other four, which is why the note argues for chunked retrieval rather than bigger limits.
 
 **Deploy steps this stage adds (Stage 9 / CLAUDE.md deploy — none done here):**
-1. **Netlify env: set `PROMPT_VERSION=v2.1`.** The code default moved to v2.1 (the chat prompt changed), but the site's env var overrides the default, so without this every row is still stamped v2.0.
+1. **`PROMPT_VERSION` is v2.2 — nothing to set.** The variable is **not set on Netlify**, so the code default applies at deploy: v2.2 (v2.1 = chat harmless sentence, 721331f; v2.2 = enhancer "Return JSON" G48 and history no-citation L17). If it is ever set on the site, it must match the code default or it will mis-stamp every row (and see G47: one version still stamps both extraction and chat).
 2. Apply the `hhh_scores_insert_own` / `hhh_scores_update_own` policy change (G40, 6ecc383) to the live project.
 3. Optional: `OPENAI_ENHANCER_TIMEOUT_MS=5000`, `OPENAI_ENHANCER_MAX_TOKENS=120` (the defaults already match). Leave `RETRIEVAL_STRATEGY` unset (`full_context`).
 
