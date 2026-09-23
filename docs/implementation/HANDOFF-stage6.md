@@ -174,3 +174,4 @@ Run the evaluation suite against the deployed release and write `eval/reports/<r
 - The five instructor MSAs blocked by `MAX_PAGES`/`MAX_TOKENS` (spec 08 §D note) are reported as SKIPPED rows naming `retrieval.vector`; they are not failures of the extraction prompt.
 - The chat memory set now includes the "summarize" case (`mustNotRepeatPrevious`).
 - In the sandbox, `npm run eval` uses `tsx`, whose bundled esbuild (0.23.1) has no linux-arm64 binary in the Mac-installed `node_modules`; add `@esbuild/linux-arm64@0.23.1` under `node_modules/tsx/node_modules/@esbuild/` first, as was done for vitest's esbuild, rollup and Next SWC.
+- Validator handoff v6 (sha256 d539b7a0) covers this session; next Stage 7 (CLAUDE.md Stage 9) begins with C26 and the OpenAI auto-reload review.
