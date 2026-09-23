@@ -12,9 +12,11 @@ const ROOT = '.next/static';
 const NEEDLES = [
   { label: 'SUPABASE_SERVICE_ROLE_KEY', pattern: /SUPABASE_SERVICE_ROLE_KEY/ },
   { label: 'OPENAI_API_KEY', pattern: /OPENAI_API_KEY/ },
+  // Spec 13 v1.1 §D: the retrieval.n8n bearer token (spec 21 §4 rag/).
+  { label: 'N8N_RAG_TOKEN', pattern: /N8N_RAG_TOKEN/ },
   { label: 'an OpenAI key literal', pattern: /\bsk-[A-Za-z0-9_-]{20,}/ },
 ];
-for (const name of ['SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY']) {
+for (const name of ['SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY', 'N8N_RAG_TOKEN']) {
   const value = process.env[name];
   if (value) {
     NEEDLES.push({

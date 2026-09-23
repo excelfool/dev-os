@@ -129,9 +129,28 @@ Worked in a Docker sandbox against a **local** Supabase stack (`npm run supabase
 |---|---|
 | **G43** | The chat turn had no overall budget: each call had its own 20 s timeout, so enhancer + answer + retries + repair could run far past the 15 s P95. Now one deadline for the whole turn. |
 | **G44** | Chat's citation regex only understood `[Page N]`; the multi-page forms the summary already parsed (L8) counted as uncited in chat and triggered needless repairs. One shared parser now. |
-| **G45** | `callLlm` returned `AI_UNAVAILABLE` (503) when a caller's deadline left no room for even a first attempt; it now returns `AI_TIMEOUT` (504) — the budget ran out, the provider was never tried (spec 06 §3 note). |
-| **G46** | E2E date assertions were formatted in the runner's `TZ=EDT4` while the browsers rendered in UTC, so `duplicate-upload` failed every night from 20:00 EDT. Browsers and app server now share one pinned zone. |
-| **G47** | `chat_messages` is append-only (no UPDATE policy), so writing `enhanced_query` onto the user row after the enhancer failed silently. The enhancer now runs first and the user row is inserted once, with it (spec 08 §B "Order, as built"). |
+| **G45** | Registry entries that are `stub` with **no code behind them**: `crm.*`, `esign.docusign`, `risk.*`, `compare.contracts` — the table claims "in progress" where there is only a registry row and (for some) a 501 route. Back each with its adapter/route stub or mark it `planned`. **Stage 10.** |
+| **G46** | E2E date assertions were formatted in the runner's `TZ=EDT4` while the browsers rendered in UTC, so `duplicate-upload` failed every night from 20:00 EDT. Browsers and app server now share one pinned zone (721331f). |
+| **G47** | **One `PROMPT_VERSION` stamps both prompts.** `contracts.prompt_version` and every `openai_calls` row carry the same value, so the v2.1 bump (a chat-prompt change) re-stamps extraction rows whose prompt is still `EXTRACTION_PROMPT_VERSION` v2.0. Any eval that groups or compares by prompt version would split identical extraction runs. Separate the extraction and chat versions **in Stage 7, before any eval compares by version.** |
+
+| Decision | One line |
+|---|---|
+| **D57** (was G45 in 5527f9b's first draft) | `callLlm` returns **`AI_TIMEOUT`** (504), not `AI_UNAVAILABLE` (503), when a caller's deadline leaves no room for even a first attempt — the budget ran out, the provider was never tried (spec 06 §3 note, 02693cb). |
+| **D58** (was G47 in 5527f9b's first draft) | The query enhancer runs **before** the user-row insert and `enhanced_query` is written **with** the row: `chat_messages` is append-only (no UPDATE policy), so updating it afterwards failed silently. The question is still stored before the answer call (spec 08 §B "Order, as built", 02693cb). |
+
+**Next free identifiers: D59, C29, G48, L17.**
+
+**C25/C27 — instructor MSAs the upload gates stop** (measured with the app's `extractPdfText` + `estimateTokens`; gates in the route's order, `MAX_PAGES` = 20 then `MAX_TOKENS` = 15,000; full argument in spec 08 v1.1 §D):
+
+| Contract | Pages | Tokens | Stopped by |
+|---|---:|---:|---|
+| Stripe | 35 | 17,546 | `MAX_PAGES` (tokens over too) |
+| Celonis | 31 | 20,213 | `MAX_PAGES` (tokens over too) |
+| Square | 141 | 53,829 | `MAX_PAGES` (tokens over too) |
+| Salesforce | 16 | 15,704 | `MAX_TOKENS` — misses the gate by **704 tokens** |
+| Intuit | 20 | 17,259 | `MAX_TOKENS` (20 pages is within `MAX_PAGES`) |
+
+Salesforce is the near miss: a small raise of `MAX_TOKENS` would admit it, but not the other four, which is why the note argues for chunked retrieval rather than bigger limits.
 
 **Deploy steps this stage adds (Stage 9 / CLAUDE.md deploy — none done here):**
 1. **Netlify env: set `PROMPT_VERSION=v2.1`.** The code default moved to v2.1 (the chat prompt changed), but the site's env var overrides the default, so without this every row is still stamped v2.0.
